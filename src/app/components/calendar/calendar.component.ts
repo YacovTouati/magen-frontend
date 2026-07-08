@@ -2,17 +2,17 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface CalendarDay {
-  dayNumber: number;
-  dateString: string;
-  volunteer: string;
-  isToday: boolean;
+    dayNumber: number;
+    dateString: string;
+    volunteer: string;
+    isToday: boolean;
 }
 
 @Component({
-  selector: 'app-calendar',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-calendar',
+    standalone: true,
+    imports: [CommonModule],
+    template: `
   <section class="section-card diary-card">
     <div class="calendar-header">
       <h3>📓 יומן עבודה חודשי - <span class="month-highlight">{{ currentMonthName }}</span></h3>
@@ -63,21 +63,21 @@ export interface CalendarDay {
     </div>
   </section>
   `
-  ,
-  styleUrls: ['./calendar.component.css']
+    ,
+    styleUrls: ['./calendar.component.css']
 })
 export class CalendarComponent {
-  @Input() calendarDays: CalendarDay[] = [];
-  @Input() currentMonthName = '';
-  @Output() assignVolunteer = new EventEmitter<number>();
+    @Input() calendarDays: CalendarDay[] = [];
+    @Input() currentMonthName = '';
+    @Output() assignVolunteer = new EventEmitter<number>();
 
-  viewMode: 'diary' | 'table' = 'diary';
+    viewMode: 'diary' | 'table' = 'diary';
 
-  toggleView(mode: 'diary' | 'table') {
-    this.viewMode = mode;
-  }
+    toggleView(mode: 'diary' | 'table') {
+        this.viewMode = mode;
+    }
 
-  assign(index: number) {
-    this.assignVolunteer.emit(index);
-  }
+    assign(index: number) {
+        this.assignVolunteer.emit(index);
+    }
 }

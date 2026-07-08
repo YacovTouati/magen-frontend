@@ -3,30 +3,30 @@
   <app-login *ngIf="!isLoggedIn" [loginEmail]="loginEmail" (login)="onLogin($event)"></app-login>
 
   <div *ngIf="isLoggedIn" class="dashboard-layout">
-    <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab" (tabChange)="onTabChange($event)" (logoutEvent)="logout()"></app-sidebar>
+    <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab"
+      (tabChange)="onTabChange($event)" (logoutEvent)="logout()"></app-sidebar>
 
     <main class="main-content">
-      <app-calendar *ngIf="currentTab === 'calendar'" [calendarDays]="calendarDays" [currentMonthName]="currentMonthName" (assignVolunteer)="onAssignVolunteer($event)"></app-calendar>
+      <ng-container *ngIf="isAdminUsersRoute(); else legacyContent">
+        <router-outlet></router-outlet>
+      </ng-container>
 
-      <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>
+      <ng-template #legacyContent>
+        <app-calendar *ngIf="currentTab === 'calendar'" [calendarDays]="calendarDays"
+          [currentMonthName]="currentMonthName" (assignVolunteer)="onAssignVolunteer($event)"></app-calendar>
 
-      <app-report *ngIf="currentTab === 'report'"
-        [callDuration]="callDuration"
-        [callerType]="callerType"
-        [callPurpose]="callPurpose"
-        [summaryNotes]="summaryNotes"
-        [callerName]="callerName"
-        [phone]="phone"
-        [email]="email"
-        [region]="region"
-        [gender]="gender"
-        [sector]="sector"
-        [contactedOtherCenterBefore]="contactedOtherCenterBefore"
-        (reportSubmit)="onReportSubmit($event)"></app-report>
+        <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>
 
-      <app-charts *ngIf="currentTab === 'charts'"></app-charts>
+        <app-report *ngIf="currentTab === 'report'" [callDuration]="callDuration" [callerType]="callerType"
+          [callPurpose]="callPurpose" [summaryNotes]="summaryNotes" [callerName]="callerName" [phone]="phone"
+          [email]="email" [region]="region" [gender]="gender" [sector]="sector"
+          [contactedOtherCenterBefore]="contactedOtherCenterBefore"
+          (reportSubmit)="onReportSubmit($event)"></app-report>
 
-      <app-future *ngIf="currentTab === 'future'"></app-future>
+        <app-charts *ngIf="currentTab === 'charts'"></app-charts>
+
+        <app-future *ngIf="currentTab === 'future'"></app-future>
+      </ng-template>
     </main>
   </div>
 </div>

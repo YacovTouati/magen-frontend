@@ -2,10 +2,10 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-charts',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-charts',
+    standalone: true,
+    imports: [CommonModule],
+    template: `
   <section class="section-card">
     <h3>📊 דוחות חודשיים וכלי ניהול מנהלי</h3>
     <p class="section-desc">גרפים ופילוחים סטטיסטיים של השיחות שהתקבלו במערכת.</p>
@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
     </div>
   </section>
   `
-  ,
-  styleUrls: ['./charts.component.css']
+    ,
+    styleUrls: ['./charts.component.css']
 })
-export class ChartsComponent {}
+export class ChartsComponent { }

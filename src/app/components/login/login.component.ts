@@ -3,18 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+    selector: 'app-login',
+    standalone: true,
+    imports: [CommonModule, FormsModule],
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  @Input() loginEmail = '';
-  @Output() login = new EventEmitter<string>();
+    @Input() loginEmail = '';
+    @Output() login = new EventEmitter<string>();
 
-  onLogin() {
-    if (!this.loginEmail) return;
-    this.login.emit(this.loginEmail);
-  }
+    onLogin() {
+        if (!this.loginEmail) return;
+        this.login.emit(this.loginEmail);
+    }
 }

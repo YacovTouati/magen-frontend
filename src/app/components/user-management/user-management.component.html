@@ -1,0 +1,79 @@
+<section class="user-management-page" dir="rtl">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">ניהול מערכת</p>
+            <h2>משתמשים</h2>
+        </div>
+    </div>
+
+    <div class="alert success" *ngIf="formSuccess">{{ formSuccess }}</div>
+    <div class="alert error" *ngIf="formError">{{ formError }}</div>
+
+    <div class="dashboard-grid">
+        <div class="panel table-panel">
+            <div class="panel-header">
+                <h3>רשימת משתמשים</h3>
+                <span *ngIf="isLoading">טוען...</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>שם</th>
+                            <th>אימייל</th>
+                            <th>תפקיד</th>
+                            <th>פעולה</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let user of users">
+                            <td>{{ user?.name || '—' }}</td>
+                            <td>{{ user?.email || '—' }}</td>
+                            <td>{{ getRoleLabel(user?.role) }}</td>
+                            <td>
+                                <button class="delete-btn" type="button" (click)="deleteUser(user.id)">מחק</button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="!isLoading && users.length === 0">
+                            <td colspan="4" class="empty-state">אין משתמשים להצגה.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel form-panel">
+            <div class="panel-header">
+                <h3>הוספת משתמש חדש</h3>
+            </div>
+
+            <form (ngSubmit)="addUser($event)" class="user-form" novalidate>
+                <label>
+                    שם מלא
+                    <input type="text" [(ngModel)]="newUser.name" name="name" required />
+                </label>
+
+                <label>
+                    אימייל
+                    <input type="email" [(ngModel)]="newUser.email" name="email" required />
+                </label>
+
+                <label>
+                    סיסמה
+                    <input type="password" [(ngModel)]="newUser.password" name="password" required />
+                </label>
+
+                <label>
+                    תפקיד
+                    <select [(ngModel)]="newUser.role" name="role">
+                        <option value="ADMIN">מנהל</option>
+                        <option value="VOLUNTEER">מתנדב</option>
+                    </select>
+                </label>
+
+                <button type="submit" class="submit-btn">הוסף משתמש</button>
+            </form>
+        </div>
+    </div>
+</section>

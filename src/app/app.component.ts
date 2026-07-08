@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { inject } from '@angular/core'; // כלי מודרני להזרקת שירותים
+import { inject } from '@angular/core';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { LoginComponent } from './components/login/login.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
@@ -10,6 +12,7 @@ import { SamplesComponent } from './components/samples/samples.component';
 import { ReportComponent } from './components/report/report.component';
 import { ChartsComponent } from './components/charts/charts.component';
 import { FutureComponent } from './components/future/future.component';
+import { UserManagementComponent } from './components/user-management/user-management.component';
 
 interface CalendarDay {
   dayNumber: number;
@@ -21,12 +24,13 @@ interface CalendarDay {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, LoginComponent, SidebarComponent, CalendarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent],
+  imports: [CommonModule, FormsModule, HttpClientModule, RouterOutlet, LoginComponent, SidebarComponent, CalendarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent, UserManagementComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
   private http = inject(HttpClient);
+  private router = inject(Router);
 
   isLoggedIn = false;
   isAdmin = false;
@@ -36,6 +40,7 @@ export class AppComponent implements OnInit {
 
   currentMonthName = '';
   calendarDays: CalendarDay[] = [];
+  currentRoute = '/';
 
   empowermentQuotes = [
     "« כל המציל נפש אחת... כאילו קיים עולם מלא »",
@@ -63,11 +68,19 @@ export class AppComponent implements OnInit {
   gender: string = 'unknown';
   sector: string = 'secular';
   contactedOtherCenterBefore: boolean = false;
+  reportingDuty: boolean = false;
 
   ngOnInit() {
     this.generateCurrentMonthCalendar();
+    this.currentRoute = this.router.url;
 
-    // 🔥 בדיקה אוטומטית: האם המשתמש כבר התחבר בעבר?
+    this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe((event: any) => {
+      this.currentRoute = event.urlAfterRedirects || event.url;
+      this.updateCurrentTabFromRoute();
+    });
+
+    this.updateCurrentTabFromRoute();
+
     const savedEmail = localStorage.getItem('magen_user_email');
     if (savedEmail) {
       this.loginEmail = savedEmail;
@@ -123,8 +136,27 @@ export class AppComponent implements OnInit {
     this.loginUser(email);
   }
 
+  private updateCurrentTabFromRoute(): void {
+    if (this.currentRoute === '/admin/users') {
+      this.currentTab = 'users';
+      return;
+    }
+
+    this.currentTab = 'calendar';
+  }
+
+  isAdminUsersRoute(): boolean {
+    return this.currentRoute === '/admin/users';
+  }
+
   switchTab(tabName: string) {
     this.currentTab = tabName;
+
+    if (tabName === 'users') {
+      this.router.navigate(['/admin/users']);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   onTabChange(tab: string) {
@@ -154,7 +186,8 @@ export class AppComponent implements OnInit {
       region: this.region,
       gender: this.gender,
       sector: this.sector,
-      contactedOtherCenterBefore: this.contactedOtherCenterBefore
+      contactedOtherCenterBefore: this.contactedOtherCenterBefore,
+      reportingDuty: this.reportingDuty
     };
 
     console.log('🚀 הפרונטנד שולח כעת בקשת HTTP אמיתית לבקאנד...');
@@ -173,6 +206,7 @@ export class AppComponent implements OnInit {
           this.phone = '';
           this.email = '';
           this.contactedOtherCenterBefore = false;
+          this.reportingDuty = false;
         },
         error: (err) => {
           // ⛔ כישלון - השרת חסם את המידע (למשל, ה-Validator מצא שגיאה)
@@ -196,6 +230,7 @@ export class AppComponent implements OnInit {
           this.phone = '';
           this.email = '';
           this.contactedOtherCenterBefore = false;
+          this.reportingDuty = false;
         },
         error: (err) => {
           console.error('❌ הבקאנד חסם את הבקשה או שיש שגיאת רשת:', err);

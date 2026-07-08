@@ -1,22 +1,22 @@
 .samples-list {
-  display: grid;
-  gap: 12px;
+    display: grid;
+    gap: 12px;
 }
 
 .sample-call-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 12px;
-  border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    border-radius: 6px;
 }
 
 .sample-call-desc {
-  color: #64748b;
-  font-size: 13px;
+    color: #64748b;
+    font-size: 13px;
 }
 
 .placeholder-tag {
-  display: inline-block;
-  margin-top: 8px;
-  color: #94a3b8;
+    display: inline-block;
+    margin-top: 8px;
+    color: #94a3b8;
 }

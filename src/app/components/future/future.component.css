@@ -1,10 +1,14 @@
 .section-card {
-  background: white;
-  border-radius: 8px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
 }
 
-.section-desc { color: #64748b; font-size: 13px; margin-bottom: 20px; }
+.section-desc {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
