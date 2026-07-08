@@ -1,0 +1,11 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1 class="main-title">מערכת מגן - קו חם</h1>
+    <p class="subtitle">מערכת ניהול ותמיכה מבוססת הרשאות</p>
+    <div class="form-group" style="text-align: right;">
+      <label>כתובת אימייל לכניסה:</label>
+      <input type="email" [(ngModel)]="loginEmail" placeholder="הכנס את המייל שלך..." class="form-input">
+    </div>
+    <button (click)="onLogin()" class="btn btn-primary">כניסה כמנהל המערכת</button>
+  </div>
+</div>

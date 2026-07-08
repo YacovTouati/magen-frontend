@@ -1,0 +1,412 @@
+/* ניווט הטאבים בסרגל הצד */
+.nav-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 30px;
+  flex-grow: 1;
+}
+
+.nav-btn {
+  background: transparent;
+  color: #cbd5e1;
+  border: none;
+  padding: 12px 15px;
+  text-align: right;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.nav-btn.active {
+  background-color: #0d9488;
+  /* צבע ירוק טורקיז לטאב פעיל */
+  color: white;
+  font-weight: bold;
+}
+
+/* שאר הסטיילים נשארים כמו מקודם */
+.magen-wrapper {
+  font-family: system-ui, sans-serif;
+  background-color: #fcfbf9;
+  min-height: 100vh;
+  color: #1e293b;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 450px;
+  text-align: center;
+}
+
+.main-title {
+  color: #1e3a8a;
+  margin-bottom: 10px;
+  font-size: 28px;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 280px;
+  background-color: #1e293b;
+  color: white;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #334155;
+}
+
+.logo-area {
+  display: flex;
+  flex-direction: column;
+  /* מסדר אותם אחד מתחת לשני */
+  align-items: center;
+  /* ממרכז את הכל (כולל ה-badge) בדיוק באמצע */
+  width: 100%;
+  /* דואג שהאזור יקבל את כל רוחב הסיידבר */
+  padding: 0 0 15px 0;
+  /* מוריד פדינג מיותר מהצדדים כדי שהתמונה תיגע בקצוות */
+  box-sizing: border-box;
+}
+
+.magen-logo {
+  width: 100%;
+  /* מותח את התמונה על כל הרוחב הזמין */
+  height: auto;
+  /* שומר על פרופורציות של הלוגו */
+  display: block;
+  object-fit: cover;
+  /* דואג שהיא תתפרס יפה בלי עיוותים */
+  margin-bottom: 12px;
+  /* רווח קטן וקבוע בין התמונה ל-Badge */
+}
+
+/* מוודאים שהתגית עצמה ממורכזת */
+.role-badge.admin {
+  text-align: center;
+  margin: 0 auto;
+  /* ביטוח כפול למרכז */
+}
+
+.quote-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-right: 4px solid #86efac;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 30px 0;
+}
+
+.quote-text {
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.section-card {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+
+.section-card h3 {
+  margin-top: 0;
+  color: #1e3a8a;
+}
+
+.section-desc {
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 15px;
+}
+
+.calendar-day {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.day-number {
+  font-weight: bold;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 5px;
+}
+
+.day-volunteer {
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+  text-align: center;
+}
+
+.day-volunteer.vacant {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  flex: 1;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #475569;
+}
+
+.form-input {
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #1e3a8a;
+  color: white;
+  width: 100%;
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-logout {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #475569;
+  font-size: 12px;
+  width: 100%;
+  margin-top: auto;
+}
+
+.btn-mini {
+  margin-top: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.user-info {
+  margin-top: 20px;
+}
+
+/* עיצובים ללוח שנה אמיתי */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.month-highlight {
+  color: #0d9488;
+  font-weight: bold;
+}
+
+.today-indicator-legend {
+  font-size: 12px;
+  color: #475569;
+  background: #f0fdf4;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.day-date {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+/* הדגשת היום הנוכחי */
+.calendar-day.today-card {
+  background-color: #f0fdf4;
+  /* ירוק מרווה רך מאוד */
+  border: 2px solid #10b981;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+}
+
+.day-number.today-text {
+  color: #065f46;
+  font-weight: 800;
+}
+
+/* 📋 עיצוב כללי לטופס דיווח שיחה */
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* 📊 גריד ראשי: מסדר את השדות ב-3 טורים שווים זה לצד זה */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background-color: #f8fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 🔄 גריד משני: מסדר גם את פרטי השיחה ב-3 טורים */
+.secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+/* 📐 מבנה קבוצת שדה (תווית + קלט) */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 📝 שדה סיכום השיחה החופשי - תופס שורה שלמה ומלאה בתחתית */
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ⚡ עיצוב שדות הקלט, הבחירה ותיבת הטקסט */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+/* 💾 עיצוב כפתור השמירה */
+.submit-btn {
+  background-color: #10b981;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-self: flex-start;
+  min-width: 250px;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  background-color: #059669;
+}
+
+/* 📱 התאמה רספונסיבית למסכים קטנים (טאבלטים וניידים) */
+@media (max-width: 900px) {
+
+  .form-grid,
+  .secondary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+
+  .form-grid,
+  .secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
