@@ -1,5 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { UserManagementService, User } from '../../services/user-management.service';
+import { AssignmentModalComponent } from '../assignment-modal/assignment-modal.component';
+import { IntakeAlertsComponent } from '../intake-alerts/intake-alerts.component';
 
 export interface CalendarDay {
     dayNumber: number;
@@ -8,76 +13,223 @@ export interface CalendarDay {
     isToday: boolean;
 }
 
+export interface ShiftAssignment {
+    dayIndex: number;
+    volunteerName: string;
+}
+
+interface CalendarCell {
+    day: CalendarDay;
+    index: number;
+}
+
+export interface MonthSelection {
+    year: number;
+    month: number; // 0-indexed, matches JS Date convention
+}
+
+interface MonthOption extends MonthSelection {
+    key: string;
+    label: string;
+}
+
+const VACANT_LABEL = 'חלון פנוי';
+const WEEKDAY_LABELS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const MONTHS_BEFORE = 12;
+const MONTHS_AFTER = 12;
+
 @Component({
     selector: 'app-calendar',
     standalone: true,
-    imports: [CommonModule],
-    template: `
-  <section class="section-card diary-card">
-    <div class="calendar-header">
-      <h3>📓 יומן עבודה חודשי - <span class="month-highlight">{{ currentMonthName }}</span></h3>
-      <div class="view-toggle">
-        <button type="button" (click)="toggleView('diary')" [class.active]="viewMode === 'diary'">יומן</button>
-        <button type="button" (click)="toggleView('table')" [class.active]="viewMode === 'table'">טבלה</button>
-      </div>
-    </div>
-    <p class="section-desc">רשומות יומיות של משמרות, נקודות מפתח ותזכורות עבודה.</p>
-
-    <div *ngIf="viewMode === 'diary'" class="diary-list">
-      <article *ngFor="let day of calendarDays; let i = index" class="diary-entry" [class.today-card]="day.isToday">
-        <div class="entry-header">
-          <div>
-            <div class="entry-date">{{ day.dateString }}</div>
-            <div class="entry-title">יום {{ day.dayNumber }}</div>
-          </div>
-          <button (click)="assign(i)" class="assign-btn">שיבוץ</button>
-        </div>
-
-        <div class="entry-content">
-          <p class="entry-label">סטטוס משמרת:</p>
-          <p class="entry-value" [class.vacant]="day.volunteer === 'חלון פנוי'">{{ day.volunteer }}</p>
-          <p class="entry-note">הערה: תזכורת להודיע על זמינות שעתיים לפני תחילת המשמרת.</p>
-        </div>
-      </article>
-    </div>
-
-    <div *ngIf="viewMode === 'table'" class="table-wrap">
-      <table class="diary-table">
-        <thead>
-          <tr>
-            <th>יום</th>
-            <th>תאריך</th>
-            <th>סטטוס</th>
-            <th>פעולה</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let day of calendarDays; let i = index" [class.today-row]="day.isToday">
-            <td>יום {{ day.dayNumber }}</td>
-            <td>{{ day.dateString }}</td>
-            <td [class.vacant]="day.volunteer === 'חלון פנוי'">{{ day.volunteer }}</td>
-            <td><button type="button" (click)="assign(i)" class="assign-btn small">שיבוץ</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-  `
-    ,
+    imports: [CommonModule, FormsModule, AssignmentModalComponent, IntakeAlertsComponent],
+    templateUrl: './calendar.component.html',
     styleUrls: ['./calendar.component.css']
 })
 export class CalendarComponent {
+    private authService = inject(AuthService);
+    private userService = inject(UserManagementService);
+
     @Input() calendarDays: CalendarDay[] = [];
-    @Input() currentMonthName = '';
-    @Output() assignVolunteer = new EventEmitter<number>();
+    @Input() year: number = new Date().getFullYear();
+    @Input() month: number = new Date().getMonth();
+    @Output() assignVolunteer = new EventEmitter<ShiftAssignment>();
+    @Output() navigateToTab = new EventEmitter<string>();
+    @Output() monthChange = new EventEmitter<MonthSelection>();
 
-    viewMode: 'diary' | 'table' = 'diary';
+    readonly isAdmin = this.authService.isAdmin();
+    readonly weekdayLabels = WEEKDAY_LABELS;
+    readonly vacantLabel = VACANT_LABEL;
 
-    toggleView(mode: 'diary' | 'table') {
-        this.viewMode = mode;
+    isAssignmentModalOpen = false;
+    assignableUsers: User[] = [];
+    isLoadingUsers = false;
+    usersError = '';
+    private assignmentCell: CalendarCell | null = null;
+
+    get weeks(): (CalendarCell | null)[][] {
+        if (!this.calendarDays.length) {
+            return [];
+        }
+
+        const cells: (CalendarCell | null)[] = [];
+        const leadingBlanks = this.parseDate(this.calendarDays[0].dateString).getDay();
+
+        for (let i = 0; i < leadingBlanks; i++) {
+            cells.push(null);
+        }
+
+        this.calendarDays.forEach((day, index) => cells.push({ day, index }));
+
+        while (cells.length % 7 !== 0) {
+            cells.push(null);
+        }
+
+        const weeks: (CalendarCell | null)[][] = [];
+        for (let i = 0; i < cells.length; i += 7) {
+            weeks.push(cells.slice(i, i + 7));
+        }
+
+        return weeks;
     }
 
-    assign(index: number) {
-        this.assignVolunteer.emit(index);
+    /** Scrollable window of months for the picker: a couple of years back and forward from today. */
+    get monthOptions(): MonthOption[] {
+        const options: MonthOption[] = [];
+        const today = new Date();
+
+        for (let offset = -MONTHS_BEFORE; offset <= MONTHS_AFTER; offset++) {
+            const date = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            options.push({ year, month, key: this.monthKeyFor(year, month), label: this.formatMonthLabel(year, month) });
+        }
+
+        return options;
+    }
+
+    get selectedMonthKey(): string {
+        return this.monthKeyFor(this.year, this.month);
+    }
+
+    get headerLabel(): string {
+        return this.formatMonthLabel(this.year, this.month);
+    }
+
+    onMonthSelect(key: string): void {
+        const [yearStr, monthStr] = key.split('-');
+        this.monthChange.emit({ year: Number(yearStr), month: Number(monthStr) });
+    }
+
+    /**
+     * Smart year labeling: months within the real current calendar year show just the
+     * Hebrew month name; months in any other year get the short (2-digit) year appended.
+     */
+    private formatMonthLabel(year: number, month: number): string {
+        const monthName = new Intl.DateTimeFormat('he-IL', { month: 'long' }).format(new Date(year, month, 1));
+        const currentYear = new Date().getFullYear();
+
+        if (year === currentYear) {
+            return monthName;
+        }
+
+        return `${monthName} ${String(year).slice(-2)}`;
+    }
+
+    private monthKeyFor(year: number, month: number): string {
+        return `${year}-${month}`;
+    }
+
+    get assignmentDayLabel(): string {
+        if (!this.assignmentCell) {
+            return '';
+        }
+
+        return `יום ${this.assignmentCell.day.dayNumber} · ${this.assignmentCell.day.dateString}`;
+    }
+
+    isVacant(day: CalendarDay): boolean {
+        return day.volunteer === VACANT_LABEL;
+    }
+
+    isPast(day: CalendarDay): boolean {
+        const cellDate = this.parseDate(day.dateString);
+        cellDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return cellDate.getTime() < today.getTime();
+    }
+
+    getCellHint(cell: CalendarCell): string {
+        if (!this.isAdmin) {
+            return 'לחץ לדיווח שיחה';
+        }
+
+        return this.isPast(cell.day) ? '' : 'לחץ לשיבוץ';
+    }
+
+    onCellClick(cell: CalendarCell): void {
+        if (this.isAdmin) {
+            this.openAssignmentModal(cell);
+        } else {
+            this.navigateToTab.emit('report');
+        }
+    }
+
+    openAssignmentModal(cell: CalendarCell): void {
+        // past shifts stay visible for history, but can no longer be (re)assigned
+        if (!this.isAdmin || this.isPast(cell.day)) {
+            return;
+        }
+
+        this.assignmentCell = cell;
+        this.isAssignmentModalOpen = true;
+        this.loadAssignableUsers();
+    }
+
+    closeAssignmentModal(): void {
+        this.isAssignmentModalOpen = false;
+        this.assignmentCell = null;
+        this.assignableUsers = [];
+        this.usersError = '';
+    }
+
+    selectUserForAssignment(user: User): void {
+        if (!this.isAdmin || !this.assignmentCell) {
+            return;
+        }
+
+        this.assignVolunteer.emit({ dayIndex: this.assignmentCell.index, volunteerName: user.name });
+        this.closeAssignmentModal();
+    }
+
+    private loadAssignableUsers(): void {
+        this.isLoadingUsers = true;
+        this.usersError = '';
+
+        this.userService.getUsers().subscribe({
+            next: (users) => {
+                this.assignableUsers = users;
+                this.isLoadingUsers = false;
+            },
+            error: () => {
+                this.usersError = 'לא ניתן לטעון את רשימת המשתמשים כרגע.';
+                this.isLoadingUsers = false;
+            }
+        });
+    }
+
+    goToReports(): void {
+        this.navigateToTab.emit('report');
+    }
+
+    goToScenarios(): void {
+        this.navigateToTab.emit('samples');
+    }
+
+    private parseDate(dateString: string): Date {
+        const [day, month, year] = dateString.split('/').map(Number);
+        return new Date(year, month - 1, day);
     }
 }

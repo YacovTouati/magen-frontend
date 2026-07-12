@@ -1,0 +1,11 @@
+<div class="confirm-overlay" *ngIf="isOpen" (click)="onBackdropClick()">
+  <div class="confirm-panel" role="alertdialog" aria-modal="true" (click)="onPanelClick($event)">
+    <h3 class="confirm-title">{{ title }}</h3>
+    <p class="confirm-message">{{ message }}</p>
+
+    <div class="confirm-actions">
+      <button type="button" class="btn-secondary" (click)="onCancel()">{{ cancelLabel }}</button>
+      <button type="button" class="btn-primary-action" (click)="onConfirm()">{{ confirmLabel }}</button>
+    </div>
+  </div>
+</div>

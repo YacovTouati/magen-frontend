@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-    selector: 'app-report',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-report',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
   <section class="section-card">
     <h3>📝 דיווח וסיכום שיחת סיוע</h3>
     <p class="section-desc">מלא את פרטי הפונה דמוגרפית ופרטי השיחה. כל המידע עובר אימות קפדני ונשמר בצורה מאובטחת.</p>
@@ -93,56 +93,56 @@ import { FormsModule } from '@angular/forms';
     </form>
   </section>
   `
-    ,
-    styleUrls: ['./report.component.css']
+  ,
+  styleUrls: ['./report.component.css']
 })
 export class ReportComponent {
-    @Input() callDuration = 30;
-    @Input() callerType = 'victim';
-    @Input() callPurpose = 'counseling';
-    @Input() summaryNotes = '';
-    @Input() callerName = '';
-    @Input() phone = '';
-    @Input() email = '';
-    @Input() region = 'center';
-    @Input() gender = 'unknown';
-    @Input() sector = 'secular';
-    @Input() contactedOtherCenterBefore = false;
-    @Input() reportingDuty = false;
+  @Input() callDuration = 30;
+  @Input() callerType = 'victim';
+  @Input() callPurpose = 'counseling';
+  @Input() summaryNotes = '';
+  @Input() callerName = '';
+  @Input() phone = '';
+  @Input() email = '';
+  @Input() region = 'center';
+  @Input() gender = 'unknown';
+  @Input() sector = 'secular';
+  @Input() contactedOtherCenterBefore = false;
+  @Input() reportingDuty = false;
 
-    @Output() reportSubmit = new EventEmitter<any>();
+  @Output() reportSubmit = new EventEmitter<any>();
 
-    onSubmit() {
-        const data = {
-            callDuration: this.callDuration,
-            callerType: this.callerType,
-            callPurpose: this.callPurpose,
-            summaryNotes: this.summaryNotes,
-            callerName: this.callerName,
-            phone: this.phone,
-            email: this.email,
-            region: this.region,
-            gender: this.gender,
-            sector: this.sector,
-            contactedOtherCenterBefore: this.contactedOtherCenterBefore,
-            reportingDuty: this.reportingDuty
-        };
-        this.reportSubmit.emit(data);
+  onSubmit() {
+    const data = {
+      callDuration: this.callDuration,
+      callerType: this.callerType,
+      callPurpose: this.callPurpose,
+      summaryNotes: this.summaryNotes,
+      callerName: this.callerName,
+      phone: this.phone,
+      email: this.email,
+      region: this.region,
+      gender: this.gender,
+      sector: this.sector,
+      contactedOtherCenterBefore: this.contactedOtherCenterBefore,
+      reportingDuty: this.reportingDuty
+    };
+    this.reportSubmit.emit(data);
+  }
+
+  onlyLetters(event: KeyboardEvent) {
+    const charCode = event.key;
+    const pattern = /^[a-zA-Zא-ת\s]$/;
+    if (!pattern.test(charCode)) {
+      event.preventDefault();
     }
+  }
 
-    onlyLetters(event: KeyboardEvent) {
-        const charCode = event.key;
-        const pattern = /^[a-zA-Zא-ת\s]$/;
-        if (!pattern.test(charCode)) {
-            event.preventDefault();
-        }
+  onlyNumbers(event: KeyboardEvent) {
+    const charCode = event.key;
+    const pattern = /^[0-9\-]$/;
+    if (!pattern.test(charCode)) {
+      event.preventDefault();
     }
-
-    onlyNumbers(event: KeyboardEvent) {
-        const charCode = event.key;
-        const pattern = /^[0-9\-]$/;
-        if (!pattern.test(charCode)) {
-            event.preventDefault();
-        }
-    }
+  }
 }

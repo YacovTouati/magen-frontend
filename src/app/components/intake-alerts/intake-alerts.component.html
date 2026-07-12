@@ -1,0 +1,94 @@
+<section class="section-card intake-alerts-card">
+  <button type="button" class="alert-strip" [class.has-pending]="pendingCount > 0" (click)="togglePanel()">
+    <span class="alert-message">
+      🚨 שים לב: ישנם <strong>{{ pendingCount }}</strong> דיווחי אינטייק חדשים הממתינים לטיפול
+    </span>
+    <span class="toggle-icon" [class.rotated]="isExpanded">▾</span>
+  </button>
+
+  <div class="intake-panel" [class.expanded]="isExpanded">
+    <div class="intake-panel-inner">
+      <div class="table-wrap">
+        <table class="intake-table">
+          <thead>
+            <tr>
+              <th>שם הפונה</th>
+              <th>טלפון</th>
+              <th>מייל</th>
+              <th>רמת דחיפות</th>
+              <th>מתי נכנס</th>
+              <th>חובת דיווח</th>
+              <th>פנייה לגורם נוסף</th>
+              <th>תיאור המקרה</th>
+              <th>סטטוס</th>
+              <th>בטיפול של</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let intake of intakes" [class.critical-row]="intake.urgency === 'CRITICAL'">
+              <td class="caller-name">{{ intake.callerName }}</td>
+              <td class="phone-cell">{{ intake.phone }}</td>
+              <td>{{ intake.email }}</td>
+              <td>
+                <span class="urgency-pill" [ngClass]="'urgency-' + intake.urgency.toLowerCase()">
+                  {{ urgencyLabel(intake.urgency) }}
+                </span>
+              </td>
+              <td>{{ formatCreatedAt(intake.createdAt) }}</td>
+              <td>
+                <span class="duty-pill" [class.yes]="intake.reportingDuty" [class.no]="!intake.reportingDuty">
+                  {{ intake.reportingDuty ? 'כן' : 'לא' }}
+                </span>
+              </td>
+              <td class="other-center-cell">{{ intake.contactedOtherCenter }}</td>
+              <td class="case-description" [title]="intake.caseDescription">{{ intake.caseDescription }}</td>
+              <td>
+                <fieldset class="status-fieldset" [disabled]="!canEditStatus(intake)">
+                  <select
+                    class="status-select"
+                    [ngModel]="intake.status"
+                    (ngModelChange)="onStatusChange(intake, $event)"
+                    [title]="canEditStatus(intake) ? '' : 'רק מי שלקח/ה את התיק לטיפול יכול/ה לשנות סטטוס'"
+                  >
+                    <option *ngFor="let option of statusOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </fieldset>
+              </td>
+              <td>
+                <div class="assignee-cell" [ngSwitch]="getRowAction(intake)">
+                  <span class="assignee-label" [class.empty]="!intake.assignedTo">
+                    {{ intake.assignedTo ? ('בטיפול של: ' + intake.assignedTo) : 'טרם שויך' }}
+                  </span>
+
+                  <button *ngSwitchCase="'claim'" type="button" class="assign-btn" (click)="claimOwnership(intake)">
+                    קח/י לטיפול
+                  </button>
+
+                  <button *ngSwitchCase="'mine'" type="button" class="assign-btn mine" (click)="releaseOwnership(intake)">
+                    ✓ בטיפולי (לחץ לביטול)
+                  </button>
+
+                  <button *ngSwitchCase="'takeover'" type="button" class="assign-btn takeover" (click)="takeOverCase(intake)">
+                    העבר טיפול אליי
+                  </button>
+
+                  <span *ngSwitchCase="'locked'" class="locked-hint">🔒 בטיפול פעיל אצל אחר/ת</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="intakes.length === 0">
+              <td colspan="10" class="empty-state">אין דיווחי אינטייק להצגה כרגע.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <app-confirm-modal
+    [isOpen]="isConfirmOpen"
+    [message]="confirmMessage"
+    (confirmed)="onConfirmAccept()"
+    (cancelled)="onConfirmCancel()"
+  ></app-confirm-modal>
+</section>

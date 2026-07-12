@@ -1,10 +1,7 @@
 <div class="magen-wrapper" dir="rtl">
-
-  <app-login *ngIf="!isLoggedIn" [loginEmail]="loginEmail" (login)="onLogin($event)"></app-login>
-
-  <div *ngIf="isLoggedIn" class="dashboard-layout">
+  <div class="dashboard-layout">
     <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab"
-      (tabChange)="onTabChange($event)" (logoutEvent)="logout()"></app-sidebar>
+      [isAdmin]="isAdmin" (tabChange)="onTabChange($event)" (logoutEvent)="logout()"></app-sidebar>
 
     <main class="main-content">
       <ng-container *ngIf="isAdminUsersRoute(); else legacyContent">
@@ -13,7 +10,8 @@
 
       <ng-template #legacyContent>
         <app-calendar *ngIf="currentTab === 'calendar'" [calendarDays]="calendarDays"
-          [currentMonthName]="currentMonthName" (assignVolunteer)="onAssignVolunteer($event)"></app-calendar>
+          [year]="selectedYear" [month]="selectedMonth" (assignVolunteer)="onAssignVolunteer($event)"
+          (navigateToTab)="onTabChange($event)" (monthChange)="onMonthChange($event)"></app-calendar>
 
         <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>
 

@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
     selector: 'app-login',
@@ -10,11 +12,31 @@ import { FormsModule } from '@angular/forms';
     styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-    @Input() loginEmail = '';
-    @Output() login = new EventEmitter<string>();
+    private authService = inject(AuthService);
+    private router = inject(Router);
 
-    onLogin() {
-        if (!this.loginEmail) return;
-        this.login.emit(this.loginEmail);
+    email = '';
+    password = '';
+    isSubmitting = false;
+    errorMessage = '';
+
+    onSubmit() {
+        if (!this.email || !this.password || this.isSubmitting) {
+            return;
+        }
+
+        this.isSubmitting = true;
+        this.errorMessage = '';
+
+        this.authService.login(this.email, this.password).subscribe({
+            next: ({ user }) => {
+                this.isSubmitting = false;
+                this.router.navigate([user?.role === 'ADMIN' ? '/admin/users' : '/']);
+            },
+            error: () => {
+                this.isSubmitting = false;
+                this.errorMessage = 'אימייל או סיסמה שגויים, או שאין לך הרשאה להתחבר.';
+            }
+        });
     }
 }
