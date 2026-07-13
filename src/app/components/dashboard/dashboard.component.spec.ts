@@ -2,15 +2,18 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../../services/auth.service';
 import { AssignmentService, ShiftAssignmentRecord } from '../../services/assignment.service';
+import { UserManagementService } from '../../services/user-management.service';
 import { VACANT_LABEL } from '../calendar/calendar.component';
 
 describe('DashboardComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
     let assignmentServiceSpy: jasmine.SpyObj<AssignmentService>;
+    let userManagementServiceSpy: jasmine.SpyObj<UserManagementService>;
+    let usersChanged: Subject<void>;
 
     beforeEach(async () => {
         authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser', 'isAdmin', 'logout']);
@@ -20,11 +23,16 @@ describe('DashboardComponent', () => {
         assignmentServiceSpy = jasmine.createSpyObj('AssignmentService', ['getAssignments', 'assign', 'unassign']);
         assignmentServiceSpy.getAssignments.and.returnValue(of([]));
 
+        usersChanged = new Subject<void>();
+        userManagementServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'addUser', 'deleteUser']);
+        (userManagementServiceSpy as any).usersChanged$ = usersChanged.asObservable();
+
         await TestBed.configureTestingModule({
             imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule],
             providers: [
                 { provide: AuthService, useValue: authServiceSpy },
-                { provide: AssignmentService, useValue: assignmentServiceSpy }
+                { provide: AssignmentService, useValue: assignmentServiceSpy },
+                { provide: UserManagementService, useValue: userManagementServiceSpy }
             ]
         }).compileComponents();
     });
@@ -80,6 +88,32 @@ describe('DashboardComponent', () => {
             expect(comp.calendarError).toBeTruthy();
             expect(comp.isLoadingCalendar).toBeFalse();
             expect(comp.calendarDays.every(day => day.volunteer === VACANT_LABEL)).toBeTrue();
+        });
+    });
+
+    describe('reacting to UserManagementService.usersChanged$', () => {
+        it('should refetch the currently-viewed month when a user is deleted elsewhere (e.g. cascade-deleted assignments)', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            const comp = fixture.componentInstance;
+            comp.selectedYear = 2027;
+            comp.selectedMonth = 0; // January
+            fixture.detectChanges();
+            assignmentServiceSpy.getAssignments.calls.reset();
+
+            usersChanged.next();
+
+            expect(assignmentServiceSpy.getAssignments).toHaveBeenCalledOnceWith('2027-01-01', '2027-01-31');
+        });
+
+        it('should stop listening after the component is destroyed', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            fixture.detectChanges();
+            assignmentServiceSpy.getAssignments.calls.reset();
+
+            fixture.destroy();
+            usersChanged.next();
+
+            expect(assignmentServiceSpy.getAssignments).not.toHaveBeenCalled();
         });
     });
 

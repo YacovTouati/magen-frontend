@@ -99,4 +99,29 @@ describe('UserManagementService', () => {
         expect(req.request.method).toBe('DELETE');
         expect(req.request.body).toBeNull();
     });
+
+    describe('usersChanged$', () => {
+        it('should emit after a successful deleteUser (so other views, e.g. the calendar, know to refetch)', () => {
+            let emitCount = 0;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.deleteUser(3).subscribe();
+            httpMock.expectOne(`${apiUrl}/3`).flush(null);
+
+            expect(emitCount).toBe(1);
+        });
+
+        it('should not emit when deleteUser fails', () => {
+            let emitCount = 0;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.deleteUser(3).subscribe({ error: () => { } });
+            httpMock.expectOne(`${apiUrl}/3`).flush(
+                { message: 'forbidden' },
+                { status: 403, statusText: 'Forbidden' }
+            );
+
+            expect(emitCount).toBe(0);
+        });
+    });
 });

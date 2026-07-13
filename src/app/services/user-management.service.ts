@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, Subject, map, tap } from 'rxjs';
 
 export interface User {
     id?: number | string;
@@ -20,6 +20,11 @@ export interface User {
 export class UserManagementService {
     private readonly apiUrl = 'http://localhost:3000/api/users';
 
+    // Emits whenever the user list changes in a way that other views (e.g. the shift
+    // calendar, whose assignments cascade-delete with their volunteer) need to know about.
+    private readonly usersChangedSource = new Subject<void>();
+    readonly usersChanged$ = this.usersChangedSource.asObservable();
+
     constructor(private http: HttpClient) { }
 
     getUsers(): Observable<User[]> {
@@ -33,7 +38,9 @@ export class UserManagementService {
     }
 
     deleteUser(id: number | string): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
+        return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+            tap(() => this.usersChangedSource.next())
+        );
     }
 
     private normalizeRole(role: unknown): 'ADMIN' | 'VOLUNTEER' {

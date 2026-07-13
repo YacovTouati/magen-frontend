@@ -12,6 +12,7 @@ import { FutureComponent } from '../future/future.component';
 import { AuthService } from '../../services/auth.service';
 import { ReportService, CallReportPayload } from '../../services/report.service';
 import { AssignmentService, ShiftAssignmentRecord } from '../../services/assignment.service';
+import { UserManagementService } from '../../services/user-management.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,6 +26,7 @@ export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private reportService = inject(ReportService);
   private assignmentService = inject(AssignmentService);
+  private userManagementService = inject(UserManagementService);
   private destroyRef = inject(DestroyRef);
 
   currentUserEmail = '';
@@ -86,6 +88,15 @@ export class DashboardComponent implements OnInit {
     });
 
     this.updateCurrentTabFromRoute();
+
+    // A user deletion can cascade-delete their shift assignments server-side. The calendar
+    // tab may not even be mounted right now (e.g. while viewing /admin/users), so re-fetch
+    // proactively rather than relying on the calendar to notice on its own next render.
+    this.userManagementService.usersChanged$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.loadCalendarForMonth(this.selectedYear, this.selectedMonth);
+    });
   }
 
   loadCalendarForMonth(year: number, month: number) {
