@@ -61,6 +61,40 @@
     padding: 20px 22px 24px;
 }
 
+.action-error-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+
+.action-error-banner .dismiss-btn {
+    background: transparent;
+    border: none;
+    color: #b91c1c;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.intake-status-message {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    padding: 24px 12px;
+}
+
+.intake-status-message.error {
+    color: #b91c1c;
+}
+
 .table-wrap {
     overflow-x: auto;
     border: 1px solid #e2e8f0;
@@ -97,6 +131,10 @@
 
 .intake-table tr.critical-row {
     background: #fff7f7;
+}
+
+.intake-table tr.row-pending {
+    opacity: 0.6;
 }
 
 .caller-name {
@@ -265,6 +303,12 @@
     font-size: 11px;
     color: #94a3b8;
     white-space: nowrap;
+}
+
+.pending-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    font-style: italic;
 }
 
 @media (max-width: 720px) {

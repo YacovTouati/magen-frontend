@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { CalendarComponent, CalendarDay } from './calendar.component';
 import { AuthService } from '../../services/auth.service';
 import { UserManagementService, User } from '../../services/user-management.service';
+import { IntakeService } from '../../services/intake.service';
 
 function offsetDate(offsetDays: number): Date {
     const date = new Date();
@@ -27,6 +28,7 @@ function buildDay(offsetDays: number, volunteer: string, isToday = false): Calen
 describe('CalendarComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
     let userServiceSpy: jasmine.SpyObj<UserManagementService>;
+    let intakeServiceSpy: jasmine.SpyObj<IntakeService>;
 
     const mockUsers: User[] = [
         { id: 1, name: 'שרה מ.', email: 'sara@magen.org', role: 'VOLUNTEER' },
@@ -47,11 +49,15 @@ describe('CalendarComponent', () => {
         userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers']);
         userServiceSpy.getUsers.and.returnValue(of(mockUsers));
 
+        intakeServiceSpy = jasmine.createSpyObj('IntakeService', ['getIntakes', 'claimOwnership', 'undoClaim', 'takeOverCase', 'updateStatus']);
+        intakeServiceSpy.getIntakes.and.returnValue(of([]));
+
         TestBed.configureTestingModule({
             imports: [CalendarComponent],
             providers: [
                 { provide: AuthService, useValue: authServiceSpy },
-                { provide: UserManagementService, useValue: userServiceSpy }
+                { provide: UserManagementService, useValue: userServiceSpy },
+                { provide: IntakeService, useValue: intakeServiceSpy }
             ]
         });
 

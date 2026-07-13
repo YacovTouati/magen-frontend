@@ -1,37 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
-
-export type IntakeUrgency = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-
-export type IntakeStatus =
-    | 'חדש'
-    | 'לא ענה - לנסות שוב'
-    | 'בטיפול פעיל'
-    | 'נסגר בשיחה קצרה'
-    | 'המשך לטיפול ארוך';
+import { IntakeService, IntakeAlert, IntakeUrgency, IntakeStatus } from '../../services/intake.service';
 
 export type IntakeRowAction = 'claim' | 'mine' | 'takeover' | 'locked';
 
 type PendingConfirmation =
     | { kind: 'release'; intake: IntakeAlert }
     | { kind: 'takeover'; intake: IntakeAlert };
-
-export interface IntakeAlert {
-    id: number;
-    callerName: string;
-    phone: string;
-    email: string;
-    urgency: IntakeUrgency;
-    createdAt: Date;
-    reportingDuty: boolean;
-    contactedOtherCenter: string;
-    caseDescription: string;
-    status: IntakeStatus;
-    assignedTo: string | null;
-}
 
 const STATUS_OPTIONS: IntakeStatus[] = [
     'חדש',
@@ -51,80 +29,7 @@ const URGENCY_LABELS: Record<IntakeUrgency, string> = {
     LOW: 'נמוכה'
 };
 
-function minutesAgo(minutes: number): Date {
-    return new Date(Date.now() - minutes * 60 * 1000);
-}
-
-// TODO: replace with a real intake-reports API call once the Prisma models/endpoints land
-function seedIntakes(): IntakeAlert[] {
-    return [
-        {
-            id: 1,
-            callerName: 'מירי אברהם',
-            phone: '050-1234567',
-            email: 'miri.a@example.com',
-            urgency: 'CRITICAL',
-            createdAt: minutesAgo(12),
-            reportingDuty: true,
-            contactedOtherCenter: 'לא',
-            caseDescription: 'פנייה דחופה בנוגע לחשש ממצוקה מיידית, מבקשת ליווי טלפוני עוד היום.',
-            status: 'חדש',
-            assignedTo: null
-        },
-        {
-            id: 2,
-            callerName: 'דוד לוי',
-            phone: '052-9876543',
-            email: 'david.l@example.com',
-            urgency: 'HIGH',
-            createdAt: minutesAgo(35),
-            reportingDuty: false,
-            contactedOtherCenter: 'כן - ער"ן',
-            caseDescription: 'שיחת המשך לבירור מצב לאחר פנייה קודמת, אין חובת דיווח.',
-            status: 'חדש',
-            assignedTo: null
-        },
-        {
-            id: 3,
-            callerName: 'נועה שמעוני',
-            phone: '054-5551234',
-            email: 'noa.s@example.com',
-            urgency: 'MEDIUM',
-            createdAt: minutesAgo(58),
-            reportingDuty: true,
-            contactedOtherCenter: 'לא',
-            caseDescription: 'בקשה למידע כללי על שירותי התמיכה, ללא מצוקה מיידית.',
-            status: 'לא ענה - לנסות שוב',
-            assignedTo: 'רבקה ס.'
-        },
-        {
-            id: 4,
-            callerName: 'יוסי כהן',
-            phone: '053-4443322',
-            email: 'yossi.c@example.com',
-            urgency: 'LOW',
-            createdAt: minutesAgo(120),
-            reportingDuty: false,
-            contactedOtherCenter: 'כן - עמותת "אחווה"',
-            caseDescription: 'פנייה כללית, נסגרה בשיחה קצרה עם מענה ראשוני.',
-            status: 'נסגר בשיחה קצרה',
-            assignedTo: 'רבקה ס.'
-        },
-        {
-            id: 5,
-            callerName: 'אלון גבע',
-            phone: '058-7778899',
-            email: 'alon.g@example.com',
-            urgency: 'HIGH',
-            createdAt: minutesAgo(8),
-            reportingDuty: true,
-            contactedOtherCenter: 'לא',
-            caseDescription: 'שיחה רגישה שבטיפול פעיל כרגע, לא לפצל בין מטפלים.',
-            status: 'בטיפול פעיל',
-            assignedTo: 'רבקה ס.'
-        }
-    ];
-}
+const GENERIC_ACTION_ERROR = 'הפעולה נכשלה. ייתכן שמצב התיק השתנה בינתיים — רענן/י ונסה/י שוב.';
 
 @Component({
     selector: 'app-intake-alerts',
@@ -133,14 +38,42 @@ function seedIntakes(): IntakeAlert[] {
     templateUrl: './intake-alerts.component.html',
     styleUrls: ['./intake-alerts.component.css']
 })
-export class IntakeAlertsComponent {
+export class IntakeAlertsComponent implements OnInit {
     private authService = inject(AuthService);
+    private intakeService = inject(IntakeService);
 
     readonly statusOptions = STATUS_OPTIONS;
 
-    intakes: IntakeAlert[] = seedIntakes();
+    intakes: IntakeAlert[] = [];
     isExpanded = false;
+    isLoadingIntakes = false;
+    loadError = '';
+
+    /** id of the intake with an in-flight claim/undo/takeover/status request, if any */
+    pendingActionId: number | null = null;
+    actionError = '';
+
     private pendingConfirmation: PendingConfirmation | null = null;
+
+    ngOnInit(): void {
+        this.loadIntakes();
+    }
+
+    loadIntakes(): void {
+        this.isLoadingIntakes = true;
+        this.loadError = '';
+
+        this.intakeService.getIntakes().subscribe({
+            next: (intakes) => {
+                this.intakes = intakes;
+                this.isLoadingIntakes = false;
+            },
+            error: () => {
+                this.loadError = 'לא ניתן לטעון את דיווחי האינטייק כרגע.';
+                this.isLoadingIntakes = false;
+            }
+        });
+    }
 
     get pendingCount(): number {
         return this.intakes.filter(intake => intake.status === UNASSIGNED_STATUS).length;
@@ -177,6 +110,10 @@ export class IntakeAlertsComponent {
         return !!intake.assignedTo && this.isOwner(intake);
     }
 
+    isPendingAction(intake: IntakeAlert): boolean {
+        return this.pendingActionId === intake.id;
+    }
+
     /**
      * Drives which action a row exposes:
      * - claim:    nobody owns it yet — anyone can take responsibility
@@ -197,22 +134,50 @@ export class IntakeAlertsComponent {
     }
 
     onStatusChange(intake: IntakeAlert, newStatus: IntakeStatus): void {
-        if (!this.canEditStatus(intake)) {
+        if (!this.canEditStatus(intake) || this.pendingActionId !== null) {
             return;
         }
 
-        intake.status = newStatus;
+        this.pendingActionId = intake.id;
+        this.actionError = '';
+
+        // Pessimistic update: intake.status only changes once the server confirms it, so the
+        // one-way [ngModel] binding naturally snaps the <select> back to the current value on
+        // its own if this request fails — no manual rollback needed.
+        this.intakeService.updateStatus(intake.id, newStatus).subscribe({
+            next: (updated) => {
+                Object.assign(intake, updated);
+                this.pendingActionId = null;
+            },
+            error: (err) => {
+                this.pendingActionId = null;
+                this.actionError = this.describeError(err);
+            }
+        });
     }
 
     claimOwnership(intake: IntakeAlert): void {
-        if (intake.assignedTo) {
+        if (intake.assignedTo || this.pendingActionId !== null) {
             return;
         }
 
-        intake.assignedTo = this.currentAdminName;
+        this.pendingActionId = intake.id;
+        this.actionError = '';
+
+        this.intakeService.claimOwnership(intake.id).subscribe({
+            next: (updated) => {
+                Object.assign(intake, updated);
+                this.pendingActionId = null;
+            },
+            error: (err) => {
+                this.pendingActionId = null;
+                this.actionError = this.describeError(err);
+                this.loadIntakes(); // someone else likely claimed it first — resync with the server's truth
+            }
+        });
     }
 
-    /** Opens the in-app confirmation modal; the actual state change happens in onConfirmAccept(). */
+    /** Opens the in-app confirmation modal; the actual API call happens in onConfirmAccept(). */
     releaseOwnership(intake: IntakeAlert): void {
         if (!this.isOwner(intake)) {
             return;
@@ -221,7 +186,7 @@ export class IntakeAlertsComponent {
         this.pendingConfirmation = { kind: 'release', intake };
     }
 
-    /** Opens the in-app confirmation modal; the actual state change happens in onConfirmAccept(). */
+    /** Opens the in-app confirmation modal; the actual API call happens in onConfirmAccept(). */
     takeOverCase(intake: IntakeAlert): void {
         if (this.getRowAction(intake) !== 'takeover') {
             return;
@@ -253,18 +218,42 @@ export class IntakeAlertsComponent {
         }
 
         const { kind, intake } = this.pendingConfirmation;
-
-        if (kind === 'release') {
-            intake.assignedTo = null;
-            intake.status = UNASSIGNED_STATUS;
-        } else {
-            intake.assignedTo = this.currentAdminName;
-        }
-
         this.pendingConfirmation = null;
+        this.pendingActionId = intake.id;
+        this.actionError = '';
+
+        const request$ = kind === 'release'
+            ? this.intakeService.undoClaim(intake.id)
+            : this.intakeService.takeOverCase(intake.id);
+
+        request$.subscribe({
+            next: (updated) => {
+                Object.assign(intake, updated);
+                this.pendingActionId = null;
+            },
+            error: (err) => {
+                this.pendingActionId = null;
+                this.actionError = this.describeError(err);
+                this.loadIntakes(); // reconcile with the server's authoritative state after a failed handover/release
+            }
+        });
     }
 
     onConfirmCancel(): void {
         this.pendingConfirmation = null;
+    }
+
+    dismissActionError(): void {
+        this.actionError = '';
+    }
+
+    private describeError(err: any): string {
+        // status 0 means the request never reached the server (offline / CORS / server down) —
+        // don't show the raw HttpErrorResponse string, it's meaningless to an end user.
+        if (err?.status === 0) {
+            return 'לא ניתן להתחבר לשרת. בדוק/י את החיבור לאינטרנט ונסה/י שוב.';
+        }
+
+        return err?.error?.message || err?.message || GENERIC_ACTION_ERROR;
     }
 }
