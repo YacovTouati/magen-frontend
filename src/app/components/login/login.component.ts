@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -33,10 +34,21 @@ export class LoginComponent {
                 this.isSubmitting = false;
                 this.router.navigate(['/']);
             },
-            error: () => {
+            error: (err: HttpErrorResponse) => {
                 this.isSubmitting = false;
-                this.errorMessage = 'אימייל או סיסמה שגויים, או שאין לך הרשאה להתחבר.';
+                this.errorMessage = this.extractServerErrorMessage(err, 'אימייל או סיסמה שגויים, או שאין לך הרשאה להתחבר.');
             }
         });
+    }
+
+    // Field-validation failures (400) come back as { success: false, errors: [{ field, message }] } —
+    // show the backend's exact message. Other failures (e.g. 401 wrong credentials) use a plain
+    // { message } shape instead, so fall back to a generic message in that case.
+    private extractServerErrorMessage(error: HttpErrorResponse, fallback: string): string {
+        const errors = error?.error?.errors;
+        if (Array.isArray(errors) && errors.length > 0 && typeof errors[0]?.message === 'string') {
+            return errors[0].message;
+        }
+        return fallback;
     }
 }

@@ -7,6 +7,7 @@ import { CalendarComponent, CalendarDay } from './calendar.component';
 import { AuthService } from '../../services/auth.service';
 import { UserManagementService, User } from '../../services/user-management.service';
 import { IntakeService } from '../../services/intake.service';
+import { AssignmentService, ShiftAssignmentRecord } from '../../services/assignment.service';
 
 function offsetDate(offsetDays: number): Date {
     const date = new Date();
@@ -25,10 +26,26 @@ function buildDay(offsetDays: number, volunteer: string, isToday = false): Calen
     };
 }
 
+// mirrors CalendarComponent's private toIsoDate(): "D/M/YYYY" -> zero-padded "YYYY-MM-DD"
+function toIsoDate(dateString: string): string {
+    const [day, month, year] = dateString.split('/').map(Number);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function buildAssignmentRecord(dateIso: string, volunteer: User): ShiftAssignmentRecord {
+    return {
+        id: 99,
+        date: dateIso,
+        volunteerId: Number(volunteer.id),
+        volunteer: { id: Number(volunteer.id), name: volunteer.name, email: volunteer.email, role: volunteer.role }
+    };
+}
+
 describe('CalendarComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
     let userServiceSpy: jasmine.SpyObj<UserManagementService>;
     let intakeServiceSpy: jasmine.SpyObj<IntakeService>;
+    let assignmentServiceSpy: jasmine.SpyObj<AssignmentService>;
 
     const mockUsers: User[] = [
         { id: 1, name: 'שרה מ.', email: 'sara@magen.org', role: 'VOLUNTEER' },
@@ -52,12 +69,18 @@ describe('CalendarComponent', () => {
         intakeServiceSpy = jasmine.createSpyObj('IntakeService', ['getIntakes', 'claimOwnership', 'undoClaim', 'takeOverCase', 'updateStatus']);
         intakeServiceSpy.getIntakes.and.returnValue(of([]));
 
+        assignmentServiceSpy = jasmine.createSpyObj('AssignmentService', ['getAssignments', 'assign', 'unassign']);
+        assignmentServiceSpy.getAssignments.and.returnValue(of([]));
+        assignmentServiceSpy.assign.and.returnValue(of(buildAssignmentRecord('2026-01-01', mockUsers[0])));
+        assignmentServiceSpy.unassign.and.returnValue(of(undefined));
+
         TestBed.configureTestingModule({
             imports: [CalendarComponent],
             providers: [
                 { provide: AuthService, useValue: authServiceSpy },
                 { provide: UserManagementService, useValue: userServiceSpy },
-                { provide: IntakeService, useValue: intakeServiceSpy }
+                { provide: IntakeService, useValue: intakeServiceSpy },
+                { provide: AssignmentService, useValue: assignmentServiceSpy }
             ]
         });
 
@@ -94,6 +117,26 @@ describe('CalendarComponent', () => {
         expect(cells[1].nativeElement.classList).toContain('today-cell');
     });
 
+    it('should show a loading banner and hide the grid while isLoadingCalendar is true', () => {
+        const fixture = setup(true);
+        fixture.componentInstance.isLoadingCalendar = true;
+        fixture.detectChanges();
+
+        expect(fixture.debugElement.query(By.css('.calendar-status'))).toBeTruthy();
+        expect(fixture.debugElement.query(By.css('.calendar-grid-wrapper'))).toBeFalsy();
+    });
+
+    it('should show an error banner (and still render the grid) when calendarError is set', () => {
+        const fixture = setup(true);
+        fixture.componentInstance.calendarError = 'לא ניתן לטעון את יומן המשמרות מהשרת כרגע.';
+        fixture.detectChanges();
+
+        const banner = fixture.debugElement.query(By.css('.calendar-status.error'));
+        expect(banner).toBeTruthy();
+        expect(banner.nativeElement.textContent).toContain('לא ניתן לטעון');
+        expect(fixture.debugElement.query(By.css('.calendar-grid-wrapper'))).toBeTruthy();
+    });
+
     describe('as ADMIN', () => {
         it('should mark cells as admin-clickable and clicking one opens the assignment modal and loads users', () => {
             const fixture = setup(true);
@@ -111,9 +154,11 @@ describe('CalendarComponent', () => {
             expect(comp.assignmentDayLabel).toContain(String(defaultDays[0].dayNumber));
         });
 
-        it('selecting a user in the modal should emit a ShiftAssignment for the clicked day and close the modal', () => {
+        it('selecting a user in the modal should call AssignmentService.assign with the ISO date and volunteer id, then emit a ShiftAssignment and close the modal', () => {
             const fixture = setup(true);
             const comp = fixture.componentInstance;
+            const expectedIso = toIsoDate(defaultDays[0].dateString);
+            assignmentServiceSpy.assign.and.returnValue(of(buildAssignmentRecord(expectedIso, mockUsers[1])));
             spyOn(comp.assignVolunteer, 'emit');
             spyOn(comp.navigateToTab, 'emit');
 
@@ -123,10 +168,78 @@ describe('CalendarComponent', () => {
 
             comp.selectUserForAssignment(mockUsers[1]);
 
+            expect(assignmentServiceSpy.assign).toHaveBeenCalledWith(expectedIso, 2);
             expect(comp.assignVolunteer.emit).toHaveBeenCalledWith({ dayIndex: 0, volunteerName: 'רבקה ס.' });
             expect(comp.navigateToTab.emit).not.toHaveBeenCalled();
             expect(comp.isAssignmentModalOpen).toBeFalse();
             expect(comp.assignableUsers).toEqual([]);
+            expect(comp.isSavingAssignment).toBeFalse();
+        });
+
+        it('should surface an assignmentActionError and keep the modal open when the assign request fails', () => {
+            const fixture = setup(true);
+            const comp = fixture.componentInstance;
+            assignmentServiceSpy.assign.and.returnValue(throwError(() => new Error('validation failed')));
+            spyOn(comp.assignVolunteer, 'emit');
+
+            const firstCell = fixture.debugElement.query(By.css('.day-cell:not(.empty-cell)'));
+            firstCell.triggerEventHandler('click', null);
+            fixture.detectChanges();
+
+            comp.selectUserForAssignment(mockUsers[1]);
+
+            expect(comp.assignVolunteer.emit).not.toHaveBeenCalled();
+            expect(comp.assignmentActionError).toBeTruthy();
+            expect(comp.isSavingAssignment).toBeFalse();
+            expect(comp.isAssignmentModalOpen).toBeTrue();
+        });
+
+        it('should expose the currently-assigned volunteer and call AssignmentService.unassign, then emit the day index and close the modal', () => {
+            const fixture = setup(true);
+            const comp = fixture.componentInstance;
+            const expectedIso = toIsoDate(defaultDays[1].dateString);
+            spyOn(comp.unassignVolunteer, 'emit');
+
+            const cells = fixture.debugElement.queryAll(By.css('.day-cell:not(.empty-cell)'));
+            cells[1].triggerEventHandler('click', null); // day index 1 (assigned to 'שרה מ.')
+            fixture.detectChanges();
+
+            expect(comp.assignmentCurrentVolunteer).toBe('שרה מ.');
+
+            comp.unassignCurrent();
+
+            expect(assignmentServiceSpy.unassign).toHaveBeenCalledWith(expectedIso);
+            expect(comp.unassignVolunteer.emit).toHaveBeenCalledWith(1);
+            expect(comp.isAssignmentModalOpen).toBeFalse();
+            expect(comp.isSavingAssignment).toBeFalse();
+        });
+
+        it('should surface an assignmentActionError and keep the modal open when the unassign request fails', () => {
+            const fixture = setup(true);
+            const comp = fixture.componentInstance;
+            assignmentServiceSpy.unassign.and.returnValue(throwError(() => new Error('not found')));
+            spyOn(comp.unassignVolunteer, 'emit');
+
+            const cells = fixture.debugElement.queryAll(By.css('.day-cell:not(.empty-cell)'));
+            cells[1].triggerEventHandler('click', null);
+            fixture.detectChanges();
+
+            comp.unassignCurrent();
+
+            expect(comp.unassignVolunteer.emit).not.toHaveBeenCalled();
+            expect(comp.assignmentActionError).toBeTruthy();
+            expect(comp.isAssignmentModalOpen).toBeTrue();
+        });
+
+        it('assignmentCurrentVolunteer should be null when opening the modal for a vacant day', () => {
+            const fixture = setup(true);
+            const comp = fixture.componentInstance;
+
+            const firstCell = fixture.debugElement.query(By.css('.day-cell:not(.empty-cell)'));
+            firstCell.triggerEventHandler('click', null); // vacant day
+            fixture.detectChanges();
+
+            expect(comp.assignmentCurrentVolunteer).toBeNull();
         });
 
         it('should surface an error in the modal when loading users fails', () => {
@@ -172,10 +285,11 @@ describe('CalendarComponent', () => {
             expect(userServiceSpy.getUsers).not.toHaveBeenCalled();
         });
 
-        it('openAssignmentModal() and selectUserForAssignment() should remain no-ops even if called directly', () => {
+        it('openAssignmentModal(), selectUserForAssignment() and unassignCurrent() should remain no-ops even if called directly', () => {
             const fixture = setup(false);
             const comp = fixture.componentInstance;
             spyOn(comp.assignVolunteer, 'emit');
+            spyOn(comp.unassignVolunteer, 'emit');
 
             comp.openAssignmentModal({ day: comp.calendarDays[0], index: 0 });
             expect(comp.isAssignmentModalOpen).toBeFalse();
@@ -183,6 +297,11 @@ describe('CalendarComponent', () => {
 
             comp.selectUserForAssignment(mockUsers[0]);
             expect(comp.assignVolunteer.emit).not.toHaveBeenCalled();
+            expect(assignmentServiceSpy.assign).not.toHaveBeenCalled();
+
+            comp.unassignCurrent();
+            expect(comp.unassignVolunteer.emit).not.toHaveBeenCalled();
+            expect(assignmentServiceSpy.unassign).not.toHaveBeenCalled();
         });
 
         it('should show the read-only mode badge', () => {

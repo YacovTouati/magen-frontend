@@ -75,7 +75,7 @@ describe('LoginComponent', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/']);
     });
 
-    it('should show an error message and not navigate when login fails', () => {
+    it('should show a generic error message and not navigate when login fails with no structured errors array', () => {
         authServiceSpy.login.and.returnValue(throwError(() => new Error('Unauthorized')));
         const fixture = TestBed.createComponent(LoginComponent);
         const comp = fixture.componentInstance;
@@ -84,7 +84,22 @@ describe('LoginComponent', () => {
 
         comp.onSubmit();
 
-        expect(comp.errorMessage).toBeTruthy();
+        expect(comp.errorMessage).toBe('אימייל או סיסמה שגויים, או שאין לך הרשאה להתחבר.');
+        expect(comp.isSubmitting).toBeFalse();
+        expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should show the backend\'s exact validation message when the server returns a structured errors array', () => {
+        const serverError = { error: { success: false, errors: [{ field: 'email', message: 'כתובת המייל שהוזנה אינה תקינה' }] } };
+        authServiceSpy.login.and.returnValue(throwError(() => serverError));
+        const fixture = TestBed.createComponent(LoginComponent);
+        const comp = fixture.componentInstance;
+        comp.email = 'not-an-email';
+        comp.password = 'wrong';
+
+        comp.onSubmit();
+
+        expect(comp.errorMessage).toBe('כתובת המייל שהוזנה אינה תקינה');
         expect(comp.isSubmitting).toBeFalse();
         expect(router.navigate).not.toHaveBeenCalled();
     });

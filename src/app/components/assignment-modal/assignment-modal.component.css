@@ -38,6 +38,65 @@
     background: #e2e8f0;
 }
 
+.current-assignment {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 24px;
+    background: #f0fdfa;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    color: #0f766e;
+}
+
+.current-assignment-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-unassign {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #fca5a5;
+    background: #fff;
+    color: #b91c1c;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-unassign:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.btn-unassign:disabled,
+.modal-close:disabled,
+.search-input:disabled,
+.btn-cancel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.action-error {
+    padding: 12px 24px 0;
+    text-align: right;
+}
+
+.user-list.saving {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.saving-hint {
+    font-size: 12px;
+    color: #64748b;
+    align-self: center;
+}
+
 .modal-search {
     padding: 16px 24px;
 }
@@ -154,7 +213,9 @@
     padding: 14px 24px 20px;
     border-top: 1px solid #f1f5f9;
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 12px;
 }
 
 .btn-cancel {

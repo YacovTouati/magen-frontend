@@ -25,7 +25,10 @@
     <span class="legend-item"><span class="legend-dot today"></span> היום</span>
   </div>
 
-  <div class="calendar-grid-wrapper">
+  <p *ngIf="isLoadingCalendar" class="calendar-status">טוען יומן משמרות...</p>
+  <p *ngIf="!isLoadingCalendar && calendarError" class="calendar-status error">{{ calendarError }}</p>
+
+  <div class="calendar-grid-wrapper" *ngIf="!isLoadingCalendar">
     <div class="weekday-row">
       <div class="weekday-cell" *ngFor="let wd of weekdayLabels">{{ wd }}</div>
     </div>
@@ -80,7 +83,11 @@
     [users]="assignableUsers"
     [isLoading]="isLoadingUsers"
     [errorMessage]="usersError"
+    [currentVolunteerName]="assignmentCurrentVolunteer"
+    [isSaving]="isSavingAssignment"
+    [actionError]="assignmentActionError"
     (selectUser)="selectUserForAssignment($event)"
+    (unassign)="unassignCurrent()"
     (closeModal)="closeAssignmentModal()"
   ></app-assignment-modal>
 </section>

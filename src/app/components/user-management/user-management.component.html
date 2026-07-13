@@ -32,7 +32,7 @@
                             <td>{{ user?.email || '—' }}</td>
                             <td>{{ getRoleLabel(user?.role) }}</td>
                             <td>
-                                <button class="delete-btn" type="button" (click)="deleteUser(user.id)">מחק</button>
+                                <button class="delete-btn" type="button" (click)="deleteUser(user)">מחק</button>
                             </td>
                         </tr>
                         <tr *ngIf="!isLoading && users.length === 0">
@@ -76,4 +76,14 @@
             </form>
         </div>
     </div>
+
+    <app-confirm-modal
+        [isOpen]="isDeleteConfirmOpen"
+        title="מחיקת משתמש"
+        [message]="deleteConfirmMessage"
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        (confirmed)="onConfirmDelete()"
+        (cancelled)="onCancelDelete()"
+    ></app-confirm-modal>
 </section>

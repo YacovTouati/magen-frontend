@@ -51,49 +51,62 @@ describe('UserManagementComponent', () => {
     });
 
     describe('deleteUser', () => {
-        it('should do nothing when id is missing, and never call the service', () => {
+        it('should do nothing when id is missing, and never open the confirm modal', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.deleteUser({ id: undefined, name: 'Ghost', email: 'x@example.com', role: 'VOLUNTEER' });
+
+            expect(comp.isDeleteConfirmOpen).toBeFalse();
+            expect(userServiceSpy.deleteUser).not.toHaveBeenCalled();
+        });
+
+        it('should open the styled confirm modal (not window.confirm) with the target user name, without calling the service yet', () => {
             const fixture = createComponent();
             const comp = fixture.componentInstance;
             spyOn(window, 'confirm');
 
-            comp.deleteUser(undefined);
+            comp.deleteUser(existingUsers[0]);
 
             expect(window.confirm).not.toHaveBeenCalled();
+            expect(comp.isDeleteConfirmOpen).toBeTrue();
+            expect(comp.deleteConfirmMessage).toContain('Alice');
             expect(userServiceSpy.deleteUser).not.toHaveBeenCalled();
         });
 
-        it('should ask for confirmation and abort the delete when the user cancels', () => {
+        it('should abort the delete and close the modal when cancelled', () => {
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            spyOn(window, 'confirm').and.returnValue(false);
 
-            comp.deleteUser(1);
+            comp.deleteUser(existingUsers[0]);
+            comp.onCancelDelete();
 
-            expect(window.confirm).toHaveBeenCalled();
+            expect(comp.isDeleteConfirmOpen).toBeFalse();
             expect(userServiceSpy.deleteUser).not.toHaveBeenCalled();
         });
 
-        it('should call deleteUser with the exact id and reload the list on confirm', () => {
+        it('should call deleteUser with the exact id, close the modal, and reload the list on confirm', () => {
             userServiceSpy.deleteUser.and.returnValue(of(undefined));
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            spyOn(window, 'confirm').and.returnValue(true);
             userServiceSpy.getUsers.calls.reset();
 
-            comp.deleteUser(2);
+            comp.deleteUser(existingUsers[1]);
+            comp.onConfirmDelete();
 
             expect(userServiceSpy.deleteUser).toHaveBeenCalledOnceWith(2);
             expect(userServiceSpy.deleteUser).not.toHaveBeenCalledWith(1);
             expect(userServiceSpy.getUsers).toHaveBeenCalledTimes(1);
+            expect(comp.isDeleteConfirmOpen).toBeFalse();
         });
 
         it('should show an error and not crash when the delete request fails', () => {
             userServiceSpy.deleteUser.and.returnValue(throwError(() => new Error('forbidden')));
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            spyOn(window, 'confirm').and.returnValue(true);
 
-            comp.deleteUser(1);
+            comp.deleteUser(existingUsers[0]);
+            comp.onConfirmDelete();
 
             expect(comp.formError).toBe('מחיקת המשתמש נכשלה. נסה שוב.');
         });
@@ -123,6 +136,29 @@ describe('UserManagementComponent', () => {
             expect(comp.formSuccess).toBe('המשתמש נוסף בהצלחה.');
             expect(comp.newUser).toEqual({ name: '', email: '', password: '', role: 'VOLUNTEER' });
             expect(userServiceSpy.getUsers).toHaveBeenCalledTimes(1);
+        });
+
+        it('should show the backend\'s exact validation message when the server returns a structured errors array', () => {
+            const serverError = { error: { success: false, errors: [{ field: 'email', message: 'כתובת המייל שהוזנה אינה תקינה' }] } };
+            userServiceSpy.addUser.and.returnValue(throwError(() => serverError));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.newUser = { name: 'New', email: 'not-an-email', password: 'secret', role: 'VOLUNTEER' };
+
+            comp.addUser();
+
+            expect(comp.formError).toBe('כתובת המייל שהוזנה אינה תקינה');
+        });
+
+        it('should fall back to a generic message when the server error has no errors array', () => {
+            userServiceSpy.addUser.and.returnValue(throwError(() => new Error('network down')));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.newUser = { name: 'New', email: 'new@example.com', password: 'secret', role: 'VOLUNTEER' };
+
+            comp.addUser();
+
+            expect(comp.formError).toBe('הוספת המשתמש נכשלה. נסה שוב.');
         });
     });
 });

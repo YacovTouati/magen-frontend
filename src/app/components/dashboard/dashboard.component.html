@@ -10,7 +10,9 @@
 
       <ng-template #legacyContent>
         <app-calendar *ngIf="currentTab === 'calendar'" [calendarDays]="calendarDays"
-          [year]="selectedYear" [month]="selectedMonth" (assignVolunteer)="onAssignVolunteer($event)"
+          [year]="selectedYear" [month]="selectedMonth" [isLoadingCalendar]="isLoadingCalendar"
+          [calendarError]="calendarError" (assignVolunteer)="onAssignVolunteer($event)"
+          (unassignVolunteer)="onUnassignVolunteer($event)"
           (navigateToTab)="switchTab($event)" (monthChange)="onMonthChange($event)"></app-calendar>
 
         <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>

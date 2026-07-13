@@ -94,4 +94,57 @@ describe('AssignmentModalComponent', () => {
         const status = errorFixture.debugElement.query(By.css('.modal-status.error'));
         expect(status.nativeElement.textContent).toContain('שגיאה כלשהי');
     });
+
+    describe('current assignment / unassign', () => {
+        it('should not show the current-assignment banner when the day is vacant', () => {
+            const fixture = setup({ currentVolunteerName: null });
+            expect(fixture.debugElement.query(By.css('.current-assignment'))).toBeFalsy();
+        });
+
+        it('should show the currently-assigned volunteer name and an unassign button when the day is assigned', () => {
+            const fixture = setup({ currentVolunteerName: 'שרה מ.' });
+            const banner = fixture.debugElement.query(By.css('.current-assignment'));
+
+            expect(banner).toBeTruthy();
+            expect(banner.nativeElement.textContent).toContain('שרה מ.');
+            expect(fixture.debugElement.query(By.css('.btn-unassign'))).toBeTruthy();
+        });
+
+        it('should emit unassign when the unassign button is clicked', () => {
+            const fixture = setup({ currentVolunteerName: 'שרה מ.' });
+            const comp = fixture.componentInstance;
+            spyOn(comp.unassign, 'emit');
+
+            fixture.debugElement.query(By.css('.btn-unassign')).triggerEventHandler('click', null);
+
+            expect(comp.unassign.emit).toHaveBeenCalled();
+        });
+    });
+
+    describe('saving / action error state', () => {
+        it('should disable cancel, close and unassign while isSaving is true', () => {
+            const fixture = setup({ currentVolunteerName: 'שרה מ.', isSaving: true });
+
+            const cancelBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.btn-cancel')).nativeElement;
+            const closeBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.modal-close')).nativeElement;
+            const unassignBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.btn-unassign')).nativeElement;
+
+            expect(cancelBtn.disabled).toBeTrue();
+            expect(closeBtn.disabled).toBeTrue();
+            expect(unassignBtn.disabled).toBeTrue();
+        });
+
+        it('should show the actionError message when set', () => {
+            const fixture = setup({ actionError: 'שיבוץ המתנדב נכשל. נסה/י שוב.' });
+            const banner = fixture.debugElement.query(By.css('.action-error'));
+
+            expect(banner).toBeTruthy();
+            expect(banner.nativeElement.textContent).toContain('שיבוץ המתנדב נכשל');
+        });
+
+        it('should not show an actionError banner by default', () => {
+            const fixture = setup();
+            expect(fixture.debugElement.query(By.css('.action-error'))).toBeFalsy();
+        });
+    });
 });

@@ -1,12 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { UserManagementService, User } from '../../services/user-management.service';
+import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 
 @Component({
     selector: 'app-user-management',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, ConfirmModalComponent],
     templateUrl: './user-management.component.html',
     styleUrls: ['./user-management.component.css']
 })
@@ -22,6 +24,9 @@ export class UserManagementComponent implements OnInit {
         password: '',
         role: 'VOLUNTEER'
     };
+
+    private pendingDeleteId: number | string | null = null;
+    pendingDeleteName = '';
 
     constructor(private userService: UserManagementService) { }
 
@@ -71,19 +76,44 @@ export class UserManagementComponent implements OnInit {
                 this.newUser = { name: '', email: '', password: '', role: 'VOLUNTEER' };
                 this.loadUsers();
             },
-            error: () => {
-                this.formError = 'הוספת המשתמש נכשלה. נסה שוב.';
+            error: (err: HttpErrorResponse) => {
+                this.formError = this.extractServerErrorMessage(err, 'הוספת המשתמש נכשלה. נסה שוב.');
             }
         });
     }
 
-    deleteUser(id: number | string | undefined): void {
-        if (!id) {
+    // Field-validation failures (400) come back as { success: false, errors: [{ field, message }] } —
+    // show the backend's exact message instead of a generic one.
+    private extractServerErrorMessage(error: HttpErrorResponse, fallback: string): string {
+        const errors = error?.error?.errors;
+        if (Array.isArray(errors) && errors.length > 0 && typeof errors[0]?.message === 'string') {
+            return errors[0].message;
+        }
+        return fallback;
+    }
+
+    deleteUser(user: User): void {
+        if (!user.id) {
             return;
         }
 
-        const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק משתמש זה?');
-        if (!confirmed) {
+        this.pendingDeleteId = user.id;
+        this.pendingDeleteName = user.name || 'משתמש זה';
+    }
+
+    get isDeleteConfirmOpen(): boolean {
+        return this.pendingDeleteId !== null;
+    }
+
+    get deleteConfirmMessage(): string {
+        return `האם אתה בטוח שברצונך למחוק את ${this.pendingDeleteName}? פעולה זו אינה הפיכה.`;
+    }
+
+    onConfirmDelete(): void {
+        const id = this.pendingDeleteId;
+        this.pendingDeleteId = null;
+
+        if (!id) {
             return;
         }
 
@@ -95,5 +125,9 @@ export class UserManagementComponent implements OnInit {
                 this.formError = 'מחיקת המשתמש נכשלה. נסה שוב.';
             }
         });
+    }
+
+    onCancelDelete(): void {
+        this.pendingDeleteId = null;
     }
 }

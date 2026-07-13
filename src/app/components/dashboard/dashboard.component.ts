@@ -4,13 +4,14 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { CalendarComponent, CalendarDay, ShiftAssignment, MonthSelection } from '../calendar/calendar.component';
+import { CalendarComponent, CalendarDay, ShiftAssignment, MonthSelection, VACANT_LABEL } from '../calendar/calendar.component';
 import { SamplesComponent } from '../samples/samples.component';
 import { ReportComponent } from '../report/report.component';
 import { ChartsComponent } from '../charts/charts.component';
 import { FutureComponent } from '../future/future.component';
 import { AuthService } from '../../services/auth.service';
 import { ReportService, CallReportPayload } from '../../services/report.service';
+import { AssignmentService, ShiftAssignmentRecord } from '../../services/assignment.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -23,6 +24,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private reportService = inject(ReportService);
+  private assignmentService = inject(AssignmentService);
   private destroyRef = inject(DestroyRef);
 
   currentUserEmail = '';
@@ -30,6 +32,8 @@ export class DashboardComponent implements OnInit {
   currentTab = 'calendar';
 
   calendarDays: CalendarDay[] = [];
+  isLoadingCalendar = false;
+  calendarError = '';
   selectedYear = new Date().getFullYear();
   selectedMonth = new Date().getMonth();
   currentRoute = '/';
@@ -63,7 +67,7 @@ export class DashboardComponent implements OnInit {
   reportingDuty: boolean = false;
 
   ngOnInit() {
-    this.generateCalendarForMonth(this.selectedYear, this.selectedMonth);
+    this.loadCalendarForMonth(this.selectedYear, this.selectedMonth);
 
     const user = this.authService.getUser();
     this.currentUserEmail = user?.email ?? '';
@@ -84,7 +88,30 @@ export class DashboardComponent implements OnInit {
     this.updateCurrentTabFromRoute();
   }
 
-  generateCalendarForMonth(year: number, month: number) {
+  loadCalendarForMonth(year: number, month: number) {
+    const scaffold = this.buildMonthScaffold(year, month);
+    this.calendarDays = scaffold;
+    this.isLoadingCalendar = true;
+    this.calendarError = '';
+
+    const daysInMonth = scaffold.length;
+    const from = this.toIsoDate(year, month, 1);
+    const to = this.toIsoDate(year, month, daysInMonth);
+
+    this.assignmentService.getAssignments(from, to).subscribe({
+      next: (records) => {
+        this.calendarDays = this.mergeAssignments(scaffold, records, year, month);
+        this.isLoadingCalendar = false;
+      },
+      error: () => {
+        this.calendarDays = scaffold;
+        this.isLoadingCalendar = false;
+        this.calendarError = 'לא ניתן לטעון את יומן המשמרות מהשרת כרגע.';
+      }
+    });
+  }
+
+  private buildMonthScaffold(year: number, month: number): CalendarDay[] {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
 
@@ -97,17 +124,31 @@ export class DashboardComponent implements OnInit {
       generatedDays.push({
         dayNumber: i,
         dateString: `${i}/${month + 1}/${year}`,
-        volunteer: i % 4 === 0 ? 'חלון פנוי' : (i % 3 === 0 ? 'שרה מ.' : 'רבקה ס.'),
+        volunteer: VACANT_LABEL,
         isToday
       });
     }
-    this.calendarDays = generatedDays;
+
+    return generatedDays;
+  }
+
+  private mergeAssignments(days: CalendarDay[], records: ShiftAssignmentRecord[], year: number, month: number): CalendarDay[] {
+    const byDate = new Map(records.map(record => [record.date, record.volunteer?.name || VACANT_LABEL]));
+
+    return days.map(day => {
+      const volunteerName = byDate.get(this.toIsoDate(year, month, day.dayNumber));
+      return volunteerName ? { ...day, volunteer: volunteerName } : day;
+    });
+  }
+
+  private toIsoDate(year: number, month: number, day: number): string {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
   onMonthChange(selection: MonthSelection) {
     this.selectedYear = selection.year;
     this.selectedMonth = selection.month;
-    this.generateCalendarForMonth(selection.year, selection.month);
+    this.loadCalendarForMonth(selection.year, selection.month);
   }
 
   private updateCurrentTabFromRoute(): void {
@@ -133,11 +174,19 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // CalendarComponent already persisted this assignment to the server (POST /api/assignments)
+  // before emitting — this just syncs the locally-held day array to that confirmed result.
   onAssignVolunteer(assignment: ShiftAssignment) {
-    // build a new array (rather than mutating the existing day objects in place) so
-    // OnPush-strategy children fed [calendarDays] as an @Input reliably detect the change
     this.calendarDays = this.calendarDays.map((day, index) =>
       index === assignment.dayIndex ? { ...day, volunteer: assignment.volunteerName } : day
+    );
+  }
+
+  // CalendarComponent already persisted the removal to the server (DELETE /api/assignments/:date)
+  // before emitting — this just syncs the locally-held day array to that confirmed result.
+  onUnassignVolunteer(dayIndex: number) {
+    this.calendarDays = this.calendarDays.map((day, index) =>
+      index === dayIndex ? { ...day, volunteer: VACANT_LABEL } : day
     );
   }
 

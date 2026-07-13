@@ -18,8 +18,12 @@ export class AssignmentModalComponent {
     @Input() users: User[] = [];
     @Input() isLoading = false;
     @Input() errorMessage = '';
+    @Input() currentVolunteerName: string | null = null;
+    @Input() isSaving = false;
+    @Input() actionError = '';
 
     @Output() selectUser = new EventEmitter<User>();
+    @Output() unassign = new EventEmitter<void>();
     @Output() closeModal = new EventEmitter<void>();
 
     searchTerm = '';
@@ -42,6 +46,10 @@ export class AssignmentModalComponent {
 
     onSelect(user: User): void {
         this.selectUser.emit(user);
+    }
+
+    onUnassign(): void {
+        this.unassign.emit();
     }
 
     onCancel(): void {

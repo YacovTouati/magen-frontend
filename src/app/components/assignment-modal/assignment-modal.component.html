@@ -4,11 +4,20 @@
       <p class="modal-eyebrow">שיבוץ מתנדב למשמרת</p>
       <h3 class="modal-title">{{ dayLabel }}</h3>
     </div>
-    <button type="button" class="modal-close" (click)="onCancel()" aria-label="סגור">✕</button>
+    <button type="button" class="modal-close" (click)="onCancel()" [disabled]="isSaving" aria-label="סגור">✕</button>
   </div>
 
+  <div class="current-assignment" *ngIf="currentVolunteerName">
+    <span class="current-assignment-text">משובץ/ת כרגע: <strong>{{ currentVolunteerName }}</strong></span>
+    <button type="button" class="btn-unassign" (click)="onUnassign()" [disabled]="isSaving">
+      {{ isSaving ? 'מבטל שיבוץ...' : 'בטל שיבוץ' }}
+    </button>
+  </div>
+
+  <p *ngIf="actionError" class="modal-status error action-error">{{ actionError }}</p>
+
   <div class="modal-search">
-    <input type="text" [(ngModel)]="searchTerm" placeholder="חיפוש לפי שם או אימייל..." class="search-input" />
+    <input type="text" [(ngModel)]="searchTerm" placeholder="חיפוש לפי שם או אימייל..." class="search-input" [disabled]="isSaving" />
   </div>
 
   <div class="modal-body">
@@ -16,8 +25,8 @@
     <p *ngIf="!isLoading && errorMessage" class="modal-status error">{{ errorMessage }}</p>
     <p *ngIf="!isLoading && !errorMessage && filteredUsers.length === 0" class="modal-status">לא נמצאו משתמשים תואמים.</p>
 
-    <ul class="user-list" *ngIf="!isLoading && !errorMessage">
-      <li *ngFor="let user of filteredUsers" class="user-row" (click)="onSelect(user)">
+    <ul class="user-list" *ngIf="!isLoading && !errorMessage" [class.saving]="isSaving">
+      <li *ngFor="let user of filteredUsers" class="user-row" (click)="!isSaving && onSelect(user)">
         <span class="user-avatar">{{ (user.name || '?').charAt(0) }}</span>
         <span class="user-info">
           <span class="user-name">{{ user.name }}</span>
@@ -29,6 +38,7 @@
   </div>
 
   <div class="modal-footer">
-    <button type="button" class="btn-cancel" (click)="onCancel()">ביטול</button>
+    <span class="saving-hint" *ngIf="isSaving">שומר שיבוץ...</span>
+    <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isSaving">ביטול</button>
   </div>
 </app-modal-shell>

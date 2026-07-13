@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UserManagementService, User } from '../../services/user-management.service';
+import { AssignmentService } from '../../services/assignment.service';
 import { AssignmentModalComponent } from '../assignment-modal/assignment-modal.component';
 import { IntakeAlertsComponent } from '../intake-alerts/intake-alerts.component';
 
@@ -33,7 +34,7 @@ interface MonthOption extends MonthSelection {
     label: string;
 }
 
-const VACANT_LABEL = 'חלון פנוי';
+export const VACANT_LABEL = 'חלון פנוי';
 const WEEKDAY_LABELS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const MONTHS_BEFORE = 12;
 const MONTHS_AFTER = 12;
@@ -48,11 +49,15 @@ const MONTHS_AFTER = 12;
 export class CalendarComponent {
     private authService = inject(AuthService);
     private userService = inject(UserManagementService);
+    private assignmentService = inject(AssignmentService);
 
     @Input() calendarDays: CalendarDay[] = [];
     @Input() year: number = new Date().getFullYear();
     @Input() month: number = new Date().getMonth();
+    @Input() isLoadingCalendar = false;
+    @Input() calendarError = '';
     @Output() assignVolunteer = new EventEmitter<ShiftAssignment>();
+    @Output() unassignVolunteer = new EventEmitter<number>();
     @Output() navigateToTab = new EventEmitter<string>();
     @Output() monthChange = new EventEmitter<MonthSelection>();
 
@@ -63,6 +68,8 @@ export class CalendarComponent {
     assignableUsers: User[] = [];
     isLoadingUsers = false;
     usersError = '';
+    isSavingAssignment = false;
+    assignmentActionError = '';
     private assignmentCell: CalendarCell | null = null;
 
     get weeks(): (CalendarCell | null)[][] {
@@ -146,6 +153,14 @@ export class CalendarComponent {
         return `יום ${this.assignmentCell.day.dayNumber} · ${this.assignmentCell.day.dateString}`;
     }
 
+    get assignmentCurrentVolunteer(): string | null {
+        if (!this.assignmentCell || this.isVacant(this.assignmentCell.day)) {
+            return null;
+        }
+
+        return this.assignmentCell.day.volunteer;
+    }
+
     isVacant(day: CalendarDay): boolean {
         return day.volunteer === VACANT_LABEL;
     }
@@ -184,6 +199,7 @@ export class CalendarComponent {
 
         this.assignmentCell = cell;
         this.isAssignmentModalOpen = true;
+        this.assignmentActionError = '';
         this.loadAssignableUsers();
     }
 
@@ -192,15 +208,53 @@ export class CalendarComponent {
         this.assignmentCell = null;
         this.assignableUsers = [];
         this.usersError = '';
+        this.assignmentActionError = '';
     }
 
     selectUserForAssignment(user: User): void {
+        if (!this.isAdmin || !this.assignmentCell || !user.id) {
+            return;
+        }
+
+        const cell = this.assignmentCell;
+        const dateIso = this.toIsoDate(cell.day.dateString);
+        this.isSavingAssignment = true;
+        this.assignmentActionError = '';
+
+        this.assignmentService.assign(dateIso, Number(user.id)).subscribe({
+            next: (record) => {
+                this.isSavingAssignment = false;
+                this.assignVolunteer.emit({ dayIndex: cell.index, volunteerName: record.volunteer?.name || user.name });
+                this.closeAssignmentModal();
+            },
+            error: () => {
+                this.isSavingAssignment = false;
+                this.assignmentActionError = 'שיבוץ המתנדב נכשל. נסה/י שוב.';
+            }
+        });
+    }
+
+    unassignCurrent(): void {
         if (!this.isAdmin || !this.assignmentCell) {
             return;
         }
 
-        this.assignVolunteer.emit({ dayIndex: this.assignmentCell.index, volunteerName: user.name });
-        this.closeAssignmentModal();
+        const cell = this.assignmentCell;
+        const dateIso = this.toIsoDate(cell.day.dateString);
+        this.isSavingAssignment = true;
+        this.assignmentActionError = '';
+
+        this.assignmentService.unassign(dateIso).subscribe({
+            next: () => {
+                this.isSavingAssignment = false;
+                this.unassignVolunteer.emit(cell.index);
+                this.closeAssignmentModal();
+            },
+            error: () => {
+                this.isSavingAssignment = false;
+                this.assignmentActionError = 'ביטול השיבוץ נכשל. נסה/י שוב.';
+            }
+        });
     }
 
     private loadAssignableUsers(): void {
@@ -230,5 +284,11 @@ export class CalendarComponent {
     private parseDate(dateString: string): Date {
         const [day, month, year] = dateString.split('/').map(Number);
         return new Date(year, month - 1, day);
+    }
+
+    // dateString is "D/M/YYYY" (display format) — the backend needs zero-padded ISO "YYYY-MM-DD"
+    private toIsoDate(dateString: string): string {
+        const [day, month, year] = dateString.split('/').map(Number);
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 }
