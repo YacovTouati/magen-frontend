@@ -58,7 +58,6 @@ export class CalendarComponent {
 
     readonly isAdmin = this.authService.isAdmin();
     readonly weekdayLabels = WEEKDAY_LABELS;
-    readonly vacantLabel = VACANT_LABEL;
 
     isAssignmentModalOpen = false;
     assignableUsers: User[] = [];

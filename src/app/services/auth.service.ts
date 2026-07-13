@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, map, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 
 export interface AuthUser {
     email: string;
@@ -22,8 +22,9 @@ const USER_KEY = 'magen_auth_user';
 export class AuthService {
     private readonly apiUrl = 'http://localhost:3000/api/auth';
 
-    private currentUserSubject = new BehaviorSubject<AuthUser | null>(this.readStoredUser());
-    readonly currentUser$ = this.currentUserSubject.asObservable();
+    // no reactive consumers exist today (every caller reads getUser() synchronously) —
+    // a plain field is enough; reach for a BehaviorSubject again if that changes.
+    private currentUser: AuthUser | null = this.readStoredUser();
 
     constructor(private http: HttpClient) { }
 
@@ -37,7 +38,7 @@ export class AuthService {
     logout(): void {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
-        this.currentUserSubject.next(null);
+        this.currentUser = null;
     }
 
     getToken(): string | null {
@@ -45,7 +46,7 @@ export class AuthService {
     }
 
     getUser(): AuthUser | null {
-        return this.currentUserSubject.value;
+        return this.currentUser;
     }
 
     isLoggedIn(): boolean {
@@ -59,7 +60,7 @@ export class AuthService {
     private setSession(response: LoginResponse): void {
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-        this.currentUserSubject.next(response.user);
+        this.currentUser = response.user;
     }
 
     private normalizeLoginResponse(response: any): LoginResponse {

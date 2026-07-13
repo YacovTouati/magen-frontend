@@ -29,9 +29,9 @@ export class LoginComponent {
         this.errorMessage = '';
 
         this.authService.login(this.email, this.password).subscribe({
-            next: ({ user }) => {
+            next: () => {
                 this.isSubmitting = false;
-                this.router.navigate([user?.role === 'ADMIN' ? '/admin/users' : '/']);
+                this.router.navigate(['/']);
             },
             error: () => {
                 this.isSubmitting = false;

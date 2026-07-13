@@ -24,7 +24,7 @@ describe('AssignmentModalComponent', () => {
 
     it('should render nothing when isOpen is false', () => {
         const fixture = setup({ isOpen: false });
-        expect(fixture.debugElement.query(By.css('.modal-overlay'))).toBeFalsy();
+        expect(fixture.debugElement.query(By.css('.modal-shell-overlay'))).toBeFalsy();
     });
 
     it('should list all users when there is no search term', () => {
@@ -77,10 +77,10 @@ describe('AssignmentModalComponent', () => {
         const comp = fixture.componentInstance;
         spyOn(comp.closeModal, 'emit');
 
-        fixture.debugElement.query(By.css('.modal-panel')).triggerEventHandler('click', { stopPropagation: () => { } });
+        fixture.debugElement.query(By.css('.modal-shell-panel')).triggerEventHandler('click', { stopPropagation: () => { } });
         expect(comp.closeModal.emit).not.toHaveBeenCalled();
 
-        fixture.debugElement.query(By.css('.modal-overlay')).triggerEventHandler('click', null);
+        fixture.debugElement.query(By.css('.modal-shell-overlay')).triggerEventHandler('click', null);
         expect(comp.closeModal.emit).toHaveBeenCalled();
     });
 

@@ -1,0 +1,106 @@
+<section class="section-card analytics-card">
+  <h3>📊 דוחות חודשיים וכלי ניהול מנהלי</h3>
+  <p class="section-desc">פילוח סטטיסטי של סוגי הפונים ומטרות השיחה שהתקבלו במערכת.</p>
+
+  <div class="analytics-loading" *ngIf="isLoading">
+    <div class="skeleton-card">
+      <div class="skeleton-donut"></div>
+      <div class="skeleton-legend">
+        <div class="skeleton-line" *ngFor="let i of [1, 2, 3]"></div>
+      </div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skeleton-bars">
+        <div class="skeleton-bar" *ngFor="let i of [1, 2, 3]"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analytics-error" *ngIf="!isLoading && loadError">
+    <p>{{ loadError }}</p>
+    <button type="button" class="retry-btn" (click)="loadSummary()">נסה/י שוב</button>
+  </div>
+
+  <div class="analytics-grid" *ngIf="!isLoading && !loadError">
+    <div class="chart-panel">
+      <h4 class="chart-title">סוגי פונים</h4>
+
+      <div class="donut-wrap" *ngIf="callerTypeTotal > 0; else emptyCallerTypes">
+        <div
+          class="donut"
+          [style.background]="callerTypeGradient"
+          role="img"
+          [attr.aria-label]="'תרשים עוגה של סוגי פונים, סך הכל ' + callerTypeTotal + ' פניות'"
+        >
+          <div class="donut-hole">
+            <span class="donut-total">{{ callerTypeTotal }}</span>
+            <span class="donut-total-label">פניות</span>
+          </div>
+        </div>
+
+        <ul class="chart-legend">
+          <li *ngFor="let seg of callerTypeSegments">
+            <span class="legend-swatch" [style.background]="seg.color"></span>
+            <span class="legend-label">{{ seg.label }}</span>
+            <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+          </li>
+        </ul>
+      </div>
+
+      <ng-template #emptyCallerTypes>
+        <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+      </ng-template>
+    </div>
+
+    <div class="chart-panel">
+      <h4 class="chart-title">מטרות השיחה</h4>
+
+      <div class="bar-chart" *ngIf="maxPurposeValue > 0; else emptyPurposes">
+        <div class="bar-row" *ngFor="let seg of callPurposeSegments">
+          <div class="bar-row-header">
+            <span class="legend-swatch" [style.background]="seg.color"></span>
+            <span class="bar-name">{{ seg.label }}</span>
+            <span class="bar-value">{{ seg.value }}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="(seg.value / maxPurposeValue) * 100" [style.background]="seg.color"></div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #emptyPurposes>
+        <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="analytics-table-wrap" *ngIf="!isLoading && !loadError && (callerTypeTotal > 0 || maxPurposeValue > 0)">
+    <details>
+      <summary>הצג נתונים כטבלה</summary>
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>מדד</th>
+            <th>קטגוריה</th>
+            <th>ערך</th>
+            <th>אחוז</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let seg of callerTypeSegments">
+            <td>סוג פונה</td>
+            <td>{{ seg.label }}</td>
+            <td>{{ seg.value }}</td>
+            <td>{{ seg.percent | number: '1.0-0' }}%</td>
+          </tr>
+          <tr *ngFor="let seg of callPurposeSegments">
+            <td>מטרת שיחה</td>
+            <td>{{ seg.label }}</td>
+            <td>{{ seg.value }}</td>
+            <td>{{ seg.percent | number: '1.0-0' }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+  </div>
+</section>

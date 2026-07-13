@@ -1,0 +1,11 @@
+<div class="modal-shell-overlay" *ngIf="isOpen" (click)="onBackdropClick()">
+  <div
+    class="modal-shell-panel"
+    [style.max-width]="maxWidth"
+    role="dialog"
+    aria-modal="true"
+    (click)="onPanelClick($event)"
+  >
+    <ng-content></ng-content>
+  </div>
+</div>

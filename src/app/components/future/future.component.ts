@@ -11,7 +11,5 @@ import { CommonModule } from '@angular/common';
     <p class="section-desc">מודולים עתידיים שיפותחו בהמשך הדרך.</p>
   </section>
   `
-    ,
-    styleUrls: ['./future.component.css']
 })
 export class FutureComponent { }

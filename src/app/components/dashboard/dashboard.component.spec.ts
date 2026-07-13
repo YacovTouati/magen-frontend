@@ -42,11 +42,14 @@ describe('DashboardComponent', () => {
         const fixture = TestBed.createComponent(DashboardComponent);
         const comp = fixture.componentInstance;
         fixture.detectChanges();
-        const targetDay = comp.calendarDays[3];
+        const originalDays = comp.calendarDays;
 
         comp.onAssignVolunteer({ dayIndex: 3, volunteerName: 'דנה כ.' });
 
-        expect(targetDay.volunteer).toBe('דנה כ.');
+        // onAssignVolunteer replaces the array immutably (new references) so OnPush-strategy
+        // children fed [calendarDays] as an @Input reliably detect the change.
+        expect(comp.calendarDays).not.toBe(originalDays);
+        expect(comp.calendarDays[3].volunteer).toBe('דנה כ.');
     });
 
     it('onMonthChange should regenerate calendarDays for the newly selected month/year', () => {

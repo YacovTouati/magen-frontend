@@ -36,7 +36,7 @@
             <tr *ngFor="let intake of intakes" [class.critical-row]="intake.urgency === 'CRITICAL'" [class.row-pending]="isPendingAction(intake)">
               <td class="caller-name">{{ intake.callerName }}</td>
               <td class="phone-cell">{{ intake.phone }}</td>
-              <td>{{ intake.email }}</td>
+              <td>{{ intake.callReport?.email || '—' }}</td>
               <td>
                 <span class="urgency-pill" [ngClass]="'urgency-' + intake.urgency.toLowerCase()">
                   {{ urgencyLabel(intake.urgency) }}
@@ -44,8 +44,8 @@
               </td>
               <td>{{ formatCreatedAt(intake.createdAt) }}</td>
               <td>
-                <span class="duty-pill" [class.yes]="intake.reportingDuty" [class.no]="!intake.reportingDuty">
-                  {{ intake.reportingDuty ? 'כן' : 'לא' }}
+                <span class="duty-pill" [class.yes]="intake.callReport?.reportingDuty === true" [class.no]="intake.callReport?.reportingDuty === false">
+                  {{ dutyLabel(intake) }}
                 </span>
               </td>
               <td class="other-center-cell">{{ intake.contactedOtherCenter }}</td>
@@ -58,14 +58,14 @@
                     (ngModelChange)="onStatusChange(intake, $event)"
                     [title]="canEditStatus(intake) ? '' : 'רק מי שלקח/ה את התיק לטיפול יכול/ה לשנות סטטוס'"
                   >
-                    <option *ngFor="let option of statusOptions" [value]="option">{{ option }}</option>
+                    <option *ngFor="let option of statusOptions" [value]="option">{{ statusLabel(option) }}</option>
                   </select>
                 </fieldset>
               </td>
               <td>
                 <div class="assignee-cell" *ngIf="getRowAction(intake) as action">
                   <span class="assignee-label" [class.empty]="!intake.assignedTo">
-                    {{ intake.assignedTo ? ('בטיפול של: ' + intake.assignedTo) : 'טרם שויך' }}
+                    {{ intake.assignedTo ? ('בטיפול של: ' + intake.assignedTo.name) : 'טרם שויך' }}
                   </span>
 
                   <span *ngIf="isPendingAction(intake)" class="pending-hint">מעדכן...</span>

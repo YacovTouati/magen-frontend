@@ -18,7 +18,7 @@ describe('ConfirmModalComponent', () => {
 
     it('should render nothing when isOpen is false', () => {
         const fixture = setup({ isOpen: false });
-        expect(fixture.debugElement.query(By.css('.confirm-overlay'))).toBeFalsy();
+        expect(fixture.debugElement.query(By.css('.modal-shell-overlay'))).toBeFalsy();
     });
 
     it('should display the provided message and labels', () => {
@@ -55,10 +55,10 @@ describe('ConfirmModalComponent', () => {
         const comp = fixture.componentInstance;
         spyOn(comp.cancelled, 'emit');
 
-        fixture.debugElement.query(By.css('.confirm-panel')).triggerEventHandler('click', { stopPropagation: () => { } });
+        fixture.debugElement.query(By.css('.modal-shell-panel')).triggerEventHandler('click', { stopPropagation: () => { } });
         expect(comp.cancelled.emit).not.toHaveBeenCalled();
 
-        fixture.debugElement.query(By.css('.confirm-overlay')).triggerEventHandler('click', null);
+        fixture.debugElement.query(By.css('.modal-shell-overlay')).triggerEventHandler('click', null);
         expect(comp.cancelled.emit).toHaveBeenCalled();
     });
 });

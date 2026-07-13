@@ -1,14 +1,16 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { User } from '../../services/user-management.service';
+import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 
 @Component({
     selector: 'app-assignment-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, ModalShellComponent],
     templateUrl: './assignment-modal.component.html',
-    styleUrls: ['./assignment-modal.component.css']
+    styleUrls: ['./assignment-modal.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AssignmentModalComponent {
     @Input() isOpen = false;
@@ -36,14 +38,6 @@ export class AssignmentModalComponent {
 
     getRoleLabel(role: string | undefined): string {
         return role === 'ADMIN' ? 'מנהל' : 'מתנדב';
-    }
-
-    onBackdropClick(): void {
-        this.closeModal.emit();
-    }
-
-    onPanelClick(event: Event): void {
-        event.stopPropagation();
     }
 
     onSelect(user: User): void {

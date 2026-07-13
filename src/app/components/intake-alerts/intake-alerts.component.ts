@@ -11,16 +11,18 @@ type PendingConfirmation =
     | { kind: 'release'; intake: IntakeAlert }
     | { kind: 'takeover'; intake: IntakeAlert };
 
-const STATUS_OPTIONS: IntakeStatus[] = [
-    'חדש',
-    'לא ענה - לנסות שוב',
-    'בטיפול פעיל',
-    'נסגר בשיחה קצרה',
-    'המשך לטיפול ארוך'
-];
+const STATUS_OPTIONS: IntakeStatus[] = ['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'LONG_TERM'];
 
-const ACTIVE_STATUS: IntakeStatus = 'בטיפול פעיל';
-const UNASSIGNED_STATUS: IntakeStatus = 'חדש';
+const STATUS_LABELS: Record<IntakeStatus, string> = {
+    NEW: 'חדש',
+    NO_ANSWER: 'לא ענה - לנסות שוב',
+    ACTIVE: 'בטיפול פעיל',
+    CLOSED: 'נסגר בשיחה קצרה',
+    LONG_TERM: 'המשך לטיפול ארוך'
+};
+
+const ACTIVE_STATUS: IntakeStatus = 'ACTIVE';
+const UNASSIGNED_STATUS: IntakeStatus = 'NEW';
 
 const URGENCY_LABELS: Record<IntakeUrgency, string> = {
     CRITICAL: 'קריטית',
@@ -79,9 +81,11 @@ export class IntakeAlertsComponent implements OnInit {
         return this.intakes.filter(intake => intake.status === UNASSIGNED_STATUS).length;
     }
 
-    get currentAdminName(): string {
+    /** The login response only guarantees { id, email, role } — no display name — so ownership
+     *  must be compared by id, not by a name string that may not even be available. */
+    get currentAdminId(): number | null {
         const user = this.authService.getUser();
-        return user?.['name'] ?? user?.['fullName'] ?? (user?.email ? user.email.split('@')[0] : 'מנהל');
+        return user?.['id'] ?? null;
     }
 
     togglePanel(): void {
@@ -90,6 +94,20 @@ export class IntakeAlertsComponent implements OnInit {
 
     urgencyLabel(urgency: IntakeUrgency): string {
         return URGENCY_LABELS[urgency];
+    }
+
+    statusLabel(status: IntakeStatus): string {
+        return STATUS_LABELS[status];
+    }
+
+    dutyLabel(intake: IntakeAlert): string {
+        const duty = intake.callReport?.reportingDuty;
+
+        if (duty === null || duty === undefined) {
+            return '—';
+        }
+
+        return duty ? 'כן' : 'לא';
     }
 
     formatCreatedAt(date: Date): string {
@@ -102,7 +120,7 @@ export class IntakeAlertsComponent implements OnInit {
     }
 
     isOwner(intake: IntakeAlert): boolean {
-        return intake.assignedTo === this.currentAdminName;
+        return intake.assignedTo !== null && intake.assignedTo.id === this.currentAdminId;
     }
 
     /** Only the current owner may edit status; an unowned case is locked until someone claims it. */
@@ -209,7 +227,7 @@ export class IntakeAlertsComponent implements OnInit {
         }
 
         const { intake } = this.pendingConfirmation;
-        return `התיק של ${intake.callerName} משויך כרגע ל-${intake.assignedTo}. להעביר את הטיפול אליך?`;
+        return `התיק של ${intake.callerName} משויך כרגע ל-${intake.assignedTo?.name}. להעביר את הטיפול אליך?`;
     }
 
     onConfirmAccept(): void {

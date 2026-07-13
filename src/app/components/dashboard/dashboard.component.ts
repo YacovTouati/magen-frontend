@@ -1,22 +1,16 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { CalendarComponent, ShiftAssignment, MonthSelection } from '../calendar/calendar.component';
+import { CalendarComponent, CalendarDay, ShiftAssignment, MonthSelection } from '../calendar/calendar.component';
 import { SamplesComponent } from '../samples/samples.component';
 import { ReportComponent } from '../report/report.component';
 import { ChartsComponent } from '../charts/charts.component';
 import { FutureComponent } from '../future/future.component';
 import { AuthService } from '../../services/auth.service';
-
-interface CalendarDay {
-  dayNumber: number;
-  dateString: string;
-  volunteer: string;
-  isToday: boolean;
-}
+import { ReportService, CallReportPayload } from '../../services/report.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,9 +20,10 @@ interface CalendarDay {
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  private http = inject(HttpClient);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private reportService = inject(ReportService);
+  private destroyRef = inject(DestroyRef);
 
   currentUserEmail = '';
   isAdmin = false;
@@ -78,7 +73,10 @@ export class DashboardComponent implements OnInit {
     this.currentQuote = this.empowermentQuotes[randomIndex];
 
     this.currentRoute = this.router.url;
-    this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe((event: any) => {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((event: any) => {
       this.currentRoute = event.urlAfterRedirects || event.url;
       this.updateCurrentTabFromRoute();
     });
@@ -135,34 +133,31 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  onTabChange(tab: string) {
-    this.switchTab(tab);
-  }
-
   onAssignVolunteer(assignment: ShiftAssignment) {
-    this.calendarDays[assignment.dayIndex].volunteer = assignment.volunteerName;
+    // build a new array (rather than mutating the existing day objects in place) so
+    // OnPush-strategy children fed [calendarDays] as an @Input reliably detect the change
+    this.calendarDays = this.calendarDays.map((day, index) =>
+      index === assignment.dayIndex ? { ...day, volunteer: assignment.volunteerName } : day
+    );
   }
 
-  onReportSubmit(reportData: any) {
-    this.http.post('http://localhost:3000/api/reports', reportData)
-      .subscribe({
-        next: (response: any) => {
-          console.log('📬 תשובה שהתקבלה מהבקאנד המאובטח:', response);
-          alert(`הדיווח נשמר בהצלחה בשרת! מספר מזהה ייחודי: ${response.data?.id ?? 'N/A'}`);
+  onReportSubmit(reportData: CallReportPayload) {
+    this.reportService.submitReport(reportData).subscribe({
+      next: (result) => {
+        alert(`הדיווח נשמר בהצלחה בשרת! מספר מזהה ייחודי: ${result.id ?? 'N/A'}`);
 
-          // איפוס שדות מינימלי
-          this.summaryNotes = '';
-          this.callerName = '';
-          this.phone = '';
-          this.email = '';
-          this.contactedOtherCenterBefore = false;
-          this.reportingDuty = false;
-        },
-        error: (err) => {
-          console.error('❌ הבקאנד חסם את הבקשה או שיש שגיאת רשת:', err);
-          alert('שגיאה בשמירת הדיווח. הנתונים נחסמו מטעמי אבטחה או אימות.');
-        }
-      });
+        // איפוס שדות מינימלי
+        this.summaryNotes = '';
+        this.callerName = '';
+        this.phone = '';
+        this.email = '';
+        this.contactedOtherCenterBefore = false;
+        this.reportingDuty = false;
+      },
+      error: () => {
+        alert('שגיאה בשמירת הדיווח. הנתונים נחסמו מטעמי אבטחה או אימות.');
+      }
+    });
   }
 
   logout() {

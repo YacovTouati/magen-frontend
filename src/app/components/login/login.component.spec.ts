@@ -38,7 +38,7 @@ describe('LoginComponent', () => {
         expect(authServiceSpy.login).not.toHaveBeenCalled();
     });
 
-    it('should redirect an ADMIN to /admin/users on successful login', () => {
+    it('should redirect an ADMIN to / (the calendar) on successful login', () => {
         authServiceSpy.login.and.returnValue(of({ token: 'tok', user: { email: 'admin@magen.org', role: 'ADMIN' } }));
         const fixture = TestBed.createComponent(LoginComponent);
         const comp = fixture.componentInstance;
@@ -48,11 +48,11 @@ describe('LoginComponent', () => {
         comp.onSubmit();
 
         expect(authServiceSpy.login).toHaveBeenCalledWith('admin@magen.org', 'secret');
-        expect(router.navigate).toHaveBeenCalledWith(['/admin/users']);
+        expect(router.navigate).toHaveBeenCalledWith(['/']);
         expect(comp.isSubmitting).toBeFalse();
     });
 
-    it('should redirect a VOLUNTEER to / on successful login', () => {
+    it('should redirect a VOLUNTEER to / (the calendar) on successful login', () => {
         authServiceSpy.login.and.returnValue(of({ token: 'tok', user: { email: 'v@magen.org', role: 'VOLUNTEER' } }));
         const fixture = TestBed.createComponent(LoginComponent);
         const comp = fixture.componentInstance;
@@ -64,7 +64,7 @@ describe('LoginComponent', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/']);
     });
 
-    it('should not crash and should treat a missing role as non-admin if the service ever emits without a user', () => {
+    it('should not crash and should still redirect if the service ever emits without a user', () => {
         authServiceSpy.login.and.returnValue(of({ token: 'tok', user: undefined } as any));
         const fixture = TestBed.createComponent(LoginComponent);
         const comp = fixture.componentInstance;

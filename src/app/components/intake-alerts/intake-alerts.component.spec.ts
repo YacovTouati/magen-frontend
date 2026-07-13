@@ -3,11 +3,16 @@ import { By } from '@angular/platform-browser';
 import { of, throwError, Observable } from 'rxjs';
 import { IntakeAlertsComponent } from './intake-alerts.component';
 import { AuthService } from '../../services/auth.service';
-import { IntakeService, IntakeAlert } from '../../services/intake.service';
+import { IntakeService, IntakeAlert, IntakeAssignee, IntakeCallReport } from '../../services/intake.service';
 
 function minutesAgo(minutes: number): Date {
     return new Date(Date.now() - minutes * 60 * 1000);
 }
+
+const YAAKOV_ID = 101;
+const MICHAL_ID = 202;
+const RIVKA: IntakeAssignee = { id: 900, name: 'רבקה ס.', email: 'rivka@magen.org', role: 'ADMIN' };
+const MIRI_CALL_REPORT: IntakeCallReport = { id: 55, email: 'miri.a@example.com', reportingDuty: true };
 
 function buildMockIntakes(): IntakeAlert[] {
     return [
@@ -15,66 +20,61 @@ function buildMockIntakes(): IntakeAlert[] {
             id: 1,
             callerName: 'מירי אברהם',
             phone: '050-1234567',
-            email: 'miri.a@example.com',
             urgency: 'CRITICAL',
             createdAt: minutesAgo(12),
-            reportingDuty: true,
             contactedOtherCenter: 'לא',
             caseDescription: 'פנייה דחופה בנוגע לחשש ממצוקה מיידית.',
-            status: 'חדש',
-            assignedTo: null
+            status: 'NEW',
+            assignedTo: null,
+            callReport: MIRI_CALL_REPORT
         },
         {
             id: 2,
             callerName: 'דוד לוי',
             phone: '052-9876543',
-            email: 'david.l@example.com',
             urgency: 'HIGH',
             createdAt: minutesAgo(35),
-            reportingDuty: false,
             contactedOtherCenter: 'כן - ער"ן',
             caseDescription: 'שיחת המשך לבירור מצב לאחר פנייה קודמת.',
-            status: 'חדש',
-            assignedTo: null
+            status: 'NEW',
+            assignedTo: null,
+            callReport: null
         },
         {
             id: 3,
             callerName: 'נועה שמעוני',
             phone: '054-5551234',
-            email: 'noa.s@example.com',
             urgency: 'MEDIUM',
             createdAt: minutesAgo(58),
-            reportingDuty: true,
             contactedOtherCenter: 'לא',
             caseDescription: 'בקשה למידע כללי על שירותי התמיכה.',
-            status: 'לא ענה - לנסות שוב',
-            assignedTo: 'רבקה ס.'
+            status: 'NO_ANSWER',
+            assignedTo: RIVKA,
+            callReport: null
         },
         {
             id: 4,
             callerName: 'יוסי כהן',
             phone: '053-4443322',
-            email: 'yossi.c@example.com',
             urgency: 'LOW',
             createdAt: minutesAgo(120),
-            reportingDuty: false,
             contactedOtherCenter: 'כן - עמותת "אחווה"',
             caseDescription: 'פנייה כללית, נסגרה בשיחה קצרה.',
-            status: 'נסגר בשיחה קצרה',
-            assignedTo: 'רבקה ס.'
+            status: 'CLOSED',
+            assignedTo: RIVKA,
+            callReport: null
         },
         {
             id: 5,
             callerName: 'אלון גבע',
             phone: '058-7778899',
-            email: 'alon.g@example.com',
             urgency: 'HIGH',
             createdAt: minutesAgo(8),
-            reportingDuty: true,
             contactedOtherCenter: 'לא',
             caseDescription: 'שיחה רגישה שבטיפול פעיל כרגע.',
-            status: 'בטיפול פעיל',
-            assignedTo: 'רבקה ס.'
+            status: 'ACTIVE',
+            assignedTo: RIVKA,
+            callReport: null
         }
     ];
 }
@@ -83,9 +83,10 @@ describe('IntakeAlertsComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
     let intakeServiceSpy: jasmine.SpyObj<IntakeService>;
 
-    function setup(userName: string = 'יעקב', intakes: IntakeAlert[] = buildMockIntakes()) {
+    // Mirrors the real backend: login only returns { id, email, role } — no display name.
+    function setup(userId: number = YAAKOV_ID, intakes: IntakeAlert[] = buildMockIntakes()) {
         authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser']);
-        authServiceSpy.getUser.and.returnValue({ email: `${userName}@magen.org`, role: 'ADMIN', name: userName });
+        authServiceSpy.getUser.and.returnValue({ id: userId, email: `admin${userId}@magen.org`, role: 'ADMIN' });
 
         intakeServiceSpy = jasmine.createSpyObj('IntakeService', [
             'getIntakes', 'claimOwnership', 'undoClaim', 'takeOverCase', 'updateStatus'
@@ -113,9 +114,14 @@ describe('IntakeAlertsComponent', () => {
         expect(fixture.componentInstance.isLoadingIntakes).toBeFalse();
     });
 
+    it('currentAdminId should read the id from AuthService even when no display name is present', () => {
+        const fixture = setup(YAAKOV_ID);
+        expect(fixture.componentInstance.currentAdminId).toBe(YAAKOV_ID);
+    });
+
     it('should show a loading state, then an error message, if fetching intakes fails', () => {
         authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser']);
-        authServiceSpy.getUser.and.returnValue({ email: 'x@magen.org', role: 'ADMIN', name: 'x' });
+        authServiceSpy.getUser.and.returnValue({ id: YAAKOV_ID, email: 'x@magen.org', role: 'ADMIN' });
         intakeServiceSpy = jasmine.createSpyObj('IntakeService', ['getIntakes', 'claimOwnership', 'undoClaim', 'takeOverCase', 'updateStatus']);
         intakeServiceSpy.getIntakes.and.returnValue(throwError(() => new Error('network down')));
 
@@ -134,10 +140,10 @@ describe('IntakeAlertsComponent', () => {
         expect(fixture.debugElement.query(By.css('.intake-status-message.error'))).toBeTruthy();
     });
 
-    it('pendingCount should reflect only intakes with status "חדש"', () => {
+    it('pendingCount should reflect only intakes with status "NEW"', () => {
         const fixture = setup();
         const comp = fixture.componentInstance;
-        const expected = comp.intakes.filter(i => i.status === 'חדש').length;
+        const expected = comp.intakes.filter(i => i.status === 'NEW').length;
 
         expect(comp.pendingCount).toBe(expected);
         expect(comp.pendingCount).toBeGreaterThan(0);
@@ -164,7 +170,7 @@ describe('IntakeAlertsComponent', () => {
         expect(fixture.debugElement.query(By.css('.intake-panel')).nativeElement.classList).toContain('expanded');
     });
 
-    it('should render one table row per fetched intake including the "contacted another center" column', () => {
+    it('should render one table row per fetched intake', () => {
         const fixture = setup();
         const comp = fixture.componentInstance;
         const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
@@ -173,7 +179,23 @@ describe('IntakeAlertsComponent', () => {
         const firstRowText = rows[0].nativeElement.textContent;
         expect(firstRowText).toContain(comp.intakes[0].callerName);
         expect(firstRowText).toContain(comp.intakes[0].phone);
-        expect(firstRowText).toContain(comp.intakes[0].contactedOtherCenter);
+    });
+
+    it('should bind email and reporting-duty from the nested callReport when present', () => {
+        const fixture = setup();
+        const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+        const firstRowText = rows[0].nativeElement.textContent;
+
+        expect(firstRowText).toContain(MIRI_CALL_REPORT.email);
+        expect(firstRowText).toContain('כן'); // reportingDuty: true
+    });
+
+    it('should show "—" placeholders when an intake has no linked callReport', () => {
+        const fixture = setup();
+        const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+        const secondRowText = rows[1].nativeElement.textContent; // דוד לוי — callReport: null
+
+        expect(secondRowText).toContain('—');
     });
 
     it('urgencyLabel() should map every urgency level to a Hebrew label', () => {
@@ -186,9 +208,28 @@ describe('IntakeAlertsComponent', () => {
         expect(comp.urgencyLabel('LOW')).toBe('נמוכה');
     });
 
-    describe('ownership & edit-guard lifecycle (wired to the API)', () => {
+    it('statusLabel() should map every backend status enum value to its Hebrew label', () => {
+        const fixture = setup();
+        const comp = fixture.componentInstance;
+
+        expect(comp.statusLabel('NEW')).toBe('חדש');
+        expect(comp.statusLabel('NO_ANSWER')).toBe('לא ענה - לנסות שוב');
+        expect(comp.statusLabel('ACTIVE')).toBe('בטיפול פעיל');
+        expect(comp.statusLabel('CLOSED')).toBe('נסגר בשיחה קצרה');
+        expect(comp.statusLabel('LONG_TERM')).toBe('המשך לטיפול ארוך');
+    });
+
+    it('the status dropdown should display Hebrew labels while its underlying value stays the raw enum', () => {
+        const fixture = setup(YAAKOV_ID, [{ ...buildMockIntakes()[0], assignedTo: { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' } }]);
+        const select = fixture.debugElement.query(By.css('.status-select')).nativeElement as HTMLSelectElement;
+        const options = Array.from(select.options);
+
+        expect(options.some(o => o.value === 'ACTIVE' && o.textContent?.trim() === 'בטיפול פעיל')).toBeTrue();
+    });
+
+    describe('ownership & edit-guard lifecycle (wired to the API, compared by user id)', () => {
         it('an unassigned row should be locked ("claim" action) with the status dropdown disabled', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
             expect(intake.assignedTo).toBeNull();
@@ -200,32 +241,34 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('onStatusChange() should be a no-op on an unassigned row and never call the API', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
 
-            comp.onStatusChange(intake, 'בטיפול פעיל');
+            comp.onStatusChange(intake, 'ACTIVE');
 
-            expect(intake.status).toBe('חדש');
+            expect(intake.status).toBe('NEW');
             expect(intakeServiceSpy.updateStatus).not.toHaveBeenCalled();
         });
 
         it('claimOwnership() should POST via the service and apply the server response on success', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intakeServiceSpy.claimOwnership.and.returnValue(of({ ...intake, assignedTo: 'יעקב' }));
+            intakeServiceSpy.claimOwnership.and.returnValue(
+                of({ ...intake, status: 'ACTIVE', assignedTo: { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' } })
+            );
 
             comp.claimOwnership(intake);
 
             expect(intakeServiceSpy.claimOwnership).toHaveBeenCalledWith(1);
-            expect(intake.assignedTo).toBe('יעקב');
+            expect(intake.assignedTo?.id).toBe(YAAKOV_ID);
             expect(comp.getRowAction(intake)).toBe('mine');
             expect(comp.pendingActionId).toBeNull();
         });
 
         it('claimOwnership() should surface a backend error and reload the list without applying any change', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
             intakeServiceSpy.claimOwnership.and.returnValue(
@@ -243,7 +286,7 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('claimOwnership() should show a friendly connectivity message (not the raw HttpErrorResponse) when the request never reaches the server', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
             intakeServiceSpy.claimOwnership.and.returnValue(
@@ -259,59 +302,59 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('claimOwnership() should be a no-op if the row is already assigned, without calling the API', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
-            const intake = comp.intakes[2]; // already assigned to 'רבקה ס.'
+            const intake = comp.intakes[2]; // already assigned to רבקה ס.
 
             comp.claimOwnership(intake);
 
             expect(intakeServiceSpy.claimOwnership).not.toHaveBeenCalled();
-            expect(intake.assignedTo).toBe('רבקה ס.');
+            expect(intake.assignedTo).toBe(RIVKA);
         });
 
-        it('onStatusChange() should PATCH via the service when the current admin owns the row', () => {
-            const fixture = setup('יעקב');
+        it('onStatusChange() should PATCH via the service with the raw enum value when the current admin owns the row', () => {
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intake.assignedTo = 'יעקב'; // simulate already-claimed
-            intakeServiceSpy.updateStatus.and.returnValue(of({ ...intake, status: 'בטיפול פעיל' }));
+            intake.assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' }; // simulate already-claimed
+            intakeServiceSpy.updateStatus.and.returnValue(of({ ...intake, status: 'ACTIVE' }));
 
-            comp.onStatusChange(intake, 'בטיפול פעיל');
+            comp.onStatusChange(intake, 'ACTIVE');
 
-            expect(intakeServiceSpy.updateStatus).toHaveBeenCalledWith(1, 'בטיפול פעיל');
-            expect(intake.status).toBe('בטיפול פעיל');
+            expect(intakeServiceSpy.updateStatus).toHaveBeenCalledWith(1, 'ACTIVE');
+            expect(intake.status).toBe('ACTIVE');
         });
 
         it('onStatusChange() should surface a backend error without applying the new status', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intake.assignedTo = 'יעקב';
+            intake.assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' };
             intakeServiceSpy.updateStatus.and.returnValue(
                 throwError(() => ({ status: 403, error: { message: 'אין הרשאה לשנות סטטוס' } }))
             );
 
-            comp.onStatusChange(intake, 'בטיפול פעיל');
+            comp.onStatusChange(intake, 'ACTIVE');
 
-            expect(intake.status).toBe('חדש');
+            expect(intake.status).toBe('NEW');
             expect(comp.actionError).toBe('אין הרשאה לשנות סטטוס');
         });
 
-        it('a non-owner admin should NOT be able to edit status, and the row should render as "locked" while status is "בטיפול פעיל"', () => {
-            const fixture = setup('מיכל');
+        it('a non-owner admin should NOT be able to edit status, and the row should render as "locked" while status is ACTIVE', () => {
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
-            const lockedIntake = comp.intakes[4]; // assigned to 'רבקה ס.', status 'בטיפול פעיל'
+            const lockedIntake = comp.intakes[4]; // assigned to רבקה ס. (id 900), status ACTIVE
 
             expect(comp.canEditStatus(lockedIntake)).toBeFalse();
             expect(comp.getRowAction(lockedIntake)).toBe('locked');
 
-            comp.onStatusChange(lockedIntake, 'נסגר בשיחה קצרה');
-            expect(lockedIntake.status).toBe('בטיפול פעיל');
+            comp.onStatusChange(lockedIntake, 'CLOSED');
+            expect(lockedIntake.status).toBe('ACTIVE');
             expect(intakeServiceSpy.updateStatus).not.toHaveBeenCalled();
         });
 
         it('takeOverCase() should be blocked while the row is actively locked, without opening the confirm modal or calling the API', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
             const lockedIntake = comp.intakes[4];
 
@@ -321,10 +364,10 @@ describe('IntakeAlertsComponent', () => {
             expect(intakeServiceSpy.takeOverCase).not.toHaveBeenCalled();
         });
 
-        it('takeOverCase() should open the confirm modal without calling the API until confirmed', () => {
-            const fixture = setup('מיכל');
+        it('takeOverCase() should open the confirm modal (mentioning the current owner by name) without calling the API until confirmed', () => {
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
-            const releasedIntake = comp.intakes[2]; // status 'לא ענה - לנסות שוב', assigned to 'רבקה ס.'
+            const releasedIntake = comp.intakes[2]; // status NO_ANSWER, assigned to רבקה ס.
             expect(comp.getRowAction(releasedIntake)).toBe('takeover');
 
             comp.takeOverCase(releasedIntake);
@@ -335,21 +378,23 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('onConfirmAccept() should call the takeover endpoint and apply the server response', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
             const releasedIntake = comp.intakes[2];
-            intakeServiceSpy.takeOverCase.and.returnValue(of({ ...releasedIntake, assignedTo: 'מיכל' }));
+            intakeServiceSpy.takeOverCase.and.returnValue(
+                of({ ...releasedIntake, assignedTo: { id: MICHAL_ID, name: 'מיכל', email: 'm@magen.org', role: 'ADMIN' } })
+            );
             comp.takeOverCase(releasedIntake);
 
             comp.onConfirmAccept();
 
             expect(intakeServiceSpy.takeOverCase).toHaveBeenCalledWith(3);
-            expect(releasedIntake.assignedTo).toBe('מיכל');
+            expect(releasedIntake.assignedTo?.id).toBe(MICHAL_ID);
             expect(comp.isConfirmOpen).toBeFalse();
         });
 
         it('onConfirmAccept() should surface an error and reload the list if the takeover is rejected (e.g. 403 — already re-claimed)', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
             const releasedIntake = comp.intakes[2];
             intakeServiceSpy.takeOverCase.and.returnValue(
@@ -362,12 +407,12 @@ describe('IntakeAlertsComponent', () => {
             comp.onConfirmAccept();
 
             expect(comp.actionError).toBe('התיק נלקח בינתיים');
-            expect(releasedIntake.assignedTo).toBe('רבקה ס.'); // unchanged
+            expect(releasedIntake.assignedTo).toBe(RIVKA); // unchanged
             expect(intakeServiceSpy.getIntakes).toHaveBeenCalledTimes(1);
         });
 
         it('onConfirmCancel() should leave the takeover unapplied and never call the API', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
             const releasedIntake = comp.intakes[2];
             comp.takeOverCase(releasedIntake);
@@ -379,10 +424,10 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('releaseOwnership() should open the confirm modal with the exact required Hebrew message, without calling the API yet', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intake.assignedTo = 'יעקב';
+            intake.assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' };
 
             comp.releaseOwnership(intake);
 
@@ -392,25 +437,25 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('onConfirmAccept() should call undo-claim and apply the server response after a release is confirmed', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intake.assignedTo = 'יעקב';
-            intakeServiceSpy.undoClaim.and.returnValue(of({ ...intake, assignedTo: null, status: 'חדש' }));
+            intake.assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' };
+            intakeServiceSpy.undoClaim.and.returnValue(of({ ...intake, assignedTo: null, status: 'NEW' }));
             comp.releaseOwnership(intake);
 
             comp.onConfirmAccept();
 
             expect(intakeServiceSpy.undoClaim).toHaveBeenCalledWith(1);
             expect(intake.assignedTo).toBeNull();
-            expect(intake.status).toBe('חדש');
+            expect(intake.status).toBe('NEW');
             expect(comp.isConfirmOpen).toBeFalse();
         });
 
         it('releaseOwnership() should be a no-op for anyone other than the current owner, and never call the API', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const comp = fixture.componentInstance;
-            const intake = comp.intakes[2]; // assigned to 'רבקה ס.'
+            const intake = comp.intakes[2]; // assigned to רבקה ס. (id 900), not the current admin (202)
 
             comp.releaseOwnership(intake);
 
@@ -419,7 +464,7 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('should render the correct action control in the DOM per row state', () => {
-            const fixture = setup('מיכל');
+            const fixture = setup(MICHAL_ID);
             const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
 
             expect(rows[0].query(By.css('.assign-btn:not(.mine):not(.takeover)'))).toBeTruthy(); // claim
@@ -429,25 +474,25 @@ describe('IntakeAlertsComponent', () => {
         });
 
         it('clicking the "mine" button in the DOM should open the styled confirm modal, not the native browser dialog', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
-            comp.intakes[0].assignedTo = 'יעקב';
+            comp.intakes[0].assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' };
             fixture.detectChanges();
 
             fixture.debugElement.queryAll(By.css('tbody tr'))[0].query(By.css('.assign-btn.mine')).triggerEventHandler('click', null);
             fixture.detectChanges();
 
-            const modal = fixture.debugElement.query(By.css('app-confirm-modal .confirm-overlay'));
+            const modal = fixture.debugElement.query(By.css('app-confirm-modal .modal-shell-overlay'));
             expect(modal).toBeTruthy();
             expect(modal.nativeElement.textContent).toContain('האם אתה בטוח שברצונך לבטל את שיוך התיק אליך?');
         });
 
         it('confirming via the modal button in the DOM should call undo-claim and complete the release', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
-            intake.assignedTo = 'יעקב';
-            intakeServiceSpy.undoClaim.and.returnValue(of({ ...intake, assignedTo: null, status: 'חדש' }));
+            intake.assignedTo = { id: YAAKOV_ID, name: 'יעקב', email: 'y@magen.org', role: 'ADMIN' };
+            intakeServiceSpy.undoClaim.and.returnValue(of({ ...intake, assignedTo: null, status: 'NEW' }));
             fixture.detectChanges();
 
             fixture.debugElement.queryAll(By.css('tbody tr'))[0].query(By.css('.assign-btn.mine')).triggerEventHandler('click', null);
@@ -456,11 +501,11 @@ describe('IntakeAlertsComponent', () => {
             fixture.detectChanges();
 
             expect(intake.assignedTo).toBeNull();
-            expect(fixture.debugElement.query(By.css('app-confirm-modal .confirm-overlay'))).toBeFalsy();
+            expect(fixture.debugElement.query(By.css('app-confirm-modal .modal-shell-overlay'))).toBeFalsy();
         });
 
         it('should disable the row and hide its action controls while a request is in flight', () => {
-            const fixture = setup('יעקב');
+            const fixture = setup(YAAKOV_ID);
             const comp = fixture.componentInstance;
             const intake = comp.intakes[0];
             // never resolves — simulates an in-flight request
