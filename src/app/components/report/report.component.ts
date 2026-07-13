@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
     <h3>📝 דיווח וסיכום שיחת סיוע</h3>
     <p class="section-desc">מלא את פרטי הפונה דמוגרפית ופרטי השיחה. כל המידע עובר אימות קפדני ונשמר בצורה מאובטחת.</p>
 
-    <form (ngSubmit)="onSubmit()" class="report-form">
+    <form #reportForm="ngForm" (ngSubmit)="onSubmit()" class="report-form" novalidate>
       <div class="compact-row">
         <div class="form-group inline-group">
           <label>שם הפונה (חובה):</label>
@@ -20,7 +20,20 @@ import { FormsModule } from '@angular/forms';
 
         <div class="form-group inline-group">
           <label>טלפון (חובה):</label>
-          <input type="tel" [(ngModel)]="phone" name="phone" required placeholder="0500000000" (keypress)="onlyNumbers($event)">
+          <input
+            type="tel"
+            [(ngModel)]="phone"
+            #phoneModel="ngModel"
+            name="phone"
+            required
+            maxlength="10"
+            pattern="^[0-9]{9,10}$"
+            placeholder="0500000000"
+            (keypress)="onlyNumbers($event)"
+          >
+          <p class="field-error" *ngIf="phoneModel.invalid && (phoneModel.dirty || phoneModel.touched)">
+            מספר הטלפון חייב להכיל בין 9 ל-10 ספרות בלבד
+          </p>
         </div>
 
         <div class="form-group inline-group">
@@ -89,7 +102,7 @@ import { FormsModule } from '@angular/forms';
         <textarea [(ngModel)]="summaryNotes" name="summaryNotes" rows="5" required placeholder="הקלד כאן נקודות מפתח מתוך השיחה..."></textarea>
       </div>
 
-      <button type="submit" class="submit-btn">💾 שמור דיווח שיחה במערכת</button>
+      <button type="submit" class="submit-btn" [disabled]="reportForm.invalid">💾 שמור דיווח שיחה במערכת</button>
     </form>
   </section>
   `
@@ -112,7 +125,13 @@ export class ReportComponent {
 
   @Output() reportSubmit = new EventEmitter<any>();
 
+  private readonly phonePattern = /^[0-9]{9,10}$/;
+
   onSubmit() {
+    if (!this.phonePattern.test(this.phone)) {
+      return;
+    }
+
     const data = {
       callDuration: this.callDuration,
       callerType: this.callerType,
@@ -140,7 +159,7 @@ export class ReportComponent {
 
   onlyNumbers(event: KeyboardEvent) {
     const charCode = event.key;
-    const pattern = /^[0-9\-]$/;
+    const pattern = /^[0-9]$/;
     if (!pattern.test(charCode)) {
       event.preventDefault();
     }

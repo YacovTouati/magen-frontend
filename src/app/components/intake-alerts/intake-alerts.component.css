@@ -129,7 +129,7 @@
     border-bottom: none;
 }
 
-.intake-table tr.critical-row {
+.intake-table tr.new-status-row {
     background: #fff7f7;
 }
 

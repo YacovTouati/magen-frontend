@@ -132,6 +132,11 @@ export class IntakeAlertsComponent implements OnInit {
         return this.pendingActionId === intake.id;
     }
 
+    /** Highlights reports that haven't been touched yet, regardless of urgency. */
+    isNewStatus(intake: IntakeAlert): boolean {
+        return intake.status === UNASSIGNED_STATUS;
+    }
+
     /**
      * Drives which action a row exposes:
      * - claim:    nobody owns it yet — anyone can take responsibility

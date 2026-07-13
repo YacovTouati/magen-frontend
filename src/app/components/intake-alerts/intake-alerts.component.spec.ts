@@ -227,6 +227,44 @@ describe('IntakeAlertsComponent', () => {
         expect(options.some(o => o.value === 'ACTIVE' && o.textContent?.trim() === 'בטיפול פעיל')).toBeTrue();
     });
 
+    describe('row highlighting', () => {
+        it('isNewStatus() should be true only for status === NEW, regardless of urgency', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            // id 1: CRITICAL urgency + NEW status, id 2: HIGH urgency + NEW status
+            expect(comp.isNewStatus(comp.intakes[0])).toBeTrue();
+            expect(comp.isNewStatus(comp.intakes[1])).toBeTrue();
+            // id 3: MEDIUM urgency + NO_ANSWER, id 4: LOW urgency + CLOSED, id 5: HIGH urgency + ACTIVE
+            expect(comp.isNewStatus(comp.intakes[2])).toBeFalse();
+            expect(comp.isNewStatus(comp.intakes[3])).toBeFalse();
+            expect(comp.isNewStatus(comp.intakes[4])).toBeFalse();
+        });
+
+        it('should apply new-status-row to every row whose status is NEW, and to no others — independent of urgency', () => {
+            const fixture = setup();
+            const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+
+            // id 1 (CRITICAL + NEW) and id 2 (HIGH + NEW) are both highlighted purely because they're NEW
+            expect(rows[0].nativeElement.classList).toContain('new-status-row');
+            expect(rows[1].nativeElement.classList).toContain('new-status-row');
+            // id 3 (NO_ANSWER), id 4 (CLOSED), id 5 (ACTIVE) must have a clean background
+            expect(rows[2].nativeElement.classList).not.toContain('new-status-row');
+            expect(rows[3].nativeElement.classList).not.toContain('new-status-row');
+            expect(rows[4].nativeElement.classList).not.toContain('new-status-row');
+        });
+
+        it('should NOT highlight a row solely for having CRITICAL urgency once its status moves off NEW', () => {
+            const criticalButHandled = { ...buildMockIntakes()[0], status: 'ACTIVE' as const, assignedTo: RIVKA };
+            const fixture = setup(YAAKOV_ID, [criticalButHandled]);
+            const comp = fixture.componentInstance;
+            const row = fixture.debugElement.query(By.css('tbody tr'));
+
+            expect(comp.isNewStatus(criticalButHandled)).toBeFalse();
+            expect(row.nativeElement.classList).not.toContain('new-status-row');
+        });
+    });
+
     describe('ownership & edit-guard lifecycle (wired to the API, compared by user id)', () => {
         it('an unassigned row should be locked ("claim" action) with the status dropdown disabled', () => {
             const fixture = setup(YAAKOV_ID);
