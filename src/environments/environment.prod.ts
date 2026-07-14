@@ -3,5 +3,5 @@
 export const environment = {
     production: true,
     // TODO: replace with the real production API origin once the backend is deployed.
-    apiBaseUrl: 'https://REPLACE_WITH_PRODUCTION_API_URL'
+    apiBaseUrl: 'https://magen-backend-production.up.railway.app'
 };
