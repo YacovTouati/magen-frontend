@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AuthUser {
     email: string;
@@ -20,7 +21,7 @@ const USER_KEY = 'magen_auth_user';
     providedIn: 'root'
 })
 export class AuthService {
-    private readonly apiUrl = 'http://localhost:3000/api/auth';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/auth`;
 
     // no reactive consumers exist today (every caller reads getUser() synchronously) —
     // a plain field is enough; reach for a BehaviorSubject again if that changes.

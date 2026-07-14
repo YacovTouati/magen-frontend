@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AnalyticsSummary {
     callerTypes: Record<string, number>;
@@ -11,7 +12,7 @@ export interface AnalyticsSummary {
     providedIn: 'root'
 })
 export class AnalyticsService {
-    private readonly apiUrl = 'http://localhost:3000/api/analytics/summary';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/analytics/summary`;
 
     constructor(private http: HttpClient) { }
 

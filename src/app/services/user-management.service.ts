@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, map, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface User {
     id?: number | string;
@@ -18,7 +19,7 @@ export interface User {
     providedIn: 'root'
 })
 export class UserManagementService {
-    private readonly apiUrl = 'http://localhost:3000/api/users';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/users`;
 
     // Emits whenever the user list changes in a way that other views (e.g. the shift
     // calendar, whose assignments cascade-delete with their volunteer) need to know about.

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AssignmentVolunteer {
     id: number;
@@ -20,7 +21,7 @@ export interface ShiftAssignmentRecord {
     providedIn: 'root'
 })
 export class AssignmentService {
-    private readonly apiUrl = 'http://localhost:3000/api/assignments';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/assignments`;
 
     constructor(private http: HttpClient) { }
 

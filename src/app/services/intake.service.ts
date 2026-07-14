@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export type IntakeUrgency = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -40,7 +41,7 @@ export interface IntakeAlert {
     providedIn: 'root'
 })
 export class IntakeService {
-    private readonly apiUrl = 'http://localhost:3000/api/intakes';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/intakes`;
 
     constructor(private http: HttpClient) { }
 

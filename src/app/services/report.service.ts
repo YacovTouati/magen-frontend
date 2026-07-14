@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface CallReportPayload {
     callDuration: number;
@@ -25,7 +26,7 @@ export interface CallReportResult {
     providedIn: 'root'
 })
 export class ReportService {
-    private readonly apiUrl = 'http://localhost:3000/api/reports';
+    private readonly apiUrl = `${environment.apiBaseUrl}/api/reports`;
 
     constructor(private http: HttpClient) { }
 
