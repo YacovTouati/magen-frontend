@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
   <aside class="sidebar">
     <div class="logo-area">
       <img src="assets/magen-logo.png" alt="מגן לוגו" class="magen-logo">
-      <span class="role-badge admin">{{ isAdmin ? 'ממשק מנהל' : 'ממשק מתנדב' }}</span>
+      <span class="role-badge" [ngClass]="roleBadgeClass">{{ roleBadgeLabel }}</span>
     </div>
 
     <nav class="nav-tabs">
@@ -46,6 +46,32 @@ export class SidebarComponent {
   @Input() isSchedulerAdmin = false;
   @Output() tabChange = new EventEmitter<string>();
   @Output() logoutEvent = new EventEmitter<void>();
+
+  get roleBadgeLabel(): string {
+    if (this.isSuperAdmin) {
+      return 'ממשק מנהל ראשי';
+    }
+    if (this.isIntakeAdmin) {
+      return 'ממשק מנהל אינטייק';
+    }
+    if (this.isSchedulerAdmin) {
+      return 'ממשק מנהל שיבוצים';
+    }
+    return 'ממשק מתנדב';
+  }
+
+  get roleBadgeClass(): string {
+    if (this.isSuperAdmin) {
+      return 'role-super-admin';
+    }
+    if (this.isIntakeAdmin) {
+      return 'role-intake-admin';
+    }
+    if (this.isSchedulerAdmin) {
+      return 'role-scheduler-admin';
+    }
+    return 'role-volunteer';
+  }
 
   switch(tab: string) {
     this.tabChange.emit(tab);

@@ -26,6 +26,10 @@ describe('SidebarComponent', () => {
         );
     }
 
+    function roleBadge(fixture: ReturnType<typeof TestBed.createComponent<SidebarComponent>>) {
+        return fixture.debugElement.query(By.css('.role-badge'));
+    }
+
     it('should create', () => {
         const fixture = TestBed.createComponent(SidebarComponent);
         const comp = fixture.componentInstance;
@@ -99,5 +103,56 @@ describe('SidebarComponent', () => {
         fixture.detectChanges();
 
         expect(samplesButton(fixture)).toBeTruthy();
+    });
+
+    describe('role badge', () => {
+        it('should show "ממשק מנהל ראשי" for SUPER_ADMIN', () => {
+            const fixture = TestBed.createComponent(SidebarComponent);
+            fixture.componentInstance.isSuperAdmin = true;
+            fixture.detectChanges();
+
+            const badge = roleBadge(fixture);
+            expect(badge.nativeElement.textContent.trim()).toBe('ממשק מנהל ראשי');
+            expect(badge.nativeElement.classList).toContain('role-super-admin');
+        });
+
+        it('should show "ממשק מנהל אינטייק" for INTAKE_ADMIN', () => {
+            const fixture = TestBed.createComponent(SidebarComponent);
+            fixture.componentInstance.isIntakeAdmin = true;
+            fixture.detectChanges();
+
+            const badge = roleBadge(fixture);
+            expect(badge.nativeElement.textContent.trim()).toBe('ממשק מנהל אינטייק');
+            expect(badge.nativeElement.classList).toContain('role-intake-admin');
+        });
+
+        it('should show "ממשק מנהל שיבוצים" for SCHEDULER_ADMIN', () => {
+            const fixture = TestBed.createComponent(SidebarComponent);
+            fixture.componentInstance.isSchedulerAdmin = true;
+            fixture.detectChanges();
+
+            const badge = roleBadge(fixture);
+            expect(badge.nativeElement.textContent.trim()).toBe('ממשק מנהל שיבוצים');
+            expect(badge.nativeElement.classList).toContain('role-scheduler-admin');
+        });
+
+        it('should show "ממשק מתנדב" when no admin flag is set', () => {
+            const fixture = TestBed.createComponent(SidebarComponent);
+            fixture.detectChanges();
+
+            const badge = roleBadge(fixture);
+            expect(badge.nativeElement.textContent.trim()).toBe('ממשק מתנדב');
+            expect(badge.nativeElement.classList).toContain('role-volunteer');
+        });
+
+        it('should prioritize isSuperAdmin over the other role flags if more than one is somehow set', () => {
+            const fixture = TestBed.createComponent(SidebarComponent);
+            fixture.componentInstance.isSuperAdmin = true;
+            fixture.componentInstance.isIntakeAdmin = true;
+            fixture.componentInstance.isSchedulerAdmin = true;
+            fixture.detectChanges();
+
+            expect(roleBadge(fixture).nativeElement.textContent.trim()).toBe('ממשק מנהל ראשי');
+        });
     });
 });
