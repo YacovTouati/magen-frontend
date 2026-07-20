@@ -4,29 +4,40 @@
       [isAdmin]="isAdmin" (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
 
     <main class="main-content">
-      <ng-container *ngIf="isAdminUsersRoute(); else legacyContent">
-        <router-outlet></router-outlet>
-      </ng-container>
+      <!--
+        The outlet stays permanently mounted (never behind *ngIf) so it's already
+        registered with the Router before any navigation to /shifts or /admin/users
+        happens. A conditionally-rendered <router-outlet> races the Router's own
+        activation against our *ngIf flipping in reaction to that same navigation's
+        NavigationEnd — the outlet can miss the activation that created it, which is
+        exactly what caused the "only loads after switching tabs away and back" bug.
+        An inactive outlet renders nothing, so it's safe to leave present at all times.
+      -->
+      <router-outlet></router-outlet>
 
-      <ng-template #legacyContent>
-        <app-calendar *ngIf="currentTab === 'calendar'" [calendarDays]="calendarDays"
-          [year]="selectedYear" [month]="selectedMonth" [isLoadingCalendar]="isLoadingCalendar"
-          [calendarError]="calendarError" (assignVolunteer)="onAssignVolunteer($event)"
-          (unassignVolunteer)="onUnassignVolunteer($event)"
-          (navigateToTab)="switchTab($event)" (monthChange)="onMonthChange($event)"></app-calendar>
-
+      <ng-container *ngIf="!isAdminUsersRoute() && !isShiftsRoute()">
         <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>
 
         <app-report *ngIf="currentTab === 'report'" [callDuration]="callDuration" [callerType]="callerType"
           [callPurpose]="callPurpose" [summaryNotes]="summaryNotes" [callerName]="callerName" [phone]="phone"
           [email]="email" [region]="region" [gender]="gender" [sector]="sector"
-          [contactedOtherCenterBefore]="contactedOtherCenterBefore"
+          [receivedSupportAtOtherCenter]="receivedSupportAtOtherCenter"
+          [isFamilyMemberOrAcquaintance]="isFamilyMemberOrAcquaintance"
+          [magenContactHistory]="magenContactHistory"
+          [reportingDuty]="reportingDuty"
           (reportSubmit)="onReportSubmit($event)"></app-report>
 
         <app-charts *ngIf="currentTab === 'charts'"></app-charts>
 
         <app-future *ngIf="currentTab === 'future'"></app-future>
-      </ng-template>
+      </ng-container>
     </main>
   </div>
+
+  <app-success-modal
+    [isOpen]="isSuccessModalOpen"
+    title="הדיווח נשמר בהצלחה!"
+    [message]="successModalMessage"
+    (closed)="closeSuccessModal()"
+  ></app-success-modal>
 </div>

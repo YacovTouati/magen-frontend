@@ -4,20 +4,18 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { CalendarComponent, CalendarDay, ShiftAssignment, MonthSelection, VACANT_LABEL } from '../calendar/calendar.component';
 import { SamplesComponent } from '../samples/samples.component';
 import { ReportComponent } from '../report/report.component';
 import { ChartsComponent } from '../charts/charts.component';
 import { FutureComponent } from '../future/future.component';
+import { SuccessModalComponent } from '../success-modal/success-modal.component';
 import { AuthService } from '../../services/auth.service';
 import { ReportService, CallReportPayload } from '../../services/report.service';
-import { AssignmentService, ShiftAssignmentRecord } from '../../services/assignment.service';
-import { UserManagementService } from '../../services/user-management.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, CalendarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent, SuccessModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -25,19 +23,14 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private reportService = inject(ReportService);
-  private assignmentService = inject(AssignmentService);
-  private userManagementService = inject(UserManagementService);
   private destroyRef = inject(DestroyRef);
 
   currentUserEmail = '';
   isAdmin = false;
-  currentTab = 'calendar';
+  currentTab = 'report';
 
-  calendarDays: CalendarDay[] = [];
-  isLoadingCalendar = false;
-  calendarError = '';
-  selectedYear = new Date().getFullYear();
-  selectedMonth = new Date().getMonth();
+  private readonly legacyTabs = ['report', 'charts', 'samples', 'future'];
+
   currentRoute = '/';
 
   empowermentQuotes = [
@@ -62,15 +55,18 @@ export class DashboardComponent implements OnInit {
   callerName: string = '';
   phone: string = '';
   email: string = '';
-  region: string = 'center';
+  region: string = '';
   gender: string = 'unknown';
   sector: string = 'secular';
-  contactedOtherCenterBefore: boolean = false;
+  receivedSupportAtOtherCenter: boolean = false;
+  isFamilyMemberOrAcquaintance: boolean = false;
+  magenContactHistory: string = 'first_time';
   reportingDuty: boolean = false;
 
-  ngOnInit() {
-    this.loadCalendarForMonth(this.selectedYear, this.selectedMonth);
+  isSuccessModalOpen = false;
+  successModalMessage = '';
 
+  ngOnInit() {
     const user = this.authService.getUser();
     this.currentUserEmail = user?.email ?? '';
     this.isAdmin = this.authService.isAdmin();
@@ -88,78 +84,6 @@ export class DashboardComponent implements OnInit {
     });
 
     this.updateCurrentTabFromRoute();
-
-    // A user deletion can cascade-delete their shift assignments server-side. The calendar
-    // tab may not even be mounted right now (e.g. while viewing /admin/users), so re-fetch
-    // proactively rather than relying on the calendar to notice on its own next render.
-    this.userManagementService.usersChanged$.pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(() => {
-      this.loadCalendarForMonth(this.selectedYear, this.selectedMonth);
-    });
-  }
-
-  loadCalendarForMonth(year: number, month: number) {
-    const scaffold = this.buildMonthScaffold(year, month);
-    this.calendarDays = scaffold;
-    this.isLoadingCalendar = true;
-    this.calendarError = '';
-
-    const daysInMonth = scaffold.length;
-    const from = this.toIsoDate(year, month, 1);
-    const to = this.toIsoDate(year, month, daysInMonth);
-
-    this.assignmentService.getAssignments(from, to).subscribe({
-      next: (records) => {
-        this.calendarDays = this.mergeAssignments(scaffold, records, year, month);
-        this.isLoadingCalendar = false;
-      },
-      error: () => {
-        this.calendarDays = scaffold;
-        this.isLoadingCalendar = false;
-        this.calendarError = 'לא ניתן לטעון את יומן המשמרות מהשרת כרגע.';
-      }
-    });
-  }
-
-  private buildMonthScaffold(year: number, month: number): CalendarDay[] {
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const now = new Date();
-
-    const generatedDays: CalendarDay[] = [];
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      // isToday always compares against the real world date, regardless of which month is being browsed
-      const isToday = year === now.getFullYear() && month === now.getMonth() && i === now.getDate();
-
-      generatedDays.push({
-        dayNumber: i,
-        dateString: `${i}/${month + 1}/${year}`,
-        volunteer: VACANT_LABEL,
-        isToday
-      });
-    }
-
-    return generatedDays;
-  }
-
-  private mergeAssignments(days: CalendarDay[], records: ShiftAssignmentRecord[], year: number, month: number): CalendarDay[] {
-    const byDate = new Map(records.map(record => [record.date, record.volunteer?.name || VACANT_LABEL]));
-
-    return days.map(day => {
-      const volunteerName = byDate.get(this.toIsoDate(year, month, day.dayNumber));
-      return volunteerName ? { ...day, volunteer: volunteerName } : day;
-    });
-  }
-
-  private toIsoDate(year: number, month: number, day: number): string {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-
-  onMonthChange(selection: MonthSelection) {
-    this.selectedYear = selection.year;
-    this.selectedMonth = selection.month;
-    this.loadCalendarForMonth(selection.year, selection.month);
   }
 
   private updateCurrentTabFromRoute(): void {
@@ -168,11 +92,28 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    this.currentTab = 'calendar';
+    // /shifts IS the calendar tab now (ShiftBoardComponent) — no separate 'shifts' tab exists.
+    if (this.currentRoute === '/shifts') {
+      this.currentTab = 'calendar';
+      return;
+    }
+
+    // '/' is the legacy tab area (report/charts/samples/future toggle purely via currentTab,
+    // with no route of their own — switchTab() always navigates back to '/' for them, which
+    // Router ignores as a no-op since we're already there, so this branch only runs when we
+    // actually arrive at '/' from /admin/users or /shifts). Default to the call report form
+    // unless a legacy tab is already active.
+    if (!this.legacyTabs.includes(this.currentTab)) {
+      this.currentTab = 'report';
+    }
   }
 
   isAdminUsersRoute(): boolean {
     return this.currentRoute === '/admin/users';
+  }
+
+  isShiftsRoute(): boolean {
+    return this.currentRoute === '/shifts';
   }
 
   switchTab(tabName: string) {
@@ -180,44 +121,38 @@ export class DashboardComponent implements OnInit {
 
     if (tabName === 'users') {
       this.router.navigate(['/admin/users']);
+    } else if (tabName === 'calendar') {
+      this.router.navigate(['/shifts']);
     } else {
       this.router.navigate(['/']);
     }
   }
 
-  // CalendarComponent already persisted this assignment to the server (POST /api/assignments)
-  // before emitting — this just syncs the locally-held day array to that confirmed result.
-  onAssignVolunteer(assignment: ShiftAssignment) {
-    this.calendarDays = this.calendarDays.map((day, index) =>
-      index === assignment.dayIndex ? { ...day, volunteer: assignment.volunteerName } : day
-    );
-  }
-
-  // CalendarComponent already persisted the removal to the server (DELETE /api/assignments/:date)
-  // before emitting — this just syncs the locally-held day array to that confirmed result.
-  onUnassignVolunteer(dayIndex: number) {
-    this.calendarDays = this.calendarDays.map((day, index) =>
-      index === dayIndex ? { ...day, volunteer: VACANT_LABEL } : day
-    );
-  }
-
   onReportSubmit(reportData: CallReportPayload) {
     this.reportService.submitReport(reportData).subscribe({
       next: (result) => {
-        alert(`הדיווח נשמר בהצלחה בשרת! מספר מזהה ייחודי: ${result.id ?? 'N/A'}`);
+        this.successModalMessage = `הדיווח נשמר בהצלחה בשרת! מספר מזהה ייחודי: ${result.id ?? 'N/A'}`;
+        this.isSuccessModalOpen = true;
 
         // איפוס שדות מינימלי
         this.summaryNotes = '';
         this.callerName = '';
         this.phone = '';
         this.email = '';
-        this.contactedOtherCenterBefore = false;
+        this.region = '';
+        this.receivedSupportAtOtherCenter = false;
+        this.isFamilyMemberOrAcquaintance = false;
+        this.magenContactHistory = 'first_time';
         this.reportingDuty = false;
       },
       error: () => {
         alert('שגיאה בשמירת הדיווח. הנתונים נחסמו מטעמי אבטחה או אימות.');
       }
     });
+  }
+
+  closeSuccessModal(): void {
+    this.isSuccessModalOpen = false;
   }
 
   logout() {

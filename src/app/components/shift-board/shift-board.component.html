@@ -1,0 +1,109 @@
+<section class="section-card shift-board-card">
+  <div class="board-header">
+    <h3 class="month-picker-title">
+      🗓️ שיבוץ משמרות עצמאי -
+      <select
+        class="month-select"
+        [attr.aria-label]="'בחירת חודש, נבחר כרגע ' + headerLabel"
+        [ngModel]="selectedMonthKey"
+        (ngModelChange)="onMonthSelect($event)"
+      >
+        <option *ngFor="let opt of monthOptions" [value]="opt.key">{{ opt.label }}</option>
+      </select>
+    </h3>
+
+    <span class="status-badge" *ngIf="schedule" [class.draft]="schedule.status === 'DRAFT'" [class.open]="schedule.status === 'OPEN'">
+      {{ schedule.status === 'OPEN' ? '🟢 פתוח לשיבוץ' : '🛠️ בהכנה' }}
+    </span>
+  </div>
+
+  <p class="section-desc">
+    {{ schedule?.status === 'OPEN'
+      ? 'לחץ/י על תא עם משמרת פנויה כדי לשבץ את עצמך למשמרת בוקר או ערב.'
+      : 'לוח המשמרות לחודש זה נמצא בהכנה ואינו פתוח לשיבוץ עצמאי עדיין.' }}
+  </p>
+
+  <p *ngIf="actionError" class="board-status error dismissible" (click)="dismissActionError()">{{ actionError }} ✕</p>
+  <p *ngIf="isLoading" class="board-status">טוען לוח משמרות...</p>
+  <p *ngIf="!isLoading && loadError" class="board-status error">{{ loadError }}</p>
+
+  <div *ngIf="!isLoading && !loadError && !schedule" class="empty-schedule">
+    <p>טרם נוצר לוח משמרות לחודש זה.</p>
+    <button *ngIf="isAdmin" type="button" class="create-btn" [disabled]="isCreatingSchedule" (click)="createSchedule()">
+      {{ isCreatingSchedule ? 'יוצר לוח משמרות...' : 'צור לוח משמרות לחודש זה' }}
+    </button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !loadError && schedule">
+    <div class="admin-actions" *ngIf="isAdmin && schedule.status === 'DRAFT'">
+      <button type="button" class="publish-btn" [disabled]="isPublishing" (click)="publishSchedule()">
+        {{ isPublishing ? 'מפרסם...' : 'פרסם לוח משמרות למתנדבים' }}
+      </button>
+    </div>
+
+    <div class="board-grid-wrapper">
+      <div class="weekday-row">
+        <div class="weekday-cell" *ngFor="let wd of weekdayLabels">{{ wd }}</div>
+      </div>
+
+      <div class="board-grid">
+        <ng-container *ngFor="let week of weeks">
+          <div
+            *ngFor="let cell of week"
+            class="day-cell"
+            [class.empty-cell]="!cell"
+            [class.today-cell]="cell?.day?.isToday"
+            [class.past-date]="cell && isPast(cell.day)"
+            [class.clickable]="cell && isCellClickable(cell.day)"
+            (click)="cell && onDayClick(cell.day)"
+          >
+            <ng-container *ngIf="cell as c">
+              <div class="day-number">{{ c.day.dayNumber }}</div>
+
+              <div class="shift-row">
+                <span
+                  class="shift-chip morning"
+                  [class.locked]="c.day.morning?.status === 'LOCKED'"
+                  [class.mine]="isMine(c.day.morning)"
+                >
+                  ☀️ {{ c.day.morning?.status === 'LOCKED' ? (c.day.morning?.volunteer?.name || '—') : 'פנוי' }}
+                </span>
+                <span
+                  class="shift-chip evening"
+                  [class.locked]="c.day.evening?.status === 'LOCKED'"
+                  [class.mine]="isMine(c.day.evening)"
+                >
+                  🌙 {{ c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי' }}
+                </span>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+
+  <app-shift-selection-modal
+    [isOpen]="isShiftModalOpen"
+    [dayLabel]="pendingDayLabel"
+    [morningShift]="pendingMorningShift"
+    [eveningShift]="pendingEveningShift"
+    [isAdmin]="isAdmin"
+    [volunteers]="volunteers"
+    [currentUserId]="currentUserId"
+    (selectShift)="onSelectShift($event)"
+    (adminAssign)="onAdminAssign($event)"
+    (releaseShift)="onReleaseShift($event)"
+    (closeModal)="closeShiftModal()"
+  ></app-shift-selection-modal>
+
+  <app-confirm-modal
+    [isOpen]="isConfirmOpen"
+    [title]="confirmTitle"
+    [message]="confirmMessage"
+    [confirmLabel]="confirmButtonLabel"
+    cancelLabel="ביטול"
+    (confirmed)="onConfirmAccept()"
+    (cancelled)="onConfirmCancel()"
+  ></app-confirm-modal>
+</section>

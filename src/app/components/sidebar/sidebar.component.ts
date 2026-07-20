@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
   <aside class="sidebar">
     <div class="logo-area">
@@ -13,7 +14,7 @@ import { CommonModule } from '@angular/common';
     </div>
 
     <nav class="nav-tabs">
-      <button class="nav-btn" [class.active]="currentTab === 'calendar'" (click)="switch('calendar')">📅 לוח שנה חודשי</button>
+      <button class="nav-btn" [class.active]="currentTab === 'calendar'" routerLink="/shifts">📅 לוח שנה חודשי</button>
       <button class="nav-btn" [class.active]="currentTab === 'report'" (click)="switch('report')">📝 דיווח שיחה חדשה</button>
       <button class="nav-btn" [class.active]="currentTab === 'charts'" (click)="switch('charts')">📊 דוחות ואנליטיקה</button>
       <button class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>

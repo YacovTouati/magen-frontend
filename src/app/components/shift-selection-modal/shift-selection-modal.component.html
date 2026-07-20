@@ -1,0 +1,61 @@
+<app-modal-shell [isOpen]="isOpen" maxWidth="420px" (backdropClick)="onCancel()">
+  <div class="modal-header">
+    <div>
+      <p class="modal-eyebrow">בחירת משמרת</p>
+      <h3 class="modal-title">{{ dayLabel }}</h3>
+    </div>
+    <button type="button" class="modal-close" (click)="onCancel()" aria-label="סגור">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="shift-row">
+      <label class="shift-option" [class.disabled]="!canSelectMorning">
+        <input type="radio" name="shiftType" value="MORNING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectMorning" />
+        <span class="shift-option-label">☀️ משמרת בוקר</span>
+        <span class="shift-option-status" *ngIf="morningShift?.status === 'LOCKED'">
+          משובץ: {{ morningShift?.volunteer?.name || '—' }}
+        </span>
+      </label>
+      <button type="button" class="btn-release" *ngIf="canReleaseMorning" (click)="onRelease('MORNING')">
+        🔓 שחרר משמרת
+      </button>
+    </div>
+
+    <div class="shift-row">
+      <label class="shift-option" [class.disabled]="!canSelectEvening">
+        <input type="radio" name="shiftType" value="EVENING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectEvening" />
+        <span class="shift-option-label">🌙 משמרת ערב</span>
+        <span class="shift-option-status" *ngIf="eveningShift?.status === 'LOCKED'">
+          משובץ: {{ eveningShift?.volunteer?.name || '—' }}
+        </span>
+      </label>
+      <button type="button" class="btn-release" *ngIf="canReleaseEvening" (click)="onRelease('EVENING')">
+        🔓 שחרר משמרת
+      </button>
+    </div>
+
+    <div class="admin-assign-row" *ngIf="isAdmin && selectedType">
+      <label for="volunteerSelect">שיבוץ מתנדב/ת:</label>
+      <select id="volunteerSelect" name="volunteerSelect" [(ngModel)]="selectedVolunteerId">
+        <option [ngValue]="null" disabled>בחר/י מתנדב/ת...</option>
+        <option *ngFor="let v of volunteers" [ngValue]="v.id">{{ v.name }} ({{ roleLabel(v.role) }})</option>
+      </select>
+    </div>
+
+    <p class="admin-hint" *ngIf="isAdmin">
+      כמנהל/ת ניתן לשבץ כל מתנדב/ת למשמרת פנויה, לדרוס שיבוץ קיים, או לשחרר משמרת נעולה.
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="onCancel()">ביטול</button>
+    <button
+      type="button"
+      class="btn-save"
+      [disabled]="!selectedType || (isAdmin && !selectedVolunteerId)"
+      (click)="onConfirmSelection()"
+    >
+      שמור שיבוץ
+    </button>
+  </div>
+</app-modal-shell>
