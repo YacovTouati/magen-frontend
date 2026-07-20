@@ -91,6 +91,15 @@ export class DashboardComponent implements OnInit {
     });
 
     this.updateCurrentTabFromRoute();
+
+    // Land fresh sessions on the Shift Board instead of the legacy report tab. This only
+    // fires once — ngOnInit runs a single time per DashboardComponent instance, which
+    // persists across every subsequent tab/route switch — so it doesn't hijack later
+    // navigation back to '/' via the report/charts/samples/future sidebar buttons the way
+    // a router-level redirect from '' would.
+    if (this.currentRoute === '/') {
+      this.router.navigate(['/shifts']);
+    }
   }
 
   private updateCurrentTabFromRoute(): void {
