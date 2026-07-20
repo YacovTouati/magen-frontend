@@ -14,13 +14,13 @@ describe('ReportComponent', () => {
     });
 
     describe('phone number validation', () => {
-        it('the phone input should have maxlength=10 and a 9-10 digit numeric pattern', () => {
+        it('the phone input should have maxlength=10 and a 7-10 digit numeric pattern', () => {
             const fixture = TestBed.createComponent(ReportComponent);
             fixture.detectChanges();
             const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
 
             expect(input.maxLength).toBe(10);
-            expect(input.getAttribute('pattern')).toBe('^[0-9]{9,10}$');
+            expect(input.getAttribute('pattern')).toBe('^[0-9]{7,10}$');
         });
 
         it('onlyNumbers() should allow digit keys and block any non-digit key (letters, dash, symbols)', () => {
@@ -54,7 +54,7 @@ describe('ReportComponent', () => {
 
             const error = fixture.debugElement.query(By.css('.field-error'));
             expect(error).toBeTruthy();
-            expect(error.nativeElement.textContent).toContain('בין 9 ל-10 ספרות');
+            expect(error.nativeElement.textContent).toContain('בין 7 ל-10 ספרות');
         });
 
         it('should NOT show an error once a valid 10-digit phone number is entered', async () => {
@@ -80,6 +80,7 @@ describe('ReportComponent', () => {
 
             const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
             const phoneInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
+            const regionInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="region"]')).nativeElement;
             const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
             const submitBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.submit-btn')).nativeElement;
 
@@ -89,6 +90,8 @@ describe('ReportComponent', () => {
             nameInput.dispatchEvent(new Event('input'));
             phoneInput.value = '12345'; // invalid — too short
             phoneInput.dispatchEvent(new Event('input'));
+            regionInput.value = 'מרכז';
+            regionInput.dispatchEvent(new Event('input'));
             summary.value = 'תקציר שיחה לדוגמה';
             summary.dispatchEvent(new Event('input'));
             fixture.detectChanges();
@@ -133,6 +136,81 @@ describe('ReportComponent', () => {
             comp.onSubmit();
 
             expect(comp.reportSubmit.emit).toHaveBeenCalled();
+        });
+
+        it('onSubmit() should accept the new 7-digit minimum, matching the backend PHONE_PATTERN', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '1234567'; // 7 digits — the new floor
+
+            comp.onSubmit();
+
+            expect(comp.reportSubmit.emit).toHaveBeenCalled();
+        });
+
+        it('onSubmit() should reject a 6-digit number, one below the new floor', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '123456'; // 6 digits
+
+            comp.onSubmit();
+
+            expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('region field (free text)', () => {
+        it('region should render as a free-text input, not a <select>', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+
+            expect(fixture.debugElement.query(By.css('select[name="region"]'))).toBeFalsy();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="region"]')).nativeElement;
+            expect(input.type).toBe('text');
+        });
+    });
+
+    describe('email field (optional)', () => {
+        it('the email input should not be marked required', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="email"]')).nativeElement;
+
+            expect(input.required).toBeFalse();
+        });
+
+        it('onSubmit() should emit successfully with an empty email', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '0501234567';
+            comp.email = '';
+
+            comp.onSubmit();
+
+            expect(comp.reportSubmit.emit).toHaveBeenCalled();
+        });
+    });
+
+    describe('new demographic questions', () => {
+        it('onSubmit() payload should include the renamed and new fields', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            let emitted: any = null;
+            comp.reportSubmit.subscribe((v: any) => emitted = v);
+            comp.phone = '0501234567';
+            comp.receivedSupportAtOtherCenter = true;
+            comp.isFamilyMemberOrAcquaintance = true;
+            comp.magenContactHistory = 'past';
+
+            comp.onSubmit();
+
+            expect(emitted.receivedSupportAtOtherCenter).toBeTrue();
+            expect(emitted.isFamilyMemberOrAcquaintance).toBeTrue();
+            expect(emitted.magenContactHistory).toBe('past');
+            expect(emitted.contactedOtherCenterBefore).toBeUndefined();
         });
     });
 });

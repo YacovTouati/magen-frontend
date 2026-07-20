@@ -18,7 +18,9 @@ describe('ReportService', () => {
         region: 'center',
         gender: 'unknown',
         sector: 'secular',
-        contactedOtherCenterBefore: false,
+        receivedSupportAtOtherCenter: false,
+        isFamilyMemberOrAcquaintance: false,
+        magenContactHistory: 'first_time',
         reportingDuty: true
     };
 
@@ -40,7 +42,7 @@ describe('ReportService', () => {
         expect(service).toBeTruthy();
     });
 
-    it('should POST the report payload to /api/reports and extract the created id', () => {
+    it('should POST the report payload to /api/reports and extract the created id from the nested report object', () => {
         service.submitReport(payload).subscribe(result => {
             expect(result.id).toBe(42);
         });
@@ -48,7 +50,16 @@ describe('ReportService', () => {
         const req = httpMock.expectOne(apiUrl);
         expect(req.request.method).toBe('POST');
         expect(req.request.body).toEqual(payload);
-        req.flush({ success: true, data: { id: 42 } });
+        // Real backend shape: data.report.id, alongside the auto-linked data.intake.
+        req.flush({ success: true, data: { report: { id: 42 }, intake: { id: 42 } } });
+    });
+
+    it('should fall back to a flat data.id when present, for backward compatibility', () => {
+        service.submitReport(payload).subscribe(result => {
+            expect(result.id).toBe(7);
+        });
+
+        httpMock.expectOne(apiUrl).flush({ success: true, data: { id: 7 } });
     });
 
     it('should return a null id when the response has no recognizable id field', () => {

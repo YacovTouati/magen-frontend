@@ -27,12 +27,12 @@ import { FormsModule } from '@angular/forms';
             name="phone"
             required
             maxlength="10"
-            pattern="^[0-9]{9,10}$"
+            pattern="^[0-9]{7,10}$"
             placeholder="0500000000"
             (keypress)="onlyNumbers($event)"
           >
           <p class="field-error" *ngIf="phoneModel.invalid && (phoneModel.dirty || phoneModel.touched)">
-            מספר הטלפון חייב להכיל בין 9 ל-10 ספרות בלבד
+            מספר הטלפון חייב להכיל בין 7 ל-10 ספרות בלבד
           </p>
         </div>
 
@@ -44,14 +44,7 @@ import { FormsModule } from '@angular/forms';
 
       <div class="form-group">
         <label>אזור בארץ:</label>
-        <select [(ngModel)]="region" name="region">
-          <option value="center">מרכז</option>
-          <option value="north">צפון</option>
-          <option value="south">דרום</option>
-          <option value="jerusalem">ירושלים והסביבה</option>
-          <option value="haifa">חיפה והסביבה</option>
-          <option value="judea_samaria">יהודה ושומרון</option>
-        </select>
+        <input type="text" [(ngModel)]="region" name="region" required placeholder="לדוגמה: תל אביב, מרכז, ירושלים והסביבה">
       </div>
 
       <div class="form-grid secondary-grid">
@@ -79,12 +72,29 @@ import { FormsModule } from '@angular/forms';
         </div>
       </div>
 
-      <div class="compact-row">
+      <div class="compact-row-quad">
         <div class="form-group inline-group">
-          <label>האם הפונה פנה בעבר למרכז סיוע אחר?</label>
-          <select [(ngModel)]="contactedOtherCenterBefore" name="contactedOtherCenterBefore">
+          <label>האם קיבל ליווי במרכז סיוע אחר?</label>
+          <select [(ngModel)]="receivedSupportAtOtherCenter" name="receivedSupportAtOtherCenter">
             <option [ngValue]="false">לא</option>
             <option [ngValue]="true">כן</option>
+          </select>
+        </div>
+
+        <div class="form-group inline-group">
+          <label>האם מכר או בן משפחה של נפגע?</label>
+          <select [(ngModel)]="isFamilyMemberOrAcquaintance" name="isFamilyMemberOrAcquaintance">
+            <option [ngValue]="false">לא</option>
+            <option [ngValue]="true">כן</option>
+          </select>
+        </div>
+
+        <div class="form-group inline-group">
+          <label>האם פנה למגן בעבר?</label>
+          <select [(ngModel)]="magenContactHistory" name="magenContactHistory">
+            <option value="first_time">פעם ראשונה</option>
+            <option value="past">פנה בעבר</option>
+            <option value="dont_remember">לא זוכר</option>
           </select>
         </div>
 
@@ -117,15 +127,17 @@ export class ReportComponent {
   @Input() callerName = '';
   @Input() phone = '';
   @Input() email = '';
-  @Input() region = 'center';
+  @Input() region = '';
   @Input() gender = 'unknown';
   @Input() sector = 'secular';
-  @Input() contactedOtherCenterBefore = false;
+  @Input() receivedSupportAtOtherCenter = false;
+  @Input() isFamilyMemberOrAcquaintance = false;
+  @Input() magenContactHistory = 'first_time';
   @Input() reportingDuty = false;
 
   @Output() reportSubmit = new EventEmitter<any>();
 
-  private readonly phonePattern = /^[0-9]{9,10}$/;
+  private readonly phonePattern = /^[0-9]{7,10}$/;
 
   onSubmit() {
     if (!this.phonePattern.test(this.phone)) {
@@ -143,7 +155,9 @@ export class ReportComponent {
       region: this.region,
       gender: this.gender,
       sector: this.sector,
-      contactedOtherCenterBefore: this.contactedOtherCenterBefore,
+      receivedSupportAtOtherCenter: this.receivedSupportAtOtherCenter,
+      isFamilyMemberOrAcquaintance: this.isFamilyMemberOrAcquaintance,
+      magenContactHistory: this.magenContactHistory,
       reportingDuty: this.reportingDuty
     };
     this.reportSubmit.emit(data);

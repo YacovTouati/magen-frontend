@@ -14,7 +14,9 @@ export interface CallReportPayload {
     region: string;
     gender: string;
     sector: string;
-    contactedOtherCenterBefore: boolean;
+    receivedSupportAtOtherCenter: boolean;
+    isFamilyMemberOrAcquaintance: boolean;
+    magenContactHistory: string;
     reportingDuty: boolean;
 }
 
@@ -32,7 +34,9 @@ export class ReportService {
 
     submitReport(payload: CallReportPayload): Observable<CallReportResult> {
         return this.http.post<any>(this.apiUrl, payload).pipe(
-            map(response => ({ id: response?.data?.id ?? response?.id ?? null }))
+            // Backend nests the created row under data.report (alongside the auto-linked
+            // Intake) rather than putting the id directly on data — see reportController.ts.
+            map(response => ({ id: response?.data?.report?.id ?? response?.data?.id ?? response?.id ?? null }))
         );
     }
 }
