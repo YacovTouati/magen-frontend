@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -45,6 +46,7 @@ export class ShiftBoardComponent implements OnInit {
     private authService = inject(AuthService);
     private scheduleService = inject(ScheduleService);
     private userManagementService = inject(UserManagementService);
+    private destroyRef = inject(DestroyRef);
 
     // Routed via <router-outlet> (see app.routes.ts), not embedded with template bindings
     // the way CalendarComponent is — so month state is owned internally here, same as
@@ -60,6 +62,14 @@ export class ShiftBoardComponent implements OnInit {
 
     schedule: ScheduleRecord | null = null;
     days: ShiftBoardDay[] = [];
+    // Derived from `days`, recomputed only when it actually changes (via setDays()) rather
+    // than on every change-detection pass — this used to be a getter that allocated fresh
+    // arrays/objects on every CD cycle, so *ngFor saw a new array reference each time and
+    // tore down/rebuilt the entire grid continuously instead of diffing it.
+    weeks: (ShiftBoardCell | null)[][] = [];
+    // Invariant for the component's lifetime (depends only on "today" at construction, not
+    // on year/month) — built once in ngOnInit instead of as a getter.
+    monthOptions: MonthOption[] = [];
     isLoading = false;
     loadError = '';
 
@@ -79,11 +89,24 @@ export class ShiftBoardComponent implements OnInit {
     private pendingRelease: ShiftRecord | null = null;
 
     ngOnInit(): void {
+        this.monthOptions = this.buildMonthOptions();
         this.loadSchedule();
 
         if (this.canManageSchedule) {
             this.loadVolunteers();
         }
+
+        // A user update/delete can cascade-delete shift assignments server-side (e.g. a
+        // deleted volunteer's locked shifts) — refresh so the grid, and for managers the
+        // admin-assign roster, stay in sync instead of showing stale data until next reload.
+        this.userManagementService.usersChanged$.pipe(
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe(() => {
+            this.loadSchedule();
+            if (this.canManageSchedule) {
+                this.loadVolunteers();
+            }
+        });
     }
 
     private loadVolunteers(): void {
@@ -100,19 +123,19 @@ export class ShiftBoardComponent implements OnInit {
         });
     }
 
-    get weeks(): (ShiftBoardCell | null)[][] {
-        if (!this.days.length) {
+    private computeWeeks(days: ShiftBoardDay[]): (ShiftBoardCell | null)[][] {
+        if (!days.length) {
             return [];
         }
 
         const cells: (ShiftBoardCell | null)[] = [];
-        const leadingBlanks = this.parseDate(this.days[0].dateString).getDay();
+        const leadingBlanks = this.parseDate(days[0].dateString).getDay();
 
         for (let i = 0; i < leadingBlanks; i++) {
             cells.push(null);
         }
 
-        this.days.forEach((day, index) => cells.push({ day, index }));
+        days.forEach((day, index) => cells.push({ day, index }));
 
         while (cells.length % 7 !== 0) {
             cells.push(null);
@@ -126,8 +149,13 @@ export class ShiftBoardComponent implements OnInit {
         return weeks;
     }
 
-    /** Scrollable window of months for the picker: a couple of years back and forward from today. */
-    get monthOptions(): MonthOption[] {
+    trackByIndex(index: number): number {
+        return index;
+    }
+
+    /** Scrollable window of months for the picker: a couple of years back and forward from
+     *  today. Called once from ngOnInit — invariant for the component's lifetime. */
+    private buildMonthOptions(): MonthOption[] {
         const options: MonthOption[] = [];
         const today = new Date();
 
@@ -212,12 +240,12 @@ export class ShiftBoardComponent implements OnInit {
         this.isLoading = true;
         this.loadError = '';
         this.schedule = null;
-        this.days = [];
+        this.setDays([]);
 
         this.scheduleService.findForMonth(this.year, this.month).subscribe({
             next: (schedule) => {
                 this.schedule = schedule;
-                this.days = schedule ? this.buildDays(schedule) : [];
+                this.setDays(schedule ? this.buildDays(schedule) : []);
                 this.isLoading = false;
             },
             error: () => {
@@ -238,7 +266,7 @@ export class ShiftBoardComponent implements OnInit {
         this.scheduleService.createSchedule(this.year, this.month).subscribe({
             next: (schedule) => {
                 this.schedule = schedule;
-                this.days = this.buildDays(schedule);
+                this.setDays(this.buildDays(schedule));
                 this.isCreatingSchedule = false;
             },
             error: () => {
@@ -453,7 +481,12 @@ export class ShiftBoardComponent implements OnInit {
 
         const shifts = this.schedule.shifts.map(s => (s.id === updated.id ? updated : s));
         this.schedule = { ...this.schedule, shifts };
-        this.days = this.buildDays(this.schedule);
+        this.setDays(this.buildDays(this.schedule));
+    }
+
+    private setDays(days: ShiftBoardDay[]): void {
+        this.days = days;
+        this.weeks = this.computeWeeks(days);
     }
 
     private toIsoDate(day: number): string {

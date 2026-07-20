@@ -32,6 +32,17 @@ const URGENCY_LABELS: Record<IntakeUrgency, string> = {
 
 const GENERIC_ACTION_ERROR = 'הפעולה נכשלה. ייתכן שמצב התיק השתנה בינתיים — רענן/י ונסה/י שוב.';
 
+// Hoisted to module scope: constructing Intl.DateTimeFormat parses locale data and is
+// comparatively expensive — formatDate() runs twice per row on every change-detection
+// cycle (createdAt + expiresAt columns), so it must reuse one instance, not build a new
+// one per call.
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('he-IL', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+});
+
 @Component({
     selector: 'app-intake-alerts',
     standalone: true,
@@ -110,12 +121,7 @@ export class IntakeAlertsComponent implements OnInit {
     }
 
     private formatDate(date: Date): string {
-        return new Intl.DateTimeFormat('he-IL', {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date);
+        return DATE_TIME_FORMATTER.format(date);
     }
 
     isPendingAction(intake: IntakeAlert): boolean {

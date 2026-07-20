@@ -47,9 +47,9 @@
       </div>
 
       <div class="board-grid">
-        <ng-container *ngFor="let week of weeks">
+        <ng-container *ngFor="let week of weeks; trackBy: trackByIndex">
           <div
-            *ngFor="let cell of week"
+            *ngFor="let cell of week; trackBy: trackByIndex"
             class="day-cell"
             [class.empty-cell]="!cell"
             [class.today-cell]="cell?.day?.isToday"
