@@ -16,8 +16,8 @@ import { RouterLink } from '@angular/router';
     <nav class="nav-tabs">
       <button class="nav-btn" [class.active]="currentTab === 'calendar'" routerLink="/shifts">📅 לוח שנה חודשי</button>
       <button class="nav-btn" [class.active]="currentTab === 'report'" (click)="switch('report')">📝 דיווח שיחה חדשה</button>
-      <button class="nav-btn" [class.active]="currentTab === 'charts'" (click)="switch('charts')">📊 דוחות ואנליטיקה</button>
-      <button class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
+      <button *ngIf="isAdmin" class="nav-btn" [class.active]="currentTab === 'charts'" (click)="switch('charts')">📊 דוחות ואנליטיקה</button>
+      <button *ngIf="!isIntakeAdmin && !isSchedulerAdmin" class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
       <button *ngIf="isSuperAdmin" class="nav-btn" [class.active]="currentTab === 'users'" (click)="switch('users')">👤 ניהול משתמשים</button>
       <button class="nav-btn" [class.active]="currentTab === 'future'" (click)="switch('future')">⚙️ הגדרות עתידיות...</button>
     </nav>
@@ -42,6 +42,8 @@ export class SidebarComponent {
   @Input() currentTab = 'calendar';
   @Input() isAdmin = false;
   @Input() isSuperAdmin = false;
+  @Input() isIntakeAdmin = false;
+  @Input() isSchedulerAdmin = false;
   @Output() tabChange = new EventEmitter<string>();
   @Output() logoutEvent = new EventEmitter<void>();
 

@@ -10,11 +10,12 @@ describe('DashboardComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser', 'isAdmin', 'isSuperAdmin', 'isIntakeAdmin', 'logout']);
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser', 'isAdmin', 'isSuperAdmin', 'isIntakeAdmin', 'isSchedulerAdmin', 'logout']);
         authServiceSpy.getUser.and.returnValue({ email: 'admin@magen.org', role: 'SUPER_ADMIN' });
         authServiceSpy.isAdmin.and.returnValue(true);
         authServiceSpy.isSuperAdmin.and.returnValue(true);
         authServiceSpy.isIntakeAdmin.and.returnValue(false);
+        authServiceSpy.isSchedulerAdmin.and.returnValue(false);
 
         await TestBed.configureTestingModule({
             imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule],
@@ -34,6 +35,7 @@ describe('DashboardComponent', () => {
         expect(comp.isAdmin).toBeTrue();
         expect(comp.isSuperAdmin).toBeTrue();
         expect(comp.isIntakeAdmin).toBeFalse();
+        expect(comp.isSchedulerAdmin).toBeFalse();
     });
 
     it('should mount the intake alerts panel for a SUPER_ADMIN', () => {

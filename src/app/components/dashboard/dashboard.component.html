@@ -1,7 +1,8 @@
 <div class="magen-wrapper" dir="rtl">
   <div class="dashboard-layout">
     <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab"
-      [isAdmin]="isAdmin" [isSuperAdmin]="isSuperAdmin" (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
+      [isAdmin]="isAdmin" [isSuperAdmin]="isSuperAdmin" [isIntakeAdmin]="isIntakeAdmin" [isSchedulerAdmin]="isSchedulerAdmin"
+      (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
 
     <main class="main-content">
       <!--

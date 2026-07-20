@@ -30,6 +30,7 @@ export class DashboardComponent implements OnInit {
   isAdmin = false;
   isSuperAdmin = false;
   isIntakeAdmin = false;
+  isSchedulerAdmin = false;
   currentTab = 'report';
 
   private readonly legacyTabs = ['report', 'charts', 'samples', 'future'];
@@ -75,6 +76,7 @@ export class DashboardComponent implements OnInit {
     this.isAdmin = this.authService.isAdmin();
     this.isSuperAdmin = this.authService.isSuperAdmin();
     this.isIntakeAdmin = this.authService.isIntakeAdmin();
+    this.isSchedulerAdmin = this.authService.isSchedulerAdmin();
 
     const randomIndex = Math.floor(Math.random() * this.empowermentQuotes.length);
     this.currentQuote = this.empowermentQuotes[randomIndex];

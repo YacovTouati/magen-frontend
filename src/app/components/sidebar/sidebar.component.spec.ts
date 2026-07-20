@@ -14,6 +14,18 @@ describe('SidebarComponent', () => {
         );
     }
 
+    function chartsButton(fixture: ReturnType<typeof TestBed.createComponent<SidebarComponent>>) {
+        return fixture.debugElement.queryAll(By.css('.nav-btn')).find(
+            btn => (btn.nativeElement.textContent || '').includes('דוחות ואנליטיקה')
+        );
+    }
+
+    function samplesButton(fixture: ReturnType<typeof TestBed.createComponent<SidebarComponent>>) {
+        return fixture.debugElement.queryAll(By.css('.nav-btn')).find(
+            btn => (btn.nativeElement.textContent || '').includes('שיחות ותרחישים לדוגמה')
+        );
+    }
+
     it('should create', () => {
         const fixture = TestBed.createComponent(SidebarComponent);
         const comp = fixture.componentInstance;
@@ -36,5 +48,56 @@ describe('SidebarComponent', () => {
         fixture.detectChanges();
 
         expect(usersButton(fixture)).toBeTruthy();
+    });
+
+    it('should hide "דוחות ואנליטיקה" (reports & analytics) for a VOLUNTEER (isAdmin false)', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = false;
+        fixture.detectChanges();
+
+        expect(chartsButton(fixture)).toBeFalsy();
+    });
+
+    it('should show "דוחות ואנליטיקה" (reports & analytics) for any admin role (isAdmin true)', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = true;
+        fixture.detectChanges();
+
+        expect(chartsButton(fixture)).toBeTruthy();
+    });
+
+    it('should hide "שיחות ותרחישים לדוגמה" (sample calls) for INTAKE_ADMIN', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = true;
+        fixture.componentInstance.isIntakeAdmin = true;
+        fixture.detectChanges();
+
+        expect(samplesButton(fixture)).toBeFalsy();
+    });
+
+    it('should hide "שיחות ותרחישים לדוגמה" (sample calls) for SCHEDULER_ADMIN', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = true;
+        fixture.componentInstance.isSchedulerAdmin = true;
+        fixture.detectChanges();
+
+        expect(samplesButton(fixture)).toBeFalsy();
+    });
+
+    it('should show "שיחות ותרחישים לדוגמה" (sample calls) for SUPER_ADMIN', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = true;
+        fixture.componentInstance.isSuperAdmin = true;
+        fixture.detectChanges();
+
+        expect(samplesButton(fixture)).toBeTruthy();
+    });
+
+    it('should show "שיחות ותרחישים לדוגמה" (sample calls) for a VOLUNTEER', () => {
+        const fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.isAdmin = false;
+        fixture.detectChanges();
+
+        expect(samplesButton(fixture)).toBeTruthy();
     });
 });
