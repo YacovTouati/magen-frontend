@@ -142,6 +142,37 @@ th {
     text-align: center;
 }
 
+.role-select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    background: #fff;
+    color: #0f172a;
+    min-width: 140px;
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+}
+
+.role-select:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+}
+
+.pending-hint {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 4px;
+}
+
 @media (max-width: 900px) {
     .dashboard-grid {
         grid-template-columns: 1fr;

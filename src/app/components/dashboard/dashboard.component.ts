@@ -9,13 +9,14 @@ import { ReportComponent } from '../report/report.component';
 import { ChartsComponent } from '../charts/charts.component';
 import { FutureComponent } from '../future/future.component';
 import { SuccessModalComponent } from '../success-modal/success-modal.component';
+import { IntakeAlertsComponent } from '../intake-alerts/intake-alerts.component';
 import { AuthService } from '../../services/auth.service';
 import { ReportService, CallReportPayload } from '../../services/report.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent, SuccessModalComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent, SuccessModalComponent, IntakeAlertsComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -27,6 +28,8 @@ export class DashboardComponent implements OnInit {
 
   currentUserEmail = '';
   isAdmin = false;
+  isSuperAdmin = false;
+  isIntakeAdmin = false;
   currentTab = 'report';
 
   private readonly legacyTabs = ['report', 'charts', 'samples', 'future'];
@@ -70,6 +73,8 @@ export class DashboardComponent implements OnInit {
     const user = this.authService.getUser();
     this.currentUserEmail = user?.email ?? '';
     this.isAdmin = this.authService.isAdmin();
+    this.isSuperAdmin = this.authService.isSuperAdmin();
+    this.isIntakeAdmin = this.authService.isIntakeAdmin();
 
     const randomIndex = Math.floor(Math.random() * this.empowermentQuotes.length);
     this.currentQuote = this.empowermentQuotes[randomIndex];

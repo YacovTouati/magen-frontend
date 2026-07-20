@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { UserManagementService, User } from '../../services/user-management.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
+import { ROLE_OPTIONS, UserRole, getRoleLabel } from '../../shared/role-labels';
 
 @Component({
     selector: 'app-user-management',
@@ -13,6 +14,8 @@ import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component'
     styleUrls: ['./user-management.component.css']
 })
 export class UserManagementComponent implements OnInit {
+    readonly roleOptions = ROLE_OPTIONS;
+
     users: User[] = [];
     isLoading = false;
     formError = '';
@@ -28,6 +31,9 @@ export class UserManagementComponent implements OnInit {
     private pendingDeleteId: number | string | null = null;
     pendingDeleteName = '';
 
+    /** id of the user with an in-flight role-change request, if any */
+    pendingRoleChangeId: number | string | null = null;
+
     constructor(private userService: UserManagementService) { }
 
     ngOnInit(): void {
@@ -35,11 +41,36 @@ export class UserManagementComponent implements OnInit {
     }
 
     getRoleLabel(role: string | undefined): string {
-        if (!role) {
-            return 'לא ידוע';
+        return getRoleLabel(role);
+    }
+
+    isPendingRoleChange(user: User): boolean {
+        return user.id !== undefined && this.pendingRoleChangeId === user.id;
+    }
+
+    // Pessimistic update, same convention as IntakeAlertsComponent's status <select>:
+    // user.role only changes once the server confirms it, so the one-way [ngModel]
+    // binding naturally snaps back to the current value on its own if this fails.
+    onRoleChange(user: User, newRole: string): void {
+        if (!user.id || this.pendingRoleChangeId !== null) {
+            return;
         }
 
-        return role === 'ADMIN' ? 'מנהל' : 'מתנדב';
+        this.pendingRoleChangeId = user.id;
+        this.formError = '';
+        this.formSuccess = '';
+
+        this.userService.updateUserRole(user.id, newRole as UserRole).subscribe({
+            next: (updated) => {
+                user.role = updated.role;
+                this.pendingRoleChangeId = null;
+                this.formSuccess = `התפקיד של ${user.name} עודכן ל${getRoleLabel(updated.role)}.`;
+            },
+            error: (err: HttpErrorResponse) => {
+                this.pendingRoleChangeId = null;
+                this.formError = this.extractServerErrorMessage(err, 'עדכון התפקיד נכשל. נסה שוב.');
+            }
+        });
     }
 
     loadUsers(): void {

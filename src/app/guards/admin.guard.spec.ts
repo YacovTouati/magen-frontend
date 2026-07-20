@@ -9,7 +9,7 @@ describe('adminGuard', () => {
     let router: Router;
 
     beforeEach(() => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['isAdmin', 'isLoggedIn']);
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['isSuperAdmin', 'isLoggedIn']);
 
         TestBed.configureTestingModule({
             imports: [RouterTestingModule],
@@ -24,15 +24,15 @@ describe('adminGuard', () => {
         return TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any));
     }
 
-    it('should allow navigation for an admin user', () => {
-        authServiceSpy.isAdmin.and.returnValue(true);
+    it('should allow navigation for a SUPER_ADMIN user', () => {
+        authServiceSpy.isSuperAdmin.and.returnValue(true);
 
         expect(runGuard()).toBeTrue();
         expect(router.navigate).not.toHaveBeenCalled();
     });
 
-    it('should redirect a logged-in non-admin (volunteer) to the dashboard, not /login', () => {
-        authServiceSpy.isAdmin.and.returnValue(false);
+    it('should redirect a logged-in non-super-admin (INTAKE_ADMIN, SCHEDULER_ADMIN or VOLUNTEER) to the dashboard, not /login', () => {
+        authServiceSpy.isSuperAdmin.and.returnValue(false);
         authServiceSpy.isLoggedIn.and.returnValue(true);
 
         expect(runGuard()).toBeFalse();
@@ -40,7 +40,7 @@ describe('adminGuard', () => {
     });
 
     it('should redirect an anonymous user to /login', () => {
-        authServiceSpy.isAdmin.and.returnValue(false);
+        authServiceSpy.isSuperAdmin.and.returnValue(false);
         authServiceSpy.isLoggedIn.and.returnValue(false);
 
         expect(runGuard()).toBeFalse();

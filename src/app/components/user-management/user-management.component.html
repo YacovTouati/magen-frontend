@@ -30,7 +30,18 @@
                         <tr *ngFor="let user of users">
                             <td>{{ user?.name || '—' }}</td>
                             <td>{{ user?.email || '—' }}</td>
-                            <td>{{ getRoleLabel(user?.role) }}</td>
+                            <td>
+                                <select
+                                    class="role-select"
+                                    [ngModel]="user.role"
+                                    (ngModelChange)="onRoleChange(user, $event)"
+                                    [disabled]="isPendingRoleChange(user)"
+                                    [attr.aria-label]="'שינוי תפקיד עבור ' + (user.name || user.email)"
+                                >
+                                    <option *ngFor="let opt of roleOptions" [value]="opt.value">{{ opt.label }}</option>
+                                </select>
+                                <span *ngIf="isPendingRoleChange(user)" class="pending-hint">מעדכן...</span>
+                            </td>
                             <td>
                                 <button class="delete-btn" type="button" (click)="deleteUser(user)">מחק</button>
                             </td>
@@ -67,8 +78,7 @@
                 <label>
                     תפקיד
                     <select [(ngModel)]="newUser.role" name="role">
-                        <option value="ADMIN">מנהל</option>
-                        <option value="VOLUNTEER">מתנדב</option>
+                        <option *ngFor="let opt of roleOptions" [value]="opt.value">{{ opt.label }}</option>
                     </select>
                 </label>
 

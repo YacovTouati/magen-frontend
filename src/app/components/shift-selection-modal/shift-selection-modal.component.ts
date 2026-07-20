@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 import { ShiftRecord, ShiftType, ShiftVolunteer } from '../../services/schedule.service';
+import { getRoleLabel } from '../../shared/role-labels';
 
 export interface AdminAssignment {
     shift: ShiftRecord;
@@ -22,6 +23,9 @@ export class ShiftSelectionModalComponent {
     @Input() dayLabel = '';
     @Input() morningShift: ShiftRecord | null = null;
     @Input() eveningShift: ShiftRecord | null = null;
+    // Bound from ShiftBoardComponent's canManageSchedule (SUPER_ADMIN/SCHEDULER_ADMIN),
+    // not a raw "is any kind of admin" flag — kept the name isAdmin to avoid rippling
+    // an unrelated rename through this component's whole public API.
     @Input() isAdmin = false;
     // Only populated/consumed when isAdmin — the roster for the assignment dropdown.
     @Input() volunteers: ShiftVolunteer[] = [];
@@ -81,7 +85,7 @@ export class ShiftSelectionModalComponent {
     }
 
     roleLabel(role: string | undefined): string {
-        return role === 'ADMIN' ? 'מנהל' : 'מתנדב';
+        return getRoleLabel(role);
     }
 
     onConfirmSelection(): void {

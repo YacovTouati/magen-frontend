@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { UserRole, normalizeRole } from '../shared/role-labels';
 
 export interface AuthUser {
     email: string;
-    role: 'ADMIN' | 'VOLUNTEER' | string;
+    role: UserRole | string;
     [key: string]: any;
 }
 
@@ -54,8 +55,35 @@ export class AuthService {
         return !!this.getToken() && !!this.getUser();
     }
 
+    // True for any of the three admin roles — use this for generic "is some kind of
+    // admin" gating (e.g. the sidebar's role badge). For anything that should only be
+    // available to a specific admin type, use the narrower isSuperAdmin()/isIntakeAdmin()/
+    // isSchedulerAdmin() (or the canManage*() convenience methods below) instead.
     isAdmin(): boolean {
-        return this.getUser()?.role === 'ADMIN';
+        return this.isSuperAdmin() || this.isIntakeAdmin() || this.isSchedulerAdmin();
+    }
+
+    isSuperAdmin(): boolean {
+        return this.getUser()?.role === 'SUPER_ADMIN';
+    }
+
+    isIntakeAdmin(): boolean {
+        return this.getUser()?.role === 'INTAKE_ADMIN';
+    }
+
+    isSchedulerAdmin(): boolean {
+        return this.getUser()?.role === 'SCHEDULER_ADMIN';
+    }
+
+    // Matches the backend's checkRole('SUPER_ADMIN', 'SCHEDULER_ADMIN') gate on
+    // /schedules, /shifts/:id/admin-assign and /shifts/:id/admin-release.
+    canManageSchedule(): boolean {
+        return this.isSuperAdmin() || this.isSchedulerAdmin();
+    }
+
+    // Matches the backend's checkRole('SUPER_ADMIN', 'INTAKE_ADMIN') gate on POST /intakes.
+    canManageIntakes(): boolean {
+        return this.isSuperAdmin() || this.isIntakeAdmin();
     }
 
     private setSession(response: LoginResponse): void {
@@ -80,7 +108,7 @@ export class AuthService {
             token,
             user: {
                 ...rawUser,
-                role: String(role ?? '').toUpperCase() === 'ADMIN' ? 'ADMIN' : 'VOLUNTEER'
+                role: normalizeRole(role)
             }
         };
     }
@@ -92,7 +120,11 @@ export class AuthService {
         }
 
         try {
-            return JSON.parse(raw);
+            const parsed = JSON.parse(raw);
+            // Re-normalize on every restore, not just at login — a session cached before
+            // this role split still has the legacy 'ADMIN' string sitting in localStorage
+            // until the user logs out and back in.
+            return { ...parsed, role: normalizeRole(parsed?.role) };
         } catch {
             return null;
         }

@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, map, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { UserRole, normalizeRole } from '../shared/role-labels';
 
 export interface User {
     id?: number | string;
     name: string;
     email: string;
     password?: string;
-    role: 'ADMIN' | 'VOLUNTEER' | string;
+    role: UserRole | string;
     firstName?: string;
     lastName?: string;
     fullName?: string;
@@ -38,15 +39,20 @@ export class UserManagementService {
         return this.http.post<User>(this.apiUrl, user);
     }
 
-    deleteUser(id: number | string): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+    // Mirrors the backend's PATCH /intakes/:id/status convention (see intake.service.ts) —
+    // updates just the role rather than requiring a full delete+recreate, which would
+    // orphan every Intake/CallReport/Shift foreign key pointing at that user.
+    updateUserRole(id: number | string, role: UserRole): Observable<User> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}/role`, { role }).pipe(
+            map(response => this.normalizeUser(response?.data ?? response)),
             tap(() => this.usersChangedSource.next())
         );
     }
 
-    private normalizeRole(role: unknown): 'ADMIN' | 'VOLUNTEER' {
-        const normalized = String(role ?? '').trim().toUpperCase();
-        return normalized === 'ADMIN' ? 'ADMIN' : 'VOLUNTEER';
+    deleteUser(id: number | string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+            tap(() => this.usersChangedSource.next())
+        );
     }
 
     private normalizeUser(rawUser: any): User {
@@ -54,7 +60,7 @@ export class UserManagementService {
         const lastName = rawUser?.lastName ?? rawUser?.last_name ?? rawUser?.lastname ?? '';
         const fullName = rawUser?.name ?? rawUser?.fullName ?? rawUser?.full_name ?? rawUser?.displayName ?? rawUser?.display_name ?? [firstName, lastName].filter(Boolean).join(' ').trim();
         const email = rawUser?.email ?? rawUser?.emailAddress ?? rawUser?.email_address ?? '';
-        const role = this.normalizeRole(rawUser?.role ?? rawUser?.userRole ?? rawUser?.roleName ?? rawUser?.role_name ?? rawUser?.type);
+        const role = normalizeRole(rawUser?.role ?? rawUser?.userRole ?? rawUser?.roleName ?? rawUser?.role_name ?? rawUser?.type);
 
         return {
             id: rawUser?.id ?? rawUser?.userId ?? rawUser?.user_id ?? rawUser?._id ?? rawUser?.uuid,

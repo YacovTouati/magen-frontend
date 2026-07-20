@@ -52,7 +52,10 @@ export class ShiftBoardComponent implements OnInit {
     year: number = new Date().getFullYear();
     month: number = new Date().getMonth(); // 0-indexed
 
-    readonly isAdmin = this.authService.isAdmin();
+    // SUPER_ADMIN and SCHEDULER_ADMIN only — matches the backend's checkRole gate on
+    // /schedules, /shifts/:id/admin-assign and /shifts/:id/admin-release. INTAKE_ADMIN
+    // (and VOLUNTEER) get the same self-claim-only experience below.
+    readonly canManageSchedule = this.authService.canManageSchedule();
     readonly weekdayLabels = WEEKDAY_LABELS;
 
     schedule: ScheduleRecord | null = null;
@@ -78,7 +81,7 @@ export class ShiftBoardComponent implements OnInit {
     ngOnInit(): void {
         this.loadSchedule();
 
-        if (this.isAdmin) {
+        if (this.canManageSchedule) {
             this.loadVolunteers();
         }
     }
@@ -198,7 +201,7 @@ export class ShiftBoardComponent implements OnInit {
             return false;
         }
 
-        if (this.isAdmin) {
+        if (this.canManageSchedule) {
             return true;
         }
 
@@ -225,7 +228,7 @@ export class ShiftBoardComponent implements OnInit {
     }
 
     createSchedule(): void {
-        if (!this.isAdmin || this.isCreatingSchedule) {
+        if (!this.canManageSchedule || this.isCreatingSchedule) {
             return;
         }
 
@@ -246,7 +249,7 @@ export class ShiftBoardComponent implements OnInit {
     }
 
     publishSchedule(): void {
-        if (!this.isAdmin || !this.schedule || this.isPublishing) {
+        if (!this.canManageSchedule || !this.schedule || this.isPublishing) {
             return;
         }
 

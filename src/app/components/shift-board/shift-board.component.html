@@ -29,13 +29,13 @@
 
   <div *ngIf="!isLoading && !loadError && !schedule" class="empty-schedule">
     <p>טרם נוצר לוח משמרות לחודש זה.</p>
-    <button *ngIf="isAdmin" type="button" class="create-btn" [disabled]="isCreatingSchedule" (click)="createSchedule()">
+    <button *ngIf="canManageSchedule" type="button" class="create-btn" [disabled]="isCreatingSchedule" (click)="createSchedule()">
       {{ isCreatingSchedule ? 'יוצר לוח משמרות...' : 'צור לוח משמרות לחודש זה' }}
     </button>
   </div>
 
   <ng-container *ngIf="!isLoading && !loadError && schedule">
-    <div class="admin-actions" *ngIf="isAdmin && schedule.status === 'DRAFT'">
+    <div class="admin-actions" *ngIf="canManageSchedule && schedule.status === 'DRAFT'">
       <button type="button" class="publish-btn" [disabled]="isPublishing" (click)="publishSchedule()">
         {{ isPublishing ? 'מפרסם...' : 'פרסם לוח משמרות למתנדבים' }}
       </button>
@@ -88,7 +88,7 @@
     [dayLabel]="pendingDayLabel"
     [morningShift]="pendingMorningShift"
     [eveningShift]="pendingEveningShift"
-    [isAdmin]="isAdmin"
+    [isAdmin]="canManageSchedule"
     [volunteers]="volunteers"
     [currentUserId]="currentUserId"
     (selectShift)="onSelectShift($event)"

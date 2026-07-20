@@ -7,12 +7,12 @@ describe('UserManagementComponent', () => {
     let userServiceSpy: jasmine.SpyObj<UserManagementService>;
 
     const existingUsers: User[] = [
-        { id: 1, name: 'Alice', email: 'alice@example.com', role: 'ADMIN' },
+        { id: 1, name: 'Alice', email: 'alice@example.com', role: 'SUPER_ADMIN' },
         { id: 2, name: 'Bob', email: 'bob@example.com', role: 'VOLUNTEER' }
     ];
 
     beforeEach(async () => {
-        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'addUser', 'deleteUser']);
+        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'addUser', 'deleteUser', 'updateUserRole']);
         userServiceSpy.getUsers.and.returnValue(of(existingUsers));
 
         await TestBed.configureTestingModule({
@@ -159,6 +159,94 @@ describe('UserManagementComponent', () => {
             comp.addUser();
 
             expect(comp.formError).toBe('הוספת המשתמש נכשלה. נסה שוב.');
+        });
+    });
+
+    describe('getRoleLabel', () => {
+        it('should render a Hebrew label for each of the four known roles', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            expect(comp.getRoleLabel('SUPER_ADMIN')).toBe('מנהל/ת-על');
+            expect(comp.getRoleLabel('INTAKE_ADMIN')).toBe('מנהל/ת אינטייק');
+            expect(comp.getRoleLabel('SCHEDULER_ADMIN')).toBe('מנהל/ת שיבוץ');
+            expect(comp.getRoleLabel('VOLUNTEER')).toBe('מתנדב/ת');
+        });
+
+        it('should return "לא ידוע" for a missing role', () => {
+            const fixture = createComponent();
+            expect(fixture.componentInstance.getRoleLabel(undefined)).toBe('לא ידוע');
+        });
+    });
+
+    describe('role dropdown options', () => {
+        it('should expose all four roles for the create-user and per-row role selects', () => {
+            const fixture = createComponent();
+            const values = fixture.componentInstance.roleOptions.map(o => o.value);
+
+            expect(values).toEqual(['SUPER_ADMIN', 'INTAKE_ADMIN', 'SCHEDULER_ADMIN', 'VOLUNTEER']);
+        });
+    });
+
+    describe('onRoleChange', () => {
+        it('should do nothing when the user has no id', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.onRoleChange({ id: undefined, name: 'Ghost', email: 'x@example.com', role: 'VOLUNTEER' }, 'SUPER_ADMIN');
+
+            expect(userServiceSpy.updateUserRole).not.toHaveBeenCalled();
+        });
+
+        it('should call updateUserRole with the exact id and new role, then update the row in place on success', () => {
+            userServiceSpy.updateUserRole.and.returnValue(of({ id: 2, name: 'Bob', email: 'bob@example.com', role: 'SCHEDULER_ADMIN' }));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const bob = comp.users.find(u => u.id === 2)!;
+
+            comp.onRoleChange(bob, 'SCHEDULER_ADMIN');
+
+            expect(userServiceSpy.updateUserRole).toHaveBeenCalledOnceWith(2, 'SCHEDULER_ADMIN');
+            expect(bob.role).toBe('SCHEDULER_ADMIN');
+            expect(comp.formSuccess).toContain('Bob');
+            expect(comp.pendingRoleChangeId).toBeNull();
+        });
+
+        it('should mark the row pending while the request is in flight', () => {
+            userServiceSpy.updateUserRole.and.returnValue(of({ id: 2, name: 'Bob', email: 'bob@example.com', role: 'SCHEDULER_ADMIN' }));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            userServiceSpy.updateUserRole.and.callFake(() => {
+                expect(comp.isPendingRoleChange(comp.users[1])).toBeTrue();
+                return of({ id: 2, name: 'Bob', email: 'bob@example.com', role: 'SCHEDULER_ADMIN' });
+            });
+
+            comp.onRoleChange(comp.users[1], 'SCHEDULER_ADMIN');
+
+            expect(comp.isPendingRoleChange(comp.users[1])).toBeFalse();
+        });
+
+        it('should show an error and leave the row unpending when the update fails', () => {
+            userServiceSpy.updateUserRole.and.returnValue(throwError(() => new Error('forbidden')));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const bob = comp.users.find(u => u.id === 2)!;
+
+            comp.onRoleChange(bob, 'SCHEDULER_ADMIN');
+
+            expect(comp.formError).toBe('עדכון התפקיד נכשל. נסה שוב.');
+            expect(comp.pendingRoleChangeId).toBeNull();
+        });
+
+        it('should not start a second role change while one is already in flight for another row', () => {
+            userServiceSpy.updateUserRole.and.returnValue(of({ id: 1, name: 'Alice', email: 'alice@example.com', role: 'VOLUNTEER' }));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.pendingRoleChangeId = 99;
+
+            comp.onRoleChange(comp.users[0], 'VOLUNTEER');
+
+            expect(userServiceSpy.updateUserRole).not.toHaveBeenCalled();
         });
     });
 });

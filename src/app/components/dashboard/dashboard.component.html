@@ -1,9 +1,19 @@
 <div class="magen-wrapper" dir="rtl">
   <div class="dashboard-layout">
     <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab"
-      [isAdmin]="isAdmin" (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
+      [isAdmin]="isAdmin" [isSuperAdmin]="isSuperAdmin" (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
 
     <main class="main-content">
+      <!--
+        Always visible regardless of which tab/route is active (SUPER_ADMIN/INTAKE_ADMIN
+        only) — not tied to currentTab or router-outlet at all, unlike the legacy tabs
+        below. It's already a self-contained collapsible accordion (closed by default,
+        click the strip to expand — see intake-alerts.component.html/css), so it doesn't
+        need a second wrapper. Previously only ever rendered inside the retired, unrouted
+        CalendarComponent, so newly created intakes never had anywhere to show up.
+      -->
+      <app-intake-alerts *ngIf="isSuperAdmin || isIntakeAdmin"></app-intake-alerts>
+
       <!--
         The outlet stays permanently mounted (never behind *ngIf) so it's already
         registered with the Router before any navigation to /shifts or /admin/users

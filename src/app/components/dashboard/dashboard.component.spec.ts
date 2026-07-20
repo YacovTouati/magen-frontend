@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -9,9 +10,11 @@ describe('DashboardComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser', 'isAdmin', 'logout']);
-        authServiceSpy.getUser.and.returnValue({ email: 'admin@magen.org', role: 'ADMIN' });
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['getUser', 'isAdmin', 'isSuperAdmin', 'isIntakeAdmin', 'logout']);
+        authServiceSpy.getUser.and.returnValue({ email: 'admin@magen.org', role: 'SUPER_ADMIN' });
         authServiceSpy.isAdmin.and.returnValue(true);
+        authServiceSpy.isSuperAdmin.and.returnValue(true);
+        authServiceSpy.isIntakeAdmin.and.returnValue(false);
 
         await TestBed.configureTestingModule({
             imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule],
@@ -29,6 +32,33 @@ describe('DashboardComponent', () => {
         expect(comp).toBeTruthy();
         expect(comp.currentUserEmail).toBe('admin@magen.org');
         expect(comp.isAdmin).toBeTrue();
+        expect(comp.isSuperAdmin).toBeTrue();
+        expect(comp.isIntakeAdmin).toBeFalse();
+    });
+
+    it('should mount the intake alerts panel for a SUPER_ADMIN', () => {
+        const fixture = TestBed.createComponent(DashboardComponent);
+        fixture.detectChanges();
+
+        expect(fixture.debugElement.query(By.css('app-intake-alerts'))).toBeTruthy();
+    });
+
+    it('should mount the intake alerts panel for an INTAKE_ADMIN', () => {
+        authServiceSpy.isSuperAdmin.and.returnValue(false);
+        authServiceSpy.isIntakeAdmin.and.returnValue(true);
+        const fixture = TestBed.createComponent(DashboardComponent);
+        fixture.detectChanges();
+
+        expect(fixture.debugElement.query(By.css('app-intake-alerts'))).toBeTruthy();
+    });
+
+    it('should hide the intake alerts panel for a SCHEDULER_ADMIN or VOLUNTEER (neither SUPER_ADMIN nor INTAKE_ADMIN)', () => {
+        authServiceSpy.isSuperAdmin.and.returnValue(false);
+        authServiceSpy.isIntakeAdmin.and.returnValue(false);
+        const fixture = TestBed.createComponent(DashboardComponent);
+        fixture.detectChanges();
+
+        expect(fixture.debugElement.query(By.css('app-intake-alerts'))).toBeFalsy();
     });
 
     it('should default to the report tab (call report form) for the root, non-admin, non-shifts route', () => {
