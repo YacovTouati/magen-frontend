@@ -29,11 +29,16 @@
               <th>פנייה לגורם נוסף</th>
               <th>תיאור המקרה</th>
               <th>סטטוס</th>
-              <th>בטיפול של</th>
+              <th>תוקף התיק</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let intake of intakes" [class.new-status-row]="isNewStatus(intake)" [class.row-pending]="isPendingAction(intake)">
+            <tr
+              *ngFor="let intake of intakes"
+              [class.new-status-row]="isNewStatus(intake)"
+              [class.expiring-soon-row]="isExpiringSoon(intake)"
+              [class.row-pending]="isPendingAction(intake)"
+            >
               <td class="caller-name">{{ intake.callerName }}</td>
               <td class="phone-cell">{{ intake.phone }}</td>
               <td>{{ intake.callReport?.email || '—' }}</td>
@@ -51,38 +56,33 @@
               <td class="other-center-cell">{{ intake.contactedOtherCenter }}</td>
               <td class="case-description" [title]="intake.caseDescription">{{ intake.caseDescription }}</td>
               <td>
-                <fieldset class="status-fieldset" [disabled]="!canEditStatus(intake) || isPendingAction(intake)">
+                <fieldset class="status-fieldset" [disabled]="isPendingAction(intake)">
                   <select
+                    #statusSelect
                     class="status-select"
                     [ngModel]="intake.status"
-                    (ngModelChange)="onStatusChange(intake, $event)"
-                    [title]="canEditStatus(intake) ? '' : 'רק מי שלקח/ה את התיק לטיפול יכול/ה לשנות סטטוס'"
+                    (ngModelChange)="onStatusChange(intake, $event, statusSelect)"
                   >
                     <option *ngFor="let option of statusOptions" [value]="option">{{ statusLabel(option) }}</option>
                   </select>
                 </fieldset>
               </td>
               <td>
-                <div class="assignee-cell" *ngIf="getRowAction(intake) as action">
-                  <span class="assignee-label" [class.empty]="!intake.assignedTo">
-                    {{ intake.assignedTo ? ('בטיפול של: ' + intake.assignedTo.name) : 'טרם שויך' }}
+                <div class="expiry-cell">
+                  <span class="expiry-pill" [class.urgent]="isExpiringSoon(intake)">
+                    <ng-container *ngIf="isExpiringSoon(intake)">⚠️ </ng-container>{{ formatExpiresAt(intake.expiresAt) }}
                   </span>
 
                   <span *ngIf="isPendingAction(intake)" class="pending-hint">מעדכן...</span>
 
-                  <button *ngIf="!isPendingAction(intake) && action === 'claim'" type="button" class="assign-btn" (click)="claimOwnership(intake)">
-                    קח/י לטיפול
+                  <button
+                    *ngIf="isExpiringSoon(intake) && !isPendingAction(intake)"
+                    type="button"
+                    class="extend-btn"
+                    (click)="extendIntake(intake)"
+                  >
+                    הארך ב-7 ימים
                   </button>
-
-                  <button *ngIf="!isPendingAction(intake) && action === 'mine'" type="button" class="assign-btn mine" (click)="releaseOwnership(intake)">
-                    ✓ בטיפולי (לחץ לביטול)
-                  </button>
-
-                  <button *ngIf="!isPendingAction(intake) && action === 'takeover'" type="button" class="assign-btn takeover" (click)="takeOverCase(intake)">
-                    העבר טיפול אליי
-                  </button>
-
-                  <span *ngIf="!isPendingAction(intake) && action === 'locked'" class="locked-hint">🔒 בטיפול פעיל אצל אחר/ת</span>
                 </div>
               </td>
             </tr>
@@ -96,9 +96,12 @@
   </div>
 
   <app-confirm-modal
-    [isOpen]="isConfirmOpen"
-    [message]="confirmMessage"
-    (confirmed)="onConfirmAccept()"
-    (cancelled)="onConfirmCancel()"
+    [isOpen]="isDeleteConfirmOpen"
+    title="האם למחוק את האינטייק מהאתר?"
+    message="שים לב שלחיצה על כפתור מחיקה תמחק את האינטייק לצמיתות ולא יהיה ניתן לשחזרו"
+    confirmLabel="מחק"
+    cancelLabel="ביטול"
+    (confirmed)="onConfirmDelete()"
+    (cancelled)="onCancelDelete()"
   ></app-confirm-modal>
 </section>

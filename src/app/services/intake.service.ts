@@ -9,13 +9,6 @@ export type IntakeUrgency = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 // values, not display text. Hebrew labels for these live in IntakeAlertsComponent.
 export type IntakeStatus = 'NEW' | 'NO_ANSWER' | 'ACTIVE' | 'CLOSED' | 'LONG_TERM';
 
-export interface IntakeAssignee {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-}
-
 // The Intake model has no email/reportingDuty columns of its own — they live on the linked
 // CallReport (the volunteer's original submission), joined in via Intake.callReport.
 export interface IntakeCallReport {
@@ -33,7 +26,10 @@ export interface IntakeAlert {
     contactedOtherCenter: string;
     caseDescription: string;
     status: IntakeStatus;
-    assignedTo: IntakeAssignee | null;
+    // Data-retention deadline (14 days from creation, +7 per PATCH .../extend), not a
+    // business date — see prisma/schema.prisma's Intake.expiresAt and the hourly
+    // retention cron on the backend.
+    expiresAt: Date;
     callReport: IntakeCallReport | null;
 }
 
@@ -51,28 +47,22 @@ export class IntakeService {
         );
     }
 
-    claimOwnership(id: number): Observable<IntakeAlert> {
-        return this.http.post<any>(`${this.apiUrl}/${id}/claim`, {}).pipe(
-            map(response => this.normalizeIntake(this.extractOne(response)))
-        );
-    }
-
-    undoClaim(id: number): Observable<IntakeAlert> {
-        return this.http.post<any>(`${this.apiUrl}/${id}/undo-claim`, {}).pipe(
-            map(response => this.normalizeIntake(this.extractOne(response)))
-        );
-    }
-
-    takeOverCase(id: number): Observable<IntakeAlert> {
-        return this.http.post<any>(`${this.apiUrl}/${id}/takeover`, {}).pipe(
-            map(response => this.normalizeIntake(this.extractOne(response)))
-        );
-    }
-
     updateStatus(id: number, status: IntakeStatus): Observable<IntakeAlert> {
         return this.http.patch<any>(`${this.apiUrl}/${id}/status`, { status }).pipe(
             map(response => this.normalizeIntake(this.extractOne(response)))
         );
+    }
+
+    // Pushes expiresAt 7 days past its current value (not 7 days from now).
+    extendExpiration(id: number): Observable<IntakeAlert> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}/extend`, {}).pipe(
+            map(response => this.normalizeIntake(this.extractOne(response)))
+        );
+    }
+
+    // Immediate hard delete — separate from the automatic 14-day retention sweep.
+    deleteIntake(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/${id}`);
     }
 
     private extractList(response: any): IntakeAlert[] {
@@ -95,21 +85,8 @@ export class IntakeService {
             contactedOtherCenter: raw?.contactedOtherCenter ?? raw?.contacted_other_center ?? '',
             caseDescription: raw?.caseDescription ?? raw?.case_description ?? '',
             status: raw?.status ?? 'NEW',
-            assignedTo: this.normalizeAssignee(raw?.assignedTo ?? raw?.assigned_to),
+            expiresAt: raw?.expiresAt ? new Date(raw.expiresAt) : new Date(),
             callReport: this.normalizeCallReport(raw?.callReport ?? raw?.call_report)
-        };
-    }
-
-    private normalizeAssignee(raw: any): IntakeAssignee | null {
-        if (!raw) {
-            return null;
-        }
-
-        return {
-            id: raw.id,
-            name: raw.name ?? raw.email ?? 'משתמש',
-            email: raw.email ?? '',
-            role: raw.role ?? 'VOLUNTEER'
         };
     }
 

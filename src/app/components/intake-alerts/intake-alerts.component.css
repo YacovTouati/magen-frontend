@@ -133,6 +133,12 @@
     background: #fff7f7;
 }
 
+/* Takes priority over new-status-row when both apply — an intake about to be
+   auto-deleted is more urgent than one that's simply untouched. */
+.intake-table tr.expiring-soon-row {
+    background: #fef2f2;
+}
+
 .intake-table tr.row-pending {
     opacity: 0.6;
 }
@@ -246,63 +252,40 @@
     cursor: not-allowed;
 }
 
-.assignee-cell {
+.expiry-cell {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
 }
 
-.assignee-label {
+.expiry-pill {
     font-size: 12px;
     font-weight: 600;
-    color: #0f766e;
+    color: #475569;
     white-space: nowrap;
 }
 
-.assignee-label.empty {
-    color: #94a3b8;
-    font-weight: 500;
+.expiry-pill.urgent {
+    color: #b91c1c;
+    font-weight: 700;
 }
 
-.assign-btn {
+.extend-btn {
     padding: 5px 12px;
     border-radius: 999px;
-    border: 1px solid #0d9488;
+    border: 1px solid #b45309;
     background: #fff;
-    color: #0d9488;
+    color: #b45309;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease;
 }
 
-.assign-btn:hover {
-    background: #ecfdf5;
-}
-
-.assign-btn.mine {
-    background: #0d9488;
-    color: #fff;
-}
-
-.assign-btn.takeover {
-    border-color: #b45309;
-    color: #b45309;
-}
-
-.assign-btn.takeover:hover {
+.extend-btn:hover {
     background: #fffbeb;
-}
-
-.locked-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: #94a3b8;
-    white-space: nowrap;
 }
 
 .pending-hint {
