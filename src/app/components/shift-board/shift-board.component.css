@@ -87,6 +87,7 @@
 .publish-btn {
     margin-top: 10px;
     padding: 10px 20px;
+    min-height: 44px;
     border-radius: 8px;
     border: none;
     background: #1e3a8a;
@@ -223,6 +224,11 @@
         align-items: flex-start;
     }
 
+    .month-select {
+        min-height: 44px;
+        font-size: 15px;
+    }
+
     .day-cell {
         min-height: 76px;
         padding: 6px;
@@ -230,5 +236,30 @@
 
     .shift-chip {
         font-size: 9px;
+    }
+}
+
+/* Below this width the 7-column grid can no longer shrink without becoming
+   unreadable — switch to a horizontally-scrollable fixed-width grid instead
+   of continuing to crush cell content. */
+@media (max-width: 480px) {
+    .board-grid-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .weekday-row,
+    .board-grid {
+        min-width: 560px;
+    }
+
+    .day-cell {
+        min-height: 88px;
+        padding: 8px;
+    }
+
+    .shift-chip {
+        font-size: 10px;
+        padding: 4px 8px;
     }
 }

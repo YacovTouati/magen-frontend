@@ -7,19 +7,19 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-  <aside class="sidebar">
+  <div class="mobile-backdrop" *ngIf="mobileOpen" (click)="requestClose()"></div>
+  <aside class="sidebar" [class.mobile-open]="mobileOpen">
     <div class="logo-area">
       <img src="assets/magen-logo.png" alt="מגן לוגו" class="magen-logo">
       <span class="role-badge" [ngClass]="roleBadgeClass">{{ roleBadgeLabel }}</span>
     </div>
 
     <nav class="nav-tabs">
-      <button class="nav-btn" [class.active]="currentTab === 'calendar'" routerLink="/shifts">📅 לוח שנה חודשי</button>
+      <button class="nav-btn" [class.active]="currentTab === 'calendar'" routerLink="/shifts" (click)="requestClose()">📅 לוח שנה חודשי</button>
       <button class="nav-btn" [class.active]="currentTab === 'report'" (click)="switch('report')">📝 דיווח שיחה חדשה</button>
       <button *ngIf="isAdmin" class="nav-btn" [class.active]="currentTab === 'charts'" (click)="switch('charts')">📊 דוחות ואנליטיקה</button>
-      <button *ngIf="!isIntakeAdmin && !isSchedulerAdmin" class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
+      <button *ngIf="isSuperAdmin" class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
       <button *ngIf="isSuperAdmin" class="nav-btn" [class.active]="currentTab === 'users'" (click)="switch('users')">👤 ניהול משתמשים</button>
-      <button class="nav-btn" [class.active]="currentTab === 'future'" (click)="switch('future')">⚙️ הגדרות עתידיות...</button>
     </nav>
 
     <div class="quote-card">
@@ -44,8 +44,10 @@ export class SidebarComponent {
   @Input() isSuperAdmin = false;
   @Input() isIntakeAdmin = false;
   @Input() isSchedulerAdmin = false;
+  @Input() mobileOpen = false;
   @Output() tabChange = new EventEmitter<string>();
   @Output() logoutEvent = new EventEmitter<void>();
+  @Output() closeMobile = new EventEmitter<void>();
 
   get roleBadgeLabel(): string {
     if (this.isSuperAdmin) {
@@ -75,6 +77,11 @@ export class SidebarComponent {
 
   switch(tab: string) {
     this.tabChange.emit(tab);
+    this.requestClose();
+  }
+
+  requestClose() {
+    this.closeMobile.emit();
   }
 
   logout() {

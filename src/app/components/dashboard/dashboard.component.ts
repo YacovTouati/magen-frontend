@@ -7,7 +7,6 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { SamplesComponent } from '../samples/samples.component';
 import { ReportComponent } from '../report/report.component';
 import { ChartsComponent } from '../charts/charts.component';
-import { FutureComponent } from '../future/future.component';
 import { SuccessModalComponent } from '../success-modal/success-modal.component';
 import { IntakeAlertsComponent } from '../intake-alerts/intake-alerts.component';
 import { AuthService } from '../../services/auth.service';
@@ -16,7 +15,7 @@ import { ReportService, CallReportPayload } from '../../services/report.service'
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, SamplesComponent, ReportComponent, ChartsComponent, FutureComponent, SuccessModalComponent, IntakeAlertsComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, SamplesComponent, ReportComponent, ChartsComponent, SuccessModalComponent, IntakeAlertsComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -32,8 +31,9 @@ export class DashboardComponent implements OnInit {
   isIntakeAdmin = false;
   isSchedulerAdmin = false;
   currentTab = 'report';
+  isSidebarOpen = false;
 
-  private readonly legacyTabs = ['report', 'charts', 'samples', 'future'];
+  private readonly legacyTabs = ['report', 'charts', 'samples'];
 
   currentRoute = '/';
 
@@ -142,6 +142,14 @@ export class DashboardComponent implements OnInit {
     } else {
       this.router.navigate(['/']);
     }
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.isSidebarOpen = false;
   }
 
   onReportSubmit(reportData: CallReportPayload) {

@@ -43,6 +43,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
 }
 
 .shift-option {
@@ -105,6 +106,7 @@
 .btn-release {
     flex-shrink: 0;
     padding: 8px 12px;
+    min-height: 44px;
     border-radius: 8px;
     border: 1px solid #fca5a5;
     background: #fff;
@@ -170,6 +172,7 @@
 
 .btn-cancel {
     padding: 9px 20px;
+    min-height: 44px;
     border-radius: 8px;
     border: 1px solid #cbd5e1;
     background: #fff;
@@ -185,6 +188,7 @@
 
 .btn-save {
     padding: 9px 20px;
+    min-height: 44px;
     border-radius: 8px;
     border: none;
     background: #1e3a8a;
@@ -201,4 +205,37 @@
 .btn-save:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .shift-row {
+        flex-wrap: wrap;
+    }
+
+    .shift-row .shift-option {
+        flex-basis: 100%;
+    }
+
+    .btn-release {
+        flex-basis: 100%;
+    }
+
+    .modal-close {
+        width: 44px;
+        height: 44px;
+    }
+
+    .admin-assign-row select {
+        min-height: 44px;
+    }
+
+    .modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .btn-cancel,
+    .btn-save {
+        flex: 1;
+        min-width: 0;
+    }
 }

@@ -1,8 +1,11 @@
 <div class="magen-wrapper" dir="rtl">
   <div class="dashboard-layout">
+    <button type="button" class="mobile-menu-btn" (click)="toggleSidebar()" aria-label="פתח תפריט ניווט">☰</button>
+
     <app-sidebar [currentUserEmail]="currentUserEmail" [currentQuote]="currentQuote" [currentTab]="currentTab"
       [isAdmin]="isAdmin" [isSuperAdmin]="isSuperAdmin" [isIntakeAdmin]="isIntakeAdmin" [isSchedulerAdmin]="isSchedulerAdmin"
-      (tabChange)="switchTab($event)" (logoutEvent)="logout()"></app-sidebar>
+      [mobileOpen]="isSidebarOpen"
+      (tabChange)="switchTab($event)" (logoutEvent)="logout()" (closeMobile)="closeSidebar()"></app-sidebar>
 
     <main class="main-content">
       <!--
@@ -39,8 +42,6 @@
           (reportSubmit)="onReportSubmit($event)"></app-report>
 
         <app-charts *ngIf="currentTab === 'charts'"></app-charts>
-
-        <app-future *ngIf="currentTab === 'future'"></app-future>
       </ng-container>
     </main>
   </div>

@@ -23,6 +23,7 @@
 
 .btn-secondary {
     padding: 9px 18px;
+    min-height: 44px;
     border-radius: 8px;
     border: 1px solid #cbd5e1;
     background: #fff;
@@ -39,6 +40,7 @@
 
 .btn-primary-action {
     padding: 9px 18px;
+    min-height: 44px;
     border-radius: 8px;
     border: none;
     background: #1e3a8a;
@@ -51,4 +53,16 @@
 
 .btn-primary-action:hover {
     background: #1e2f6e;
+}
+
+@media (max-width: 480px) {
+    .confirm-actions {
+        flex-wrap: wrap;
+    }
+
+    .btn-secondary,
+    .btn-primary-action {
+        flex: 1;
+        min-width: 0;
+    }
 }
