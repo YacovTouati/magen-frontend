@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 
 @Component({
   selector: 'app-report',
@@ -137,7 +137,34 @@ export class ReportComponent {
 
   @Output() reportSubmit = new EventEmitter<any>();
 
+  // Every field here is an @Input bound one-way from DashboardComponent, but [(ngModel)]
+  // mutates this component's own copy directly — so once the user types, this instance's
+  // fields diverge from the parent's and never sync back. Resetting the parent's mirrored
+  // fields alone is a no-op (see DashboardComponent.onReportSubmit): the parent's value never
+  // actually changes, so Angular's binding-diff skips re-pushing it down. The only reliable
+  // reset is through the NgForm itself, which is why the parent calls resetForm() on success
+  // rather than just clearing its own copies (still done too, for when this component is
+  // recreated fresh after a tab switch).
+  @ViewChild('reportForm') private ngForm!: NgForm;
+
   private readonly phonePattern = /^[0-9]{7,10}$/;
+
+  resetForm(): void {
+    this.ngForm.resetForm({
+      callDuration: 30,
+      callerType: 'victim',
+      callPurpose: 'counseling',
+      summaryNotes: '',
+      callerName: '',
+      phone: '',
+      email: '',
+      region: '',
+      receivedSupportAtOtherCenter: false,
+      isFamilyMemberOrAcquaintance: false,
+      magenContactHistory: 'first_time',
+      reportingDuty: false
+    });
+  }
 
   onSubmit() {
     if (!this.phonePattern.test(this.phone)) {

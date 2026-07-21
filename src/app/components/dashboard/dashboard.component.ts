@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -24,6 +24,10 @@ export class DashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private reportService = inject(ReportService);
   private destroyRef = inject(DestroyRef);
+
+  // Only present while currentTab === 'report' (the template mounts app-report behind
+  // *ngIf), so this is undefined the rest of the time — always guard with ?. before use.
+  @ViewChild(ReportComponent) private reportComponent?: ReportComponent;
 
   currentUserEmail = '';
   isAdmin = false;
@@ -158,7 +162,18 @@ export class DashboardComponent implements OnInit {
         this.successModalMessage = `הדיווח נשמר בהצלחה בשרת! מספר מזהה ייחודי: ${result.id ?? 'N/A'}`;
         this.isSuccessModalOpen = true;
 
-        // איפוס שדות מינימלי
+        // Resets the live form via its NgForm — ReportComponent's @Input fields diverge
+        // from these once [(ngModel)] mutates them locally, so clearing our own copies
+        // below has no effect on what's currently rendered (see the comment on
+        // ReportComponent.resetForm()).
+        this.reportComponent?.resetForm();
+
+        // Still reset our own mirrored copies too: if the user switches tabs away and
+        // back, app-report (behind *ngIf) is destroyed and recreated, and the fresh
+        // instance's @Input defaults come from these fields.
+        this.callDuration = 30;
+        this.callerType = 'victim';
+        this.callPurpose = 'counseling';
         this.summaryNotes = '';
         this.callerName = '';
         this.phone = '';
