@@ -1,4 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, NgZone, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
@@ -32,6 +34,8 @@ const URGENCY_LABELS: Record<IntakeUrgency, string> = {
 
 const GENERIC_ACTION_ERROR = 'הפעולה נכשלה. ייתכן שמצב התיק השתנה בינתיים — רענן/י ונסה/י שוב.';
 
+const POLL_INTERVAL_MS = 15000;
+
 // Hoisted to module scope: constructing Intl.DateTimeFormat parses locale data and is
 // comparatively expensive — formatDate() runs twice per row on every change-detection
 // cycle (createdAt + expiresAt columns), so it must reuse one instance, not build a new
@@ -52,6 +56,8 @@ const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('he-IL', {
 })
 export class IntakeAlertsComponent implements OnInit {
     private intakeService = inject(IntakeService);
+    private destroyRef = inject(DestroyRef);
+    private ngZone = inject(NgZone);
 
     readonly statusOptions = STATUS_OPTIONS;
 
@@ -68,11 +74,30 @@ export class IntakeAlertsComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadIntakes();
+
+        // Keep the table and pending-count badge fresh without a manual refresh. Silent —
+        // no loading spinner, no error banner — and skips a tick entirely whenever an
+        // action is already in flight or a delete confirmation is open, so a background
+        // refetch never clobbers row state the user is mid-way through changing. Scheduled
+        // outside NgZone so the recurring timer never counts as a pending zone macrotask
+        // (which would otherwise stall e.g. ApplicationRef.isStable / fixture.whenStable());
+        // re-enters the zone only to apply results, so change detection still runs normally.
+        this.ngZone.runOutsideAngular(() => {
+            timer(POLL_INTERVAL_MS, POLL_INTERVAL_MS).pipe(
+                takeUntilDestroyed(this.destroyRef)
+            ).subscribe(() => {
+                if (this.pendingActionId === null && !this.isDeleteConfirmOpen) {
+                    this.ngZone.run(() => this.loadIntakes(true));
+                }
+            });
+        });
     }
 
-    loadIntakes(): void {
-        this.isLoadingIntakes = true;
-        this.loadError = '';
+    loadIntakes(silent = false): void {
+        if (!silent) {
+            this.isLoadingIntakes = true;
+            this.loadError = '';
+        }
 
         this.intakeService.getIntakes().subscribe({
             next: (intakes) => {
@@ -80,8 +105,10 @@ export class IntakeAlertsComponent implements OnInit {
                 this.isLoadingIntakes = false;
             },
             error: () => {
-                this.loadError = 'לא ניתן לטעון את דיווחי האינטייק כרגע.';
                 this.isLoadingIntakes = false;
+                if (!silent) {
+                    this.loadError = 'לא ניתן לטעון את דיווחי האינטייק כרגע.';
+                }
             }
         });
     }

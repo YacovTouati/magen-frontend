@@ -1,5 +1,6 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, NgZone, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -34,6 +35,7 @@ interface MonthOption extends MonthSelection {
 const WEEKDAY_LABELS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const MONTHS_BEFORE = 12;
 const MONTHS_AFTER = 12;
+const POLL_INTERVAL_MS = 15000;
 
 @Component({
     selector: 'app-shift-board',
@@ -47,6 +49,7 @@ export class ShiftBoardComponent implements OnInit {
     private scheduleService = inject(ScheduleService);
     private userManagementService = inject(UserManagementService);
     private destroyRef = inject(DestroyRef);
+    private ngZone = inject(NgZone);
 
     // Routed via <router-outlet> (see app.routes.ts), not embedded with template bindings
     // the way CalendarComponent is — so month state is owned internally here, same as
@@ -106,6 +109,23 @@ export class ShiftBoardComponent implements OnInit {
             if (this.canManageSchedule) {
                 this.loadVolunteers();
             }
+        });
+
+        // Keep the board fresh without a manual refresh. Silent — no loading spinner, no
+        // error banner — and skips a tick entirely while the user has a modal open or a
+        // save in flight, so a background refetch never yanks the schedule out from under
+        // an in-progress selection/assignment/release. Scheduled outside NgZone so the
+        // recurring timer never counts as a pending zone macrotask (which would otherwise
+        // stall e.g. ApplicationRef.isStable / fixture.whenStable()); re-enters the zone
+        // only to apply results, so change detection still runs normally.
+        this.ngZone.runOutsideAngular(() => {
+            timer(POLL_INTERVAL_MS, POLL_INTERVAL_MS).pipe(
+                takeUntilDestroyed(this.destroyRef)
+            ).subscribe(() => {
+                if (!this.isShiftModalOpen && !this.isConfirmOpen && !this.isSaving && !this.isCreatingSchedule && !this.isPublishing) {
+                    this.ngZone.run(() => this.loadSchedule(true));
+                }
+            });
         });
     }
 
@@ -236,11 +256,13 @@ export class ShiftBoardComponent implements OnInit {
         return this.schedule?.status === 'OPEN' && this.hasOpenSlot(day);
     }
 
-    private loadSchedule(): void {
-        this.isLoading = true;
-        this.loadError = '';
-        this.schedule = null;
-        this.setDays([]);
+    private loadSchedule(silent = false): void {
+        if (!silent) {
+            this.isLoading = true;
+            this.loadError = '';
+            this.schedule = null;
+            this.setDays([]);
+        }
 
         this.scheduleService.findForMonth(this.year, this.month).subscribe({
             next: (schedule) => {
@@ -250,7 +272,9 @@ export class ShiftBoardComponent implements OnInit {
             },
             error: () => {
                 this.isLoading = false;
-                this.loadError = 'לא ניתן לטעון את לוח המשמרות מהשרת כרגע.';
+                if (!silent) {
+                    this.loadError = 'לא ניתן לטעון את לוח המשמרות מהשרת כרגע.';
+                }
             }
         });
     }
