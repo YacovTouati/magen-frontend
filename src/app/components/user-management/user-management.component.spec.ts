@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { UserManagementComponent } from './user-management.component';
-import { UserManagementService, User } from '../../services/user-management.service';
+import { UserManagementService, User, PendingInvite } from '../../services/user-management.service';
 
 describe('UserManagementComponent', () => {
     let userServiceSpy: jasmine.SpyObj<UserManagementService>;
@@ -12,8 +12,9 @@ describe('UserManagementComponent', () => {
     ];
 
     beforeEach(async () => {
-        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'addUser', 'deleteUser', 'updateUserRole']);
+        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole']);
         userServiceSpy.getUsers.and.returnValue(of(existingUsers));
+        userServiceSpy.listInvitations.and.returnValue(of([]));
 
         await TestBed.configureTestingModule({
             imports: [UserManagementComponent],
@@ -112,53 +113,100 @@ describe('UserManagementComponent', () => {
         });
     });
 
-    describe('addUser', () => {
-        it('should reject an empty form and never call the service', () => {
+    describe('inviteUser', () => {
+        it('should reject an empty email and never call the service', () => {
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            comp.newUser = { name: '', email: '', password: '', role: 'VOLUNTEER' };
+            comp.inviteEmail = '   ';
 
-            comp.addUser();
+            comp.inviteUser();
 
-            expect(comp.formError).toBe('יש למלא שם, אימייל וסיסמה.');
-            expect(userServiceSpy.addUser).not.toHaveBeenCalled();
+            expect(userServiceSpy.inviteUser).not.toHaveBeenCalled();
         });
 
-        it('should submit, reset the form and reload the list on success', () => {
-            userServiceSpy.addUser.and.returnValue(of({ id: 3, name: 'New', email: 'new@example.com', role: 'VOLUNTEER' }));
+        it('should submit, reset the form, show the returned link, and reload invitations on success', () => {
+            const invite = { email: 'new@example.com', role: 'VOLUNTEER' as const, expiresAt: '2026-08-01T00:00:00.000Z', registrationToken: 'raw-token' };
+            userServiceSpy.inviteUser.and.returnValue(of(invite));
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            comp.newUser = { name: 'New', email: 'new@example.com', password: 'secret', role: 'VOLUNTEER' };
-            userServiceSpy.getUsers.calls.reset();
+            comp.inviteEmail = 'new@example.com';
+            comp.inviteRole = 'VOLUNTEER';
+            userServiceSpy.listInvitations.calls.reset();
 
-            comp.addUser();
+            comp.inviteUser();
 
-            expect(comp.formSuccess).toBe('המשתמש נוסף בהצלחה.');
-            expect(comp.newUser).toEqual({ name: '', email: '', password: '', role: 'VOLUNTEER' });
-            expect(userServiceSpy.getUsers).toHaveBeenCalledTimes(1);
+            expect(userServiceSpy.inviteUser).toHaveBeenCalledOnceWith('new@example.com', 'VOLUNTEER');
+            expect(comp.formSuccess).toContain('new@example.com');
+            expect(comp.inviteEmail).toBe('');
+            expect(comp.lastInvite).toEqual(invite);
+            expect(userServiceSpy.listInvitations).toHaveBeenCalledTimes(1);
         });
 
         it('should show the backend\'s exact validation message when the server returns a structured errors array', () => {
             const serverError = { error: { success: false, errors: [{ field: 'email', message: 'כתובת המייל שהוזנה אינה תקינה' }] } };
-            userServiceSpy.addUser.and.returnValue(throwError(() => serverError));
+            userServiceSpy.inviteUser.and.returnValue(throwError(() => serverError));
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            comp.newUser = { name: 'New', email: 'not-an-email', password: 'secret', role: 'VOLUNTEER' };
+            comp.inviteEmail = 'not-an-email';
 
-            comp.addUser();
+            comp.inviteUser();
 
             expect(comp.formError).toBe('כתובת המייל שהוזנה אינה תקינה');
         });
 
-        it('should fall back to a generic message when the server error has no errors array', () => {
-            userServiceSpy.addUser.and.returnValue(throwError(() => new Error('network down')));
+        it('should surface the backend\'s message for an already-registered email (409)', () => {
+            const serverError = { error: { success: false, message: 'כתובת המייל כבר רשומה במערכת כמשתמש פעיל' } };
+            userServiceSpy.inviteUser.and.returnValue(throwError(() => serverError));
             const fixture = createComponent();
             const comp = fixture.componentInstance;
-            comp.newUser = { name: 'New', email: 'new@example.com', password: 'secret', role: 'VOLUNTEER' };
+            comp.inviteEmail = 'alice@example.com';
 
-            comp.addUser();
+            comp.inviteUser();
 
-            expect(comp.formError).toBe('הוספת המשתמש נכשלה. נסה שוב.');
+            expect(comp.formError).toBe('כתובת המייל כבר רשומה במערכת כמשתמש פעיל');
+        });
+    });
+
+    describe('registrationLink', () => {
+        it('should build a /register URL with the token and email as query params', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            const link = comp.registrationLink({ email: 'new@example.com', registrationToken: 'abc123' });
+
+            expect(link).toContain('/register?');
+            expect(link).toContain('token=abc123');
+            expect(link).toContain('email=new%40example.com');
+        });
+    });
+
+    describe('reinvite', () => {
+        const pending: PendingInvite = {
+            id: 1, email: 'pending@example.com', role: 'VOLUNTEER', expiresAt: '2026-08-01T00:00:00.000Z',
+            createdAt: '2026-07-30T00:00:00.000Z', invitedBy: { id: 1, name: 'Admin', email: 'admin@example.com' }
+        };
+
+        it('should re-call inviteUser with the same email/role and show the fresh link', () => {
+            const refreshed = { email: 'pending@example.com', role: 'VOLUNTEER' as const, expiresAt: '2026-08-03T00:00:00.000Z', registrationToken: 'new-token' };
+            userServiceSpy.inviteUser.and.returnValue(of(refreshed));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.reinvite(pending);
+
+            expect(userServiceSpy.inviteUser).toHaveBeenCalledOnceWith('pending@example.com', 'VOLUNTEER');
+            expect(comp.lastInvite).toEqual(refreshed);
+            expect(comp.pendingReinviteEmail).toBeNull();
+        });
+
+        it('should not start a second re-invite while one is already in flight', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.pendingReinviteEmail = 'pending@example.com';
+
+            comp.reinvite(pending);
+
+            expect(userServiceSpy.inviteUser).not.toHaveBeenCalled();
         });
     });
 

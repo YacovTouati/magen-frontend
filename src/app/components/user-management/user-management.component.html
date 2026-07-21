@@ -9,6 +9,21 @@
     <div class="alert success" *ngIf="formSuccess">{{ formSuccess }}</div>
     <div class="alert error" *ngIf="formError">{{ formError }}</div>
 
+    <div class="invite-link-box" *ngIf="lastInvite">
+        <div class="invite-link-header">
+            <span>קישור הרשמה עבור {{ lastInvite.email }} (בתוקף עד {{ formatDate(lastInvite.expiresAt) }})</span>
+            <button type="button" class="dismiss-btn" (click)="lastInvite = null" aria-label="סגור">✕</button>
+        </div>
+        <div class="invite-link-row">
+            <input type="text" [value]="registrationLink(lastInvite)" readonly class="invite-link-input"
+                onclick="this.select()" />
+            <button type="button" class="copy-btn" (click)="copyInviteLink(lastInvite)">
+                {{ linkCopied ? '✓ הועתק' : '📋 העתק קישור' }}
+            </button>
+        </div>
+        <p class="invite-link-hint">יש להעתיק ולשלוח קישור זה למוזמן/ת ידנית — לא נשלח מייל אוטומטי כרגע.</p>
+    </div>
+
     <div class="dashboard-grid">
         <div class="panel table-panel">
             <div class="panel-header">
@@ -56,34 +71,64 @@
 
         <div class="panel form-panel">
             <div class="panel-header">
-                <h3>הוספת משתמש חדש</h3>
+                <h3>הזמנת משתמש חדש</h3>
             </div>
 
-            <form (ngSubmit)="addUser($event)" class="user-form" novalidate>
-                <label>
-                    שם מלא
-                    <input type="text" [(ngModel)]="newUser.name" name="name" required />
-                </label>
-
+            <form (ngSubmit)="inviteUser($event)" class="user-form" novalidate>
                 <label>
                     אימייל
-                    <input type="email" [(ngModel)]="newUser.email" name="email" required />
-                </label>
-
-                <label>
-                    סיסמה
-                    <input type="password" [(ngModel)]="newUser.password" name="password" required />
+                    <input type="email" [(ngModel)]="inviteEmail" name="inviteEmail" required autocomplete="off" />
                 </label>
 
                 <label>
                     תפקיד
-                    <select [(ngModel)]="newUser.role" name="role">
+                    <select [(ngModel)]="inviteRole" name="inviteRole">
                         <option *ngFor="let opt of roleOptions" [value]="opt.value">{{ opt.label }}</option>
                     </select>
                 </label>
 
-                <button type="submit" class="submit-btn">הוסף משתמש</button>
+                <button type="submit" class="submit-btn" [disabled]="!inviteEmail.trim() || isInviting">
+                    {{ isInviting ? 'שולח הזמנה...' : 'שלח הזמנה' }}
+                </button>
             </form>
+        </div>
+    </div>
+
+    <div class="panel invites-panel">
+        <div class="panel-header">
+            <h3>הזמנות ממתינות</h3>
+            <span *ngIf="isLoadingInvites">טוען...</span>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>אימייל</th>
+                        <th>תפקיד</th>
+                        <th>הוזמן/ה ע"י</th>
+                        <th>בתוקף עד</th>
+                        <th>פעולה</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let invite of pendingInvites">
+                        <td>{{ invite.email }}</td>
+                        <td>{{ getRoleLabel(invite.role) }}</td>
+                        <td>{{ invite.invitedBy?.name || invite.invitedBy?.email || '—' }}</td>
+                        <td>{{ formatDate(invite.expiresAt) }}</td>
+                        <td>
+                            <button class="reinvite-btn" type="button" (click)="reinvite(invite)"
+                                [disabled]="isPendingReinvite(invite)">
+                                {{ isPendingReinvite(invite) ? 'יוצר קישור...' : 'צור קישור חדש' }}
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!isLoadingInvites && pendingInvites.length === 0">
+                        <td colspan="5" class="empty-state">אין הזמנות ממתינות.</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

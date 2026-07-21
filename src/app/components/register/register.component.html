@@ -1,0 +1,69 @@
+<div class="auth-container" dir="rtl">
+  <div class="auth-card">
+    <h1 class="main-title">הרשמה למערכת מגן</h1>
+    <p class="subtitle">השלימו את פרטיכם כדי להצטרף למערכת</p>
+
+    <ng-container *ngIf="linkInvalid; else formTpl">
+      <div class="alert error">
+        קישור ההרשמה אינו תקין או חסר. יש לבקש הזמנה חדשה מהמנהל/ת המערכת.
+      </div>
+      <a routerLink="/login" class="back-link">חזרה למסך הכניסה</a>
+    </ng-container>
+
+    <ng-template #formTpl>
+      <form (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-group">
+          <label for="reg-email">כתובת אימייל</label>
+          <input id="reg-email" type="email" [value]="email" class="form-input" disabled readonly />
+        </div>
+
+        <div class="form-group">
+          <label for="reg-name">שם מלא</label>
+          <input id="reg-name" type="text" [(ngModel)]="name" name="name" required class="form-input"
+            placeholder="ישראל ישראלי" autocomplete="name" />
+        </div>
+
+        <div class="form-group">
+          <label for="reg-phone">טלפון</label>
+          <input id="reg-phone" type="tel" [(ngModel)]="phone" name="phone" required maxlength="10"
+            class="form-input" placeholder="0500000000" autocomplete="tel" (keypress)="onlyNumbers($event)" />
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password">סיסמה</label>
+          <div class="password-field">
+            <input id="reg-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password"
+              name="password" required class="form-input" placeholder="הכנס/י סיסמה..." autocomplete="new-password" />
+            <button type="button" class="toggle-visibility" (click)="showPassword = !showPassword"
+              [attr.aria-label]="showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <app-password-requirements [password]="password"></app-password-requirements>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-confirm">אימות סיסמה</label>
+          <div class="password-field">
+            <input id="reg-confirm" [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword"
+              name="confirmPassword" required class="form-input" placeholder="הכנס/י שוב את הסיסמה..."
+              autocomplete="new-password" />
+            <button type="button" class="toggle-visibility" (click)="showConfirmPassword = !showConfirmPassword"
+              [attr.aria-label]="showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'">
+              {{ showConfirmPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <p class="field-error" *ngIf="confirmPassword && !passwordsMatch">הסיסמאות אינן תואמות</p>
+        </div>
+
+        <div class="alert error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="!canSubmit">
+          {{ isSubmitting ? 'נרשמ/ת...' : 'השלמת הרשמה' }}
+        </button>
+
+        <a routerLink="/login" class="back-link">חזרה למסך הכניסה</a>
+      </form>
+    </ng-template>
+  </div>
+</div>

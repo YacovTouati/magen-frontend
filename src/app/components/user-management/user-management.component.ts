@@ -2,9 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { UserManagementService, User } from '../../services/user-management.service';
+import { UserManagementService, User, InviteResult, PendingInvite } from '../../services/user-management.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ROLE_OPTIONS, UserRole, getRoleLabel } from '../../shared/role-labels';
+import { extractServerErrorMessage } from '../../shared/http-error';
+
+// Hoisted to module scope, same reasoning as IntakeAlertsComponent's DATE_TIME_FORMATTER —
+// constructing Intl.DateTimeFormat is comparatively expensive and shouldn't happen per row
+// per change-detection cycle.
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('he-IL', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+});
 
 @Component({
     selector: 'app-user-management',
@@ -21,12 +29,18 @@ export class UserManagementComponent implements OnInit {
     formError = '';
     formSuccess = '';
 
-    newUser: Omit<User, 'id'> = {
-        name: '',
-        email: '',
-        password: '',
-        role: 'VOLUNTEER'
-    };
+    inviteEmail = '';
+    inviteRole: UserRole = 'VOLUNTEER';
+    isInviting = false;
+
+    pendingInvites: PendingInvite[] = [];
+    isLoadingInvites = false;
+
+    // Populated only right after a successful invite/re-invite — the raw registration
+    // token can never be retrieved again afterward (the backend only ever stores its
+    // hash), so this is the admin's one chance to copy the link before it's gone.
+    lastInvite: InviteResult | null = null;
+    linkCopied = false;
 
     private pendingDeleteId: number | string | null = null;
     pendingDeleteName = '';
@@ -34,14 +48,27 @@ export class UserManagementComponent implements OnInit {
     /** id of the user with an in-flight role-change request, if any */
     pendingRoleChangeId: number | string | null = null;
 
+    /** email of the invite with an in-flight re-invite request, if any */
+    pendingReinviteEmail: string | null = null;
+
     constructor(private userService: UserManagementService) { }
 
     ngOnInit(): void {
         this.loadUsers();
+        this.loadInvitations();
     }
 
     getRoleLabel(role: string | undefined): string {
         return getRoleLabel(role);
+    }
+
+    formatDate(date: string | Date): string {
+        return DATE_TIME_FORMATTER.format(new Date(date));
+    }
+
+    registrationLink(invite: { email: string; registrationToken: string }): string {
+        const params = new URLSearchParams({ token: invite.registrationToken, email: invite.email });
+        return `${window.location.origin}/register?${params.toString()}`;
     }
 
     isPendingRoleChange(user: User): boolean {
@@ -68,7 +95,7 @@ export class UserManagementComponent implements OnInit {
             },
             error: (err: HttpErrorResponse) => {
                 this.pendingRoleChangeId = null;
-                this.formError = this.extractServerErrorMessage(err, 'עדכון התפקיד נכשל. נסה שוב.');
+                this.formError = extractServerErrorMessage(err, 'עדכון התפקיד נכשל. נסה שוב.');
             }
         });
     }
@@ -88,39 +115,93 @@ export class UserManagementComponent implements OnInit {
         });
     }
 
-    addUser(event?: Event): void {
-        event?.preventDefault();
-        event?.stopPropagation();
-
-        if (!this.newUser.name || !this.newUser.email || !this.newUser.password) {
-            this.formError = 'יש למלא שם, אימייל וסיסמה.';
-            this.formSuccess = '';
-            return;
-        }
-
-        this.formError = '';
-        this.formSuccess = '';
-
-        this.userService.addUser(this.newUser).subscribe({
-            next: () => {
-                this.formSuccess = 'המשתמש נוסף בהצלחה.';
-                this.newUser = { name: '', email: '', password: '', role: 'VOLUNTEER' };
-                this.loadUsers();
+    loadInvitations(): void {
+        this.isLoadingInvites = true;
+        this.userService.listInvitations().subscribe({
+            next: (invites) => {
+                this.pendingInvites = invites;
+                this.isLoadingInvites = false;
             },
-            error: (err: HttpErrorResponse) => {
-                this.formError = this.extractServerErrorMessage(err, 'הוספת המשתמש נכשלה. נסה שוב.');
+            error: () => {
+                this.isLoadingInvites = false;
             }
         });
     }
 
-    // Field-validation failures (400) come back as { success: false, errors: [{ field, message }] } —
-    // show the backend's exact message instead of a generic one.
-    private extractServerErrorMessage(error: HttpErrorResponse, fallback: string): string {
-        const errors = error?.error?.errors;
-        if (Array.isArray(errors) && errors.length > 0 && typeof errors[0]?.message === 'string') {
-            return errors[0].message;
+    inviteUser(event?: Event): void {
+        event?.preventDefault();
+        event?.stopPropagation();
+
+        if (!this.inviteEmail.trim() || this.isInviting) {
+            return;
         }
-        return fallback;
+
+        this.isInviting = true;
+        this.formError = '';
+        this.formSuccess = '';
+        this.lastInvite = null;
+        this.linkCopied = false;
+
+        this.userService.inviteUser(this.inviteEmail.trim(), this.inviteRole).subscribe({
+            next: (invite) => {
+                this.isInviting = false;
+                this.lastInvite = invite;
+                this.formSuccess = `ההזמנה עבור ${invite.email} נוצרה בהצלחה. יש להעתיק ולשלוח את הקישור למוזמן/ת.`;
+                this.inviteEmail = '';
+                this.inviteRole = 'VOLUNTEER';
+                this.loadInvitations();
+            },
+            error: (err: HttpErrorResponse) => {
+                this.isInviting = false;
+                this.formError = extractServerErrorMessage(err, 'שליחת ההזמנה נכשלה. נסה שוב.');
+            }
+        });
+    }
+
+    isPendingReinvite(invite: PendingInvite): boolean {
+        return this.pendingReinviteEmail === invite.email;
+    }
+
+    // Re-invites the same email/role — the backend upserts the pending row with a fresh
+    // token and a renewed 48h expiry (see InviteService.inviteUser), invalidating any
+    // earlier link for this address. The only way to get a usable link again once the
+    // original copy-paste moment has passed.
+    reinvite(invite: PendingInvite): void {
+        if (this.pendingReinviteEmail !== null) {
+            return;
+        }
+
+        this.pendingReinviteEmail = invite.email;
+        this.formError = '';
+        this.formSuccess = '';
+        this.lastInvite = null;
+        this.linkCopied = false;
+
+        this.userService.inviteUser(invite.email, invite.role).subscribe({
+            next: (updated) => {
+                this.pendingReinviteEmail = null;
+                this.lastInvite = updated;
+                this.formSuccess = `נוצר קישור הזמנה חדש עבור ${updated.email}.`;
+                this.loadInvitations();
+            },
+            error: (err: HttpErrorResponse) => {
+                this.pendingReinviteEmail = null;
+                this.formError = extractServerErrorMessage(err, 'יצירת קישור חדש נכשלה. נסה שוב.');
+            }
+        });
+    }
+
+    copyInviteLink(invite: { email: string; registrationToken: string }): void {
+        const link = this.registrationLink(invite);
+
+        navigator.clipboard.writeText(link).then(
+            () => {
+                this.linkCopied = true;
+            },
+            () => {
+                this.formError = 'העתקת הקישור נכשלה. יש להעתיק אותו ידנית.';
+            }
+        );
     }
 
     deleteUser(user: User): void {

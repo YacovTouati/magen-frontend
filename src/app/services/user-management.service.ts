@@ -16,6 +16,22 @@ export interface User {
     userRole?: string;
 }
 
+export interface InviteResult {
+    email: string;
+    role: UserRole;
+    expiresAt: string;
+    registrationToken: string;
+}
+
+export interface PendingInvite {
+    id: number;
+    email: string;
+    role: UserRole;
+    expiresAt: string;
+    createdAt: string;
+    invitedBy: { id: number; name: string; email: string } | null;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -35,8 +51,21 @@ export class UserManagementService {
         );
     }
 
-    addUser(user: Omit<User, 'id'>): Observable<User> {
-        return this.http.post<User>(this.apiUrl, user);
+    // POST /users (admin sets a raw password directly) no longer exists on the backend —
+    // replaced by the invite/whitelist model: the admin picks who gets in and what role
+    // they'll have, the invitee sets their own password at POST /auth/register. Doesn't
+    // emit usersChanged$ — an invite creates a pending InvitedUser row, not an active User,
+    // so the roster other views (e.g. the shift calendar) care about hasn't changed yet.
+    inviteUser(email: string, role: UserRole): Observable<InviteResult> {
+        return this.http.post<any>(`${this.apiUrl}/invite`, { email, role }).pipe(
+            map(response => response?.data ?? response)
+        );
+    }
+
+    listInvitations(): Observable<PendingInvite[]> {
+        return this.http.get<any>(`${this.apiUrl}/invitations`).pipe(
+            map(response => response?.data ?? response ?? [])
+        );
     }
 
     // Mirrors the backend's PATCH /intakes/:id/status convention (see intake.service.ts) —

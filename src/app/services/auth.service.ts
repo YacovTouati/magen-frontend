@@ -15,6 +15,14 @@ export interface LoginResponse {
     user: AuthUser;
 }
 
+export interface RegisterPayload {
+    email: string;
+    password: string;
+    name: string;
+    phone: string;
+    token: string;
+}
+
 const TOKEN_KEY = 'magen_auth_token';
 const USER_KEY = 'magen_auth_user';
 
@@ -34,6 +42,34 @@ export class AuthService {
         return this.http.post<any>(`${this.apiUrl}/login`, { email, password }).pipe(
             map(response => this.normalizeLoginResponse(response)),
             tap(response => this.setSession(response))
+        );
+    }
+
+    // Invite-only: the backend requires both a whitelisted email AND a matching raw
+    // token (see magen-backend AuthService.register). Returns a JWT just like login,
+    // so a successful registration logs the user straight in.
+    register(payload: RegisterPayload): Observable<LoginResponse> {
+        return this.http.post<any>(`${this.apiUrl}/register`, payload).pipe(
+            map(response => this.normalizeLoginResponse(response)),
+            tap(response => this.setSession(response))
+        );
+    }
+
+    // Always resolves with the same generic message regardless of whether the email is
+    // registered — the backend deliberately can't be used to enumerate accounts, so
+    // there's no "not found" error case to handle here.
+    forgotPassword(email: string): Observable<{ message: string }> {
+        return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email }).pipe(
+            map(response => ({ message: response?.message ?? '' }))
+        );
+    }
+
+    // No session is created here — reset-password returns only a confirmation message,
+    // not a token (see magen-backend AuthController.resetPassword). The user logs in
+    // separately with their new password afterward.
+    resetPassword(token: string, password: string): Observable<{ message: string }> {
+        return this.http.post<any>(`${this.apiUrl}/reset-password`, { token, password }).pipe(
+            map(response => ({ message: response?.message ?? '' }))
         );
     }
 

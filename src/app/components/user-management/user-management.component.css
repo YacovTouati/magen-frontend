@@ -173,8 +173,104 @@ th {
     margin-top: 4px;
 }
 
+.invite-link-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 16px 18px;
+}
+
+.invite-link-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    color: #1e3a8a;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.invite-link-header .dismiss-btn {
+    background: transparent;
+    border: none;
+    color: #1e3a8a;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.invite-link-row {
+    display: flex;
+    gap: 8px;
+}
+
+.invite-link-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: monospace;
+    direction: ltr;
+    text-align: left;
+    background: #fff;
+    color: #1e3a8a;
+}
+
+.copy-btn {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    min-height: 40px;
+    border-radius: 8px;
+    border: none;
+    background: #1e3a8a;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.invite-link-hint {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.invites-panel {
+    margin-top: 4px;
+}
+
+.reinvite-btn {
+    padding: 6px 12px;
+    min-height: 36px;
+    border-radius: 8px;
+    border: 1px solid #1e3a8a;
+    background: #fff;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.reinvite-btn:hover:not(:disabled) {
+    background: #eff6ff;
+}
+
+.reinvite-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (max-width: 900px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
+    }
+
+    .invite-link-row {
+        flex-direction: column;
     }
 }

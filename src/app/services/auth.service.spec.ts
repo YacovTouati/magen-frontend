@@ -215,4 +215,103 @@ describe('AuthService', () => {
         expect(restoredService.getUser()?.role).toBe('SUPER_ADMIN');
         expect(restoredService.isSuperAdmin()).toBeTrue();
     });
+
+    describe('register', () => {
+        const payload = { email: 'invitee@magen.org', password: 'Str0ng!Pass', name: 'Invitee', phone: '0501234567', token: 'raw-token' };
+
+        it('should POST the payload to /auth/register and persist the returned session, same as login', () => {
+            service.register(payload).subscribe(response => {
+                expect(response.token).toBe('reg-tok');
+                expect(response.user.role).toBe('VOLUNTEER');
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/register`);
+            expect(req.request.method).toBe('POST');
+            expect(req.request.body).toEqual(payload);
+            req.flush({ token: 'reg-tok', user: { email: payload.email, role: 'VOLUNTEER' } });
+
+            expect(service.isLoggedIn()).toBeTrue();
+            expect(service.getToken()).toBe('reg-tok');
+        });
+
+        it('should unwrap a { data: { token, user } } envelope from the backend', () => {
+            service.register(payload).subscribe(response => {
+                expect(response.token).toBe('wrapped-tok');
+            });
+
+            httpMock.expectOne(`${apiUrl}/register`).flush({ data: { token: 'wrapped-tok', user: { email: payload.email, role: 'VOLUNTEER' } } });
+
+            expect(service.isLoggedIn()).toBeTrue();
+        });
+
+        it('should not persist a session when registration fails (e.g. expired/invalid invite)', () => {
+            service.register(payload).subscribe({
+                next: () => fail('expected an error'),
+                error: () => { }
+            });
+
+            httpMock.expectOne(`${apiUrl}/register`).flush(
+                { success: false, message: 'תוקף ההזמנה פג — יש לבקש הזמנה חדשה מהמנהל' },
+                { status: 403, statusText: 'Forbidden' }
+            );
+
+            expect(service.isLoggedIn()).toBeFalse();
+        });
+    });
+
+    describe('forgotPassword', () => {
+        it('should POST the email to /auth/forgot-password and resolve with the backend message', () => {
+            service.forgotPassword('someone@magen.org').subscribe(response => {
+                expect(response.message).toBe('אם קיים חשבון המשויך לכתובת מייל זו, נשלח אליו קישור לאיפוס הסיסמה');
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/forgot-password`);
+            expect(req.request.method).toBe('POST');
+            expect(req.request.body).toEqual({ email: 'someone@magen.org' });
+            req.flush({ success: true, message: 'אם קיים חשבון המשויך לכתובת מייל זו, נשלח אליו קישור לאיפוס הסיסמה' });
+        });
+
+        it('should not touch the stored session', () => {
+            service.forgotPassword('someone@magen.org').subscribe();
+            httpMock.expectOne(`${apiUrl}/forgot-password`).flush({ success: true, message: 'ok' });
+
+            expect(service.isLoggedIn()).toBeFalse();
+        });
+    });
+
+    describe('resetPassword', () => {
+        it('should POST the token and new password to /auth/reset-password', () => {
+            service.resetPassword('raw-reset-token', 'NewStr0ng!Pass').subscribe(response => {
+                expect(response.message).toBe('הסיסמה אופסה בהצלחה');
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/reset-password`);
+            expect(req.request.method).toBe('POST');
+            expect(req.request.body).toEqual({ token: 'raw-reset-token', password: 'NewStr0ng!Pass' });
+            req.flush({ success: true, message: 'הסיסמה אופסה בהצלחה' });
+        });
+
+        it('should not create a session on success — reset-password returns no token', () => {
+            service.resetPassword('raw-reset-token', 'NewStr0ng!Pass').subscribe();
+            httpMock.expectOne(`${apiUrl}/reset-password`).flush({ success: true, message: 'ok' });
+
+            expect(service.isLoggedIn()).toBeFalse();
+        });
+
+        it('should propagate an error for an invalid/expired token', () => {
+            let receivedError: any = null;
+
+            service.resetPassword('bad-token', 'NewStr0ng!Pass').subscribe({
+                next: () => fail('expected an error'),
+                error: (err) => { receivedError = err; }
+            });
+
+            httpMock.expectOne(`${apiUrl}/reset-password`).flush(
+                { success: false, message: 'קישור איפוס הסיסמה אינו תקין או שפג תוקפו' },
+                { status: 400, statusText: 'Bad Request' }
+            );
+
+            expect(receivedError).toBeTruthy();
+        });
+    });
 });

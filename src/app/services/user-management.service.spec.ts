@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { UserManagementService, User } from './user-management.service';
+import { UserManagementService } from './user-management.service';
 
 describe('UserManagementService', () => {
     let service: UserManagementService;
@@ -91,23 +91,53 @@ describe('UserManagementService', () => {
         httpMock.expectOne(apiUrl).flush({ message: 'no users field here' });
     });
 
-    it('addUser should issue a POST with the new user payload', () => {
-        const newUser: Omit<User, 'id'> = {
-            name: 'New User',
-            email: 'new@example.com',
-            password: 'secret',
-            role: 'VOLUNTEER'
-        };
-        const created: User = { id: 2, ...newUser };
+    describe('inviteUser', () => {
+        it('should POST to /users/invite and unwrap the { data } envelope', () => {
+            const inviteResponse = {
+                success: true,
+                data: { email: 'new@example.com', role: 'VOLUNTEER', expiresAt: '2026-08-01T00:00:00.000Z', registrationToken: 'raw-token-abc' }
+            };
 
-        service.addUser(newUser).subscribe(user => {
-            expect(user).toEqual(created);
+            service.inviteUser('new@example.com', 'VOLUNTEER').subscribe(invite => {
+                expect(invite.email).toBe('new@example.com');
+                expect(invite.role).toBe('VOLUNTEER');
+                expect(invite.registrationToken).toBe('raw-token-abc');
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/invite`);
+            expect(req.request.method).toBe('POST');
+            expect(req.request.body).toEqual({ email: 'new@example.com', role: 'VOLUNTEER' });
+            req.flush(inviteResponse);
         });
 
-        const req = httpMock.expectOne(apiUrl);
-        expect(req.request.method).toBe('POST');
-        expect(req.request.body).toEqual(newUser);
-        req.flush(created);
+        it('should not emit on usersChanged$ — an invite has no effect on the active user roster', () => {
+            let emitCount = 0;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.inviteUser('new@example.com', 'VOLUNTEER').subscribe();
+            httpMock.expectOne(`${apiUrl}/invite`).flush({
+                success: true,
+                data: { email: 'new@example.com', role: 'VOLUNTEER', expiresAt: '2026-08-01T00:00:00.000Z', registrationToken: 'tok' }
+            });
+
+            expect(emitCount).toBe(0);
+        });
+    });
+
+    it('listInvitations should GET /users/invitations and unwrap the { data } envelope', () => {
+        const invitesResponse = {
+            success: true,
+            data: [{ id: 1, email: 'pending@example.com', role: 'VOLUNTEER', expiresAt: '2026-08-01T00:00:00.000Z', createdAt: '2026-07-30T00:00:00.000Z', invitedBy: { id: 1, name: 'Admin', email: 'admin@example.com' } }]
+        };
+
+        service.listInvitations().subscribe(invites => {
+            expect(invites.length).toBe(1);
+            expect(invites[0].email).toBe('pending@example.com');
+        });
+
+        const req = httpMock.expectOne(`${apiUrl}/invitations`);
+        expect(req.request.method).toBe('GET');
+        req.flush(invitesResponse);
     });
 
     describe('updateUserRole', () => {
