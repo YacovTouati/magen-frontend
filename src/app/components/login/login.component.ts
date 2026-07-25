@@ -21,6 +21,17 @@ export class LoginComponent {
     isSubmitting = false;
     errorMessage = '';
 
+    constructor() {
+        // Set by the auth interceptor/guard on a forced logout (expired JWT,
+        // or the 24h client-side backstop) — read here since
+        // getCurrentNavigation() is only available during the navigation
+        // itself, not by the time ngOnInit would run.
+        const state = this.router.getCurrentNavigation()?.extras?.state as { message?: string } | undefined;
+        if (state?.message) {
+            this.errorMessage = state.message;
+        }
+    }
+
     onSubmit() {
         if (!this.email || !this.password || this.isSubmitting) {
             return;

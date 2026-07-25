@@ -9,7 +9,8 @@ describe('authGuard', () => {
     let router: Router;
 
     beforeEach(() => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['isLoggedIn']);
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'isSessionExpired', 'logout']);
+        authServiceSpy.isSessionExpired.and.returnValue(false);
 
         TestBed.configureTestingModule({
             imports: [RouterTestingModule],
@@ -36,5 +37,16 @@ describe('authGuard', () => {
 
         expect(runGuard()).toBeFalse();
         expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('should log out and redirect with a session-expired message when the 24h client-side backstop trips, even if isLoggedIn would otherwise be true', () => {
+        authServiceSpy.isSessionExpired.and.returnValue(true);
+        authServiceSpy.isLoggedIn.and.returnValue(true);
+
+        expect(runGuard()).toBeFalse();
+        expect(authServiceSpy.logout).toHaveBeenCalled();
+        expect(router.navigate).toHaveBeenCalledWith(['/login'], jasmine.objectContaining({
+            state: jasmine.objectContaining({ message: jasmine.any(String) })
+        }));
     });
 });

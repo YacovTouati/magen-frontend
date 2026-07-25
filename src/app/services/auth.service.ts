@@ -25,6 +25,15 @@ export interface RegisterPayload {
 
 const TOKEN_KEY = 'magen_auth_token';
 const USER_KEY = 'magen_auth_user';
+const LOGIN_TIMESTAMP_KEY = 'magen_auth_login_at';
+
+// Client-side backstop only — the JWT's own 8h server-side expiry (see
+// magen-backend .env JWT_EXPIRES_IN) is the real enforcement and applies
+// regardless of this. This just forces a fresh login for a browser tab left
+// open across days, without waiting on any particular request to 401 first.
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export const SESSION_EXPIRED_MESSAGE = 'הסשן פג תוקף, נא להתחבר מחדש';
 
 @Injectable({
     providedIn: 'root'
@@ -76,11 +85,23 @@ export class AuthService {
     logout(): void {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(LOGIN_TIMESTAMP_KEY);
         this.currentUser = null;
     }
 
     getToken(): string | null {
         return localStorage.getItem(TOKEN_KEY);
+    }
+
+    // No recorded timestamp (e.g. a session already active from before this
+    // check existed) is treated as NOT expired — it'll still get force-logged-out
+    // as soon as its JWT hits its own 8h server-side expiry regardless.
+    isSessionExpired(): boolean {
+        const loginAt = localStorage.getItem(LOGIN_TIMESTAMP_KEY);
+        if (!loginAt) {
+            return false;
+        }
+        return Date.now() - Number(loginAt) > SESSION_MAX_AGE_MS;
     }
 
     getUser(): AuthUser | null {
@@ -125,6 +146,7 @@ export class AuthService {
     private setSession(response: LoginResponse): void {
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+        localStorage.setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString());
         this.currentUser = response.user;
     }
 

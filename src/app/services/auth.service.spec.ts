@@ -183,6 +183,37 @@ describe('AuthService', () => {
         expect(service.getToken()).toBeNull();
         expect(localStorage.getItem('magen_auth_token')).toBeNull();
         expect(localStorage.getItem('magen_auth_user')).toBeNull();
+        expect(localStorage.getItem('magen_auth_login_at')).toBeNull();
+    });
+
+    describe('isSessionExpired', () => {
+        it('should be false right after a fresh login', () => {
+            service.login('admin@magen.org', 'secret').subscribe();
+            httpMock.expectOne(`${apiUrl}/login`).flush({ token: 'tok', user: { email: 'admin@magen.org', role: 'SUPER_ADMIN' } });
+
+            expect(service.isSessionExpired()).toBeFalse();
+        });
+
+        it('should be false when no login timestamp is recorded at all (a session predating this check)', () => {
+            localStorage.setItem('magen_auth_token', 'persisted-token');
+            localStorage.setItem('magen_auth_user', JSON.stringify({ email: 'admin@magen.org', role: 'SUPER_ADMIN' }));
+
+            expect(service.isSessionExpired()).toBeFalse();
+        });
+
+        it('should be true once more than 24h have passed since login', () => {
+            const twentyFiveHoursAgo = Date.now() - 25 * 60 * 60 * 1000;
+            localStorage.setItem('magen_auth_login_at', twentyFiveHoursAgo.toString());
+
+            expect(service.isSessionExpired()).toBeTrue();
+        });
+
+        it('should be false at just under the 24h mark', () => {
+            const twentyThreeHoursAgo = Date.now() - 23 * 60 * 60 * 1000;
+            localStorage.setItem('magen_auth_login_at', twentyThreeHoursAgo.toString());
+
+            expect(service.isSessionExpired()).toBeFalse();
+        });
     });
 
     it('should restore an existing session from localStorage on construction', () => {
