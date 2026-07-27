@@ -30,6 +30,11 @@ export class LoginComponent {
         if (state?.message) {
             this.errorMessage = state.message;
         }
+
+        const rememberedEmail = this.authService.getRememberedEmail();
+        if (rememberedEmail) {
+            this.email = rememberedEmail;
+        }
     }
 
     onSubmit() {

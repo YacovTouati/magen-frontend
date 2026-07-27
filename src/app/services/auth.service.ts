@@ -26,6 +26,10 @@ export interface RegisterPayload {
 const TOKEN_KEY = 'magen_auth_token';
 const USER_KEY = 'magen_auth_user';
 const LOGIN_TIMESTAMP_KEY = 'magen_auth_login_at';
+// Deliberately not a session key — this is a standing local preference, not part of
+// the logged-in state, so logout() must never clear it (that would defeat the point:
+// remembering the email across logout/login cycles, not just within one session).
+const REMEMBERED_EMAIL_KEY = 'remembered_email';
 
 // Client-side backstop only — the JWT's own 8h server-side expiry (see
 // magen-backend .env JWT_EXPIRES_IN) is the real enforcement and applies
@@ -50,8 +54,15 @@ export class AuthService {
     login(email: string, password: string): Observable<LoginResponse> {
         return this.http.post<any>(`${this.apiUrl}/login`, { email, password }).pipe(
             map(response => this.normalizeLoginResponse(response)),
-            tap(response => this.setSession(response))
+            tap(response => {
+                this.setSession(response);
+                localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+            })
         );
+    }
+
+    getRememberedEmail(): string | null {
+        return localStorage.getItem(REMEMBERED_EMAIL_KEY);
     }
 
     // Invite-only: the backend requires both a whitelisted email AND a matching raw

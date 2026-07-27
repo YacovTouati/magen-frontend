@@ -10,7 +10,8 @@ describe('LoginComponent', () => {
     let router: Router;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['login']);
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'getRememberedEmail']);
+        authServiceSpy.getRememberedEmail.and.returnValue(null);
 
         await TestBed.configureTestingModule({
             imports: [LoginComponent, RouterTestingModule],
@@ -25,6 +26,22 @@ describe('LoginComponent', () => {
         const fixture = TestBed.createComponent(LoginComponent);
         const comp = fixture.componentInstance;
         expect(comp).toBeTruthy();
+    });
+
+    describe('remembered email', () => {
+        it('should leave the email field blank when nothing is remembered', () => {
+            authServiceSpy.getRememberedEmail.and.returnValue(null);
+            const fixture = TestBed.createComponent(LoginComponent);
+
+            expect(fixture.componentInstance.email).toBe('');
+        });
+
+        it('should pre-fill the email field from AuthService.getRememberedEmail() on init', () => {
+            authServiceSpy.getRememberedEmail.and.returnValue('remembered@magen.org');
+            const fixture = TestBed.createComponent(LoginComponent);
+
+            expect(fixture.componentInstance.email).toBe('remembered@magen.org');
+        });
     });
 
     it('should not call the service when email or password is missing', () => {

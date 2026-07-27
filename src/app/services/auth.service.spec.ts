@@ -47,6 +47,38 @@ describe('AuthService', () => {
         expect(localStorage.getItem('magen_auth_token')).toBe('abc.def.ghi');
     });
 
+    describe('remembered email', () => {
+        it('should persist the email to remembered_email on a successful login', () => {
+            service.login('admin@magen.org', 'secret').subscribe();
+            httpMock.expectOne(`${apiUrl}/login`).flush({ token: 'tok', user: { email: 'admin@magen.org', role: 'SUPER_ADMIN' } });
+
+            expect(localStorage.getItem('remembered_email')).toBe('admin@magen.org');
+            expect(service.getRememberedEmail()).toBe('admin@magen.org');
+        });
+
+        it('should return null when nothing has ever been remembered', () => {
+            expect(service.getRememberedEmail()).toBeNull();
+        });
+
+        it('should not persist an email when login fails', () => {
+            service.login('bad@magen.org', 'wrong').subscribe({ error: () => { } });
+            httpMock.expectOne(`${apiUrl}/login`).flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+
+            expect(service.getRememberedEmail()).toBeNull();
+        });
+
+        it('should overwrite a previously remembered email with the most recent successful login', () => {
+            service.login('first@magen.org', 'secret').subscribe();
+            httpMock.expectOne(`${apiUrl}/login`).flush({ token: 'tok', user: { email: 'first@magen.org', role: 'VOLUNTEER' } });
+            service.logout();
+
+            service.login('second@magen.org', 'secret').subscribe();
+            httpMock.expectOne(`${apiUrl}/login`).flush({ token: 'tok2', user: { email: 'second@magen.org', role: 'VOLUNTEER' } });
+
+            expect(service.getRememberedEmail()).toBe('second@magen.org');
+        });
+    });
+
     it('login should unwrap a { data: { token, user } } envelope from the backend', () => {
         const envelopedResponse = { data: { token: 'wrapped-tok', user: { email: 'admin@magen.org', role: 'SUPER_ADMIN' } } };
 
@@ -184,6 +216,16 @@ describe('AuthService', () => {
         expect(localStorage.getItem('magen_auth_token')).toBeNull();
         expect(localStorage.getItem('magen_auth_user')).toBeNull();
         expect(localStorage.getItem('magen_auth_login_at')).toBeNull();
+    });
+
+    it('logout should NOT clear remembered_email — it must survive across logout/login cycles', () => {
+        service.login('admin@magen.org', 'secret').subscribe();
+        httpMock.expectOne(`${apiUrl}/login`).flush({ token: 'tok', user: { email: 'admin@magen.org', role: 'SUPER_ADMIN' } });
+
+        service.logout();
+
+        expect(service.getRememberedEmail()).toBe('admin@magen.org');
+        expect(localStorage.getItem('remembered_email')).toBe('admin@magen.org');
     });
 
     describe('isSessionExpired', () => {
