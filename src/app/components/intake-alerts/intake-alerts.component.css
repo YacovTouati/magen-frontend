@@ -61,27 +61,38 @@
     padding: 20px 22px 24px;
 }
 
-.action-error-banner {
+.action-error-banner,
+.action-success-banner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 13px;
     margin-bottom: 14px;
 }
 
-.action-error-banner .dismiss-btn {
+.action-error-banner .dismiss-btn,
+.action-success-banner .dismiss-btn {
     background: transparent;
     border: none;
-    color: #b91c1c;
     font-size: 13px;
     cursor: pointer;
     flex-shrink: 0;
+    color: inherit;
+}
+
+.action-error-banner {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.action-success-banner {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
 }
 
 .intake-status-message {
@@ -289,6 +300,28 @@
 
 .extend-btn:hover {
     background: #fffbeb;
+}
+
+.delete-intake-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid #fca5a5;
+    background: #fff;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.delete-intake-btn:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.delete-intake-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .pending-hint {

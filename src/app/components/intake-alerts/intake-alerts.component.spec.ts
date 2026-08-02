@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick, discardPeriodicTasks } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { of, throwError, Observable } from 'rxjs';
 import { IntakeAlertsComponent } from './intake-alerts.component';
@@ -473,6 +473,121 @@ describe('IntakeAlertsComponent', () => {
             comp.onStatusChange(comp.intakes[1], 'CLOSED');
 
             expect(comp.isDeleteConfirmOpen).toBeFalse();
+        });
+    });
+
+    describe('direct delete button (action column)', () => {
+        it('requestDelete() should open the confirm modal with its own (shorter) copy, distinct from the status-triggered flow', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            comp.requestDelete(comp.intakes[0]);
+
+            expect(comp.isDeleteConfirmOpen).toBeTrue();
+            expect(comp.deleteConfirmTitle).toBe('מחיקת אינטייק');
+            expect(comp.deleteConfirmMessage).toBe('האם אתה בטוח שברצונך למחוק אינטייק זה?');
+        });
+
+        it('should render a delete button in the action column for every row, and clicking it opens the modal with the exact required confirmation text', () => {
+            const fixture = setup();
+            fixture.detectChanges();
+
+            const deleteButtons = fixture.debugElement.queryAll(By.css('.delete-intake-btn'));
+            expect(deleteButtons.length).toBe(fixture.componentInstance.intakes.length);
+
+            deleteButtons[0].triggerEventHandler('click', null);
+            fixture.detectChanges();
+
+            const modal = fixture.debugElement.query(By.css('app-confirm-modal .modal-shell-overlay'));
+            expect(modal.nativeElement.textContent).toContain('האם אתה בטוח שברצונך למחוק אינטייק זה?');
+        });
+
+        it('should not open a second confirmation while one is already pending', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.deleteIntake.and.returnValue(of(undefined));
+            comp.requestDelete(comp.intakes[0]);
+
+            comp.requestDelete(comp.intakes[1]);
+
+            // still the first intake's confirmation, not overwritten by the second click
+            comp.onConfirmDelete();
+            expect(intakeServiceSpy.deleteIntake).toHaveBeenCalledOnceWith(1);
+        });
+
+        it('should not open a confirmation while another action is already in flight', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.updateStatus.and.returnValue(new Observable(() => { })); // never resolves
+            comp.onStatusChange(comp.intakes[0], 'ACTIVE'); // now pending
+
+            comp.requestDelete(comp.intakes[1]);
+
+            expect(comp.isDeleteConfirmOpen).toBeFalse();
+        });
+
+        it('confirming a button-triggered delete should call the service, remove the row, and show a success toast', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.deleteIntake.and.returnValue(of(undefined));
+            comp.requestDelete(comp.intakes[0]);
+
+            comp.onConfirmDelete();
+
+            expect(intakeServiceSpy.deleteIntake).toHaveBeenCalledWith(1);
+            expect(comp.intakes.find(i => i.id === 1)).toBeUndefined();
+            expect(comp.actionSuccess).toBe('האינטייק נמחק בהצלחה');
+        });
+
+        it('should not show a success toast when the delete fails', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.deleteIntake.and.returnValue(throwError(() => ({ status: 403, error: { message: 'אין הרשאה למחוק' } })));
+            comp.requestDelete(comp.intakes[0]);
+
+            comp.onConfirmDelete();
+
+            expect(comp.actionSuccess).toBe('');
+            expect(comp.actionError).toBe('אין הרשאה למחוק');
+        });
+
+        it('the success toast should clear itself automatically after a few seconds', fakeAsync(() => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.deleteIntake.and.returnValue(of(undefined));
+            comp.requestDelete(comp.intakes[0]);
+
+            comp.onConfirmDelete();
+            expect(comp.actionSuccess).toBe('האינטייק נמחק בהצלחה');
+
+            tick(3000);
+
+            expect(comp.actionSuccess).toBe('');
+            discardPeriodicTasks(); // the component's own 15s silent-poll timer (ngOnInit) is still pending
+        }));
+
+        it('dismissActionSuccess() should clear the toast immediately, without waiting for the timeout', fakeAsync(() => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            intakeServiceSpy.deleteIntake.and.returnValue(of(undefined));
+            comp.requestDelete(comp.intakes[0]);
+            comp.onConfirmDelete();
+
+            comp.dismissActionSuccess();
+
+            expect(comp.actionSuccess).toBe('');
+            discardPeriodicTasks(); // the component's own 15s silent-poll timer (ngOnInit) is still pending
+        }));
+
+        it('cancelling a button-triggered delete should not call the API or revert any <select> (there is none for this path)', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+            comp.requestDelete(comp.intakes[0]);
+
+            expect(() => comp.onCancelDelete()).not.toThrow();
+
+            expect(comp.isDeleteConfirmOpen).toBeFalse();
+            expect(intakeServiceSpy.deleteIntake).not.toHaveBeenCalled();
         });
     });
 

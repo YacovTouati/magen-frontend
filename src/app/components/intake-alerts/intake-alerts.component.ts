@@ -69,8 +69,14 @@ export class IntakeAlertsComponent implements OnInit {
     /** id of the intake with an in-flight status/extend/delete request, if any */
     pendingActionId: number | null = null;
     actionError = '';
+    actionSuccess = '';
+    private successTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    private pendingDeletion: { intake: IntakeAlert; selectEl?: HTMLSelectElement } | null = null;
+    // 'status' = triggered by picking CLOSED/LONG_TERM in the status <select> (has a
+    // selectEl to revert on cancel/failure — see onStatusChange). 'button' = triggered
+    // directly by the row's delete button — no select to revert, and uses its own
+    // (shorter) confirmation copy.
+    private pendingDeletion: { intake: IntakeAlert; selectEl?: HTMLSelectElement; trigger: 'status' | 'button' } | null = null;
 
     ngOnInit(): void {
         this.loadIntakes();
@@ -181,7 +187,7 @@ export class IntakeAlertsComponent implements OnInit {
         }
 
         if (DELETION_TRIGGER_STATUSES.includes(newStatus)) {
-            this.pendingDeletion = { intake, selectEl };
+            this.pendingDeletion = { intake, selectEl, trigger: 'status' };
             return;
         }
 
@@ -223,8 +229,30 @@ export class IntakeAlertsComponent implements OnInit {
         });
     }
 
+    // Direct delete from the row's action-column button — independent of the status
+    // <select>, no selectEl to revert. Same in-flight guard as every other action here.
+    requestDelete(intake: IntakeAlert): void {
+        if (this.pendingActionId !== null || this.pendingDeletion !== null) {
+            return;
+        }
+
+        this.pendingDeletion = { intake, trigger: 'button' };
+    }
+
     get isDeleteConfirmOpen(): boolean {
         return this.pendingDeletion !== null;
+    }
+
+    get deleteConfirmTitle(): string {
+        return this.pendingDeletion?.trigger === 'button'
+            ? 'מחיקת אינטייק'
+            : 'האם למחוק את האינטייק מהאתר?';
+    }
+
+    get deleteConfirmMessage(): string {
+        return this.pendingDeletion?.trigger === 'button'
+            ? 'האם אתה בטוח שברצונך למחוק אינטייק זה?'
+            : 'שים לב שלחיצה על כפתור מחיקה תמחק את האינטייק לצמיתות ולא יהיה ניתן לשחזרו';
     }
 
     onConfirmDelete(): void {
@@ -241,6 +269,7 @@ export class IntakeAlertsComponent implements OnInit {
             next: () => {
                 this.intakes = this.intakes.filter(i => i.id !== intake.id);
                 this.pendingActionId = null;
+                this.showSuccessToast('האינטייק נמחק בהצלחה');
             },
             error: (err) => {
                 this.pendingActionId = null;
@@ -261,6 +290,28 @@ export class IntakeAlertsComponent implements OnInit {
 
     dismissActionError(): void {
         this.actionError = '';
+    }
+
+    dismissActionSuccess(): void {
+        this.actionSuccess = '';
+        if (this.successTimeoutId !== null) {
+            clearTimeout(this.successTimeoutId);
+            this.successTimeoutId = null;
+        }
+    }
+
+    // "Brief toast" per the design — clears itself instead of requiring a dismiss click.
+    // Resets any prior pending timeout first so back-to-back deletes don't have an older
+    // timer cut a newer message's display time short.
+    private showSuccessToast(message: string): void {
+        if (this.successTimeoutId !== null) {
+            clearTimeout(this.successTimeoutId);
+        }
+        this.actionSuccess = message;
+        this.successTimeoutId = setTimeout(() => {
+            this.actionSuccess = '';
+            this.successTimeoutId = null;
+        }, 3000);
     }
 
     private describeError(err: any): string {
