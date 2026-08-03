@@ -215,7 +215,7 @@ describe('UserManagementComponent', () => {
             const fixture = createComponent();
             const comp = fixture.componentInstance;
 
-            expect(comp.getRoleLabel('SUPER_ADMIN')).toBe('מנהל/ת-על');
+            expect(comp.getRoleLabel('SUPER_ADMIN')).toBe('מנהל/ת ראשי');
             expect(comp.getRoleLabel('INTAKE_ADMIN')).toBe('מנהל/ת אינטייק');
             expect(comp.getRoleLabel('SCHEDULER_ADMIN')).toBe('מנהל/ת שיבוץ');
             expect(comp.getRoleLabel('VOLUNTEER')).toBe('מתנדב/ת');

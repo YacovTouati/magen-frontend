@@ -8,7 +8,7 @@ export interface RoleOption {
 // Mirrors the backend's UserRole enum (prisma/schema.prisma, commit b0a364b) — SUPER_ADMIN
 // replaced the old flat ADMIN role as the full-access superset, plus two scoped admin types.
 export const ROLE_OPTIONS: RoleOption[] = [
-    { value: 'SUPER_ADMIN', label: 'מנהל/ת-על' },
+    { value: 'SUPER_ADMIN', label: 'מנהל/ת ראשי' },
     { value: 'INTAKE_ADMIN', label: 'מנהל/ת אינטייק' },
     { value: 'SCHEDULER_ADMIN', label: 'מנהל/ת שיבוץ' },
     { value: 'VOLUNTEER', label: 'מתנדב/ת' }
