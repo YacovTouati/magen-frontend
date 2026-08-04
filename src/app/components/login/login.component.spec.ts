@@ -1,4 +1,5 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -119,5 +120,95 @@ describe('LoginComponent', () => {
         expect(comp.errorMessage).toBe('כתובת המייל שהוזנה אינה תקינה');
         expect(comp.isSubmitting).toBeFalse();
         expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    describe('password visibility toggle', () => {
+        it('should start masked (type="password")', () => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+
+            const input = fixture.debugElement.query(By.css('#login-password'));
+            expect(input.nativeElement.type).toBe('password');
+        });
+
+        it('should reveal the password as plain text when the toggle is clicked, and mask it again on a second click', () => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+            const toggle = fixture.debugElement.query(By.css('.toggle-visibility'));
+
+            toggle.triggerEventHandler('click', null);
+            fixture.detectChanges();
+            expect(fixture.debugElement.query(By.css('#login-password')).nativeElement.type).toBe('text');
+            expect(fixture.componentInstance.showPassword).toBeTrue();
+
+            toggle.triggerEventHandler('click', null);
+            fixture.detectChanges();
+            expect(fixture.debugElement.query(By.css('#login-password')).nativeElement.type).toBe('password');
+            expect(fixture.componentInstance.showPassword).toBeFalse();
+        });
+    });
+
+    describe('password auto-hide (security timer)', () => {
+        it('should auto-hide the password 30 seconds after it is revealed', fakeAsync(() => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+
+            fixture.debugElement.query(By.css('.toggle-visibility')).triggerEventHandler('click', null);
+            fixture.detectChanges();
+            expect(fixture.componentInstance.showPassword).toBeTrue();
+
+            tick(29999);
+            expect(fixture.componentInstance.showPassword).toBeTrue();
+
+            tick(1);
+            expect(fixture.componentInstance.showPassword).toBeFalse();
+        }));
+
+        it('should clear the pending auto-hide timer when the user hides the password manually first', fakeAsync(() => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+            const toggle = fixture.debugElement.query(By.css('.toggle-visibility'));
+
+            toggle.triggerEventHandler('click', null); // reveal
+            fixture.detectChanges();
+            tick(15000);
+            toggle.triggerEventHandler('click', null); // hide manually, well before 30s
+            fixture.detectChanges();
+
+            tick(30000); // if the old timer weren't cleared, it would have fired by now
+            expect(fixture.componentInstance.showPassword).toBeFalse();
+        }));
+
+        it('should restart the countdown from zero if the password is hidden and revealed again', fakeAsync(() => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+            const toggle = fixture.debugElement.query(By.css('.toggle-visibility'));
+
+            toggle.triggerEventHandler('click', null); // reveal (t=0)
+            fixture.detectChanges();
+            tick(25000);
+            toggle.triggerEventHandler('click', null); // hide manually (t=25000)
+            fixture.detectChanges();
+            toggle.triggerEventHandler('click', null); // reveal again (t=25000, fresh countdown)
+            fixture.detectChanges();
+
+            tick(25000); // t=50000 overall, but only 25s since the second reveal
+            expect(fixture.componentInstance.showPassword).toBeTrue();
+
+            tick(5000); // now 30s since the second reveal
+            expect(fixture.componentInstance.showPassword).toBeFalse();
+        }));
+
+        it('ngOnDestroy should clear any pending auto-hide timer', fakeAsync(() => {
+            const fixture = TestBed.createComponent(LoginComponent);
+            fixture.detectChanges();
+            fixture.debugElement.query(By.css('.toggle-visibility')).triggerEventHandler('click', null);
+            const clearSpy = spyOn((fixture.componentInstance as any).passwordRevealTimer, 'clear').and.callThrough();
+
+            fixture.componentInstance.ngOnDestroy();
+
+            expect(clearSpy).toHaveBeenCalled();
+            tick(30000); // proves the timer was really cancelled — nothing left to fire
+        }));
     });
 });

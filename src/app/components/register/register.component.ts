@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { PasswordRequirementsComponent } from '../password-requirements/password-requirements.component';
 import { isPasswordValid } from '../../shared/password-policy';
 import { extractServerErrorMessage } from '../../shared/http-error';
+import { PasswordRevealTimer } from '../../shared/password-reveal-timer';
 
 @Component({
     selector: 'app-register',
@@ -15,7 +16,7 @@ import { extractServerErrorMessage } from '../../shared/http-error';
     templateUrl: './register.component.html',
     styleUrls: ['./register.component.css']
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit, OnDestroy {
     private route = inject(ActivatedRoute);
     private router = inject(Router);
     private authService = inject(AuthService);
@@ -31,6 +32,13 @@ export class RegisterComponent implements OnInit {
     isSubmitting = false;
     errorMessage = '';
 
+    // Security UX: an on-screen plaintext password auto-hides itself after 30s so it
+    // doesn't linger indefinitely (shoulder-surfing) if the user reveals it and walks away.
+    // Two independent fields need two independent timers — revealing one must not affect
+    // the other's own countdown.
+    private passwordRevealTimer = new PasswordRevealTimer(() => { this.showPassword = false; });
+    private confirmPasswordRevealTimer = new PasswordRevealTimer(() => { this.showConfirmPassword = false; });
+
     // True when the invite link is missing its token/email query params entirely — the
     // form isn't even rendered in that case, since there's nothing valid to submit.
     linkInvalid = false;
@@ -40,6 +48,31 @@ export class RegisterComponent implements OnInit {
         this.email = params.get('email') ?? '';
         this.token = params.get('token') ?? '';
         this.linkInvalid = !this.email || !this.token;
+    }
+
+    ngOnDestroy(): void {
+        this.passwordRevealTimer.clear();
+        this.confirmPasswordRevealTimer.clear();
+    }
+
+    togglePasswordVisibility(): void {
+        this.showPassword = !this.showPassword;
+
+        if (this.showPassword) {
+            this.passwordRevealTimer.start();
+        } else {
+            this.passwordRevealTimer.clear();
+        }
+    }
+
+    toggleConfirmPasswordVisibility(): void {
+        this.showConfirmPassword = !this.showConfirmPassword;
+
+        if (this.showConfirmPassword) {
+            this.confirmPasswordRevealTimer.start();
+        } else {
+            this.confirmPasswordRevealTimer.clear();
+        }
     }
 
     get passwordValid(): boolean {

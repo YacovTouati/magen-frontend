@@ -12,8 +12,15 @@
 
             <div class="form-group">
                 <label for="login-password">סיסמה</label>
-                <input id="login-password" type="password" [(ngModel)]="password" name="password"
-                    autocomplete="current-password" placeholder="הכנס סיסמה..." class="form-input" required />
+                <div class="password-field">
+                    <input id="login-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password"
+                        name="password" autocomplete="current-password" placeholder="הכנס סיסמה..."
+                        class="form-input" required />
+                    <button type="button" class="toggle-visibility" (click)="togglePasswordVisibility()"
+                        [attr.aria-label]="showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'">
+                        {{ showPassword ? '🙈' : '👁️' }}
+                    </button>
+                </div>
             </div>
 
             <div class="alert error" *ngIf="errorMessage">{{ errorMessage }}</div>

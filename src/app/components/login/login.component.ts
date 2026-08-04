@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PasswordRevealTimer } from '../../shared/password-reveal-timer';
 
 @Component({
     selector: 'app-login',
@@ -12,7 +13,7 @@ import { AuthService } from '../../services/auth.service';
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnDestroy {
     private authService = inject(AuthService);
     private router = inject(Router);
 
@@ -20,6 +21,11 @@ export class LoginComponent {
     password = '';
     isSubmitting = false;
     errorMessage = '';
+    showPassword = false;
+
+    // Security UX: an on-screen plaintext password auto-hides itself after 30s so it
+    // doesn't linger indefinitely (shoulder-surfing) if the user reveals it and walks away.
+    private passwordRevealTimer = new PasswordRevealTimer(() => { this.showPassword = false; });
 
     constructor() {
         // Set by the auth interceptor/guard on a forced logout (expired JWT,
@@ -34,6 +40,20 @@ export class LoginComponent {
         const rememberedEmail = this.authService.getRememberedEmail();
         if (rememberedEmail) {
             this.email = rememberedEmail;
+        }
+    }
+
+    ngOnDestroy(): void {
+        this.passwordRevealTimer.clear();
+    }
+
+    togglePasswordVisibility(): void {
+        this.showPassword = !this.showPassword;
+
+        if (this.showPassword) {
+            this.passwordRevealTimer.start();
+        } else {
+            this.passwordRevealTimer.clear();
         }
     }
 
