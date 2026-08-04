@@ -54,6 +54,7 @@ import { FormsModule, NgForm } from '@angular/forms';
             <option value="victim">נפגע/ת ישיר/ה</option>
             <option value="family">בן/בת משפחה</option>
             <option value="friend">חבר/ה או מכר/ה</option>
+            <option value="unknown">אנונימי</option>
           </select>
         </div>
 
@@ -78,6 +79,8 @@ import { FormsModule, NgForm } from '@angular/forms';
           <select [(ngModel)]="receivedSupportAtOtherCenter" name="receivedSupportAtOtherCenter">
             <option [ngValue]="false">לא</option>
             <option [ngValue]="true">כן</option>
+            <option [ngValue]="true">לא ידוע</option>
+
           </select>
         </div>
 
@@ -102,7 +105,8 @@ import { FormsModule, NgForm } from '@angular/forms';
           <label>האם יש חובת דיווח?</label>
           <select [(ngModel)]="reportingDuty" name="reportingDuty">
             <option [ngValue]="false">לא</option>
-            <option [ngValue]="true">כן</option>
+            <option [ngValue]="true">כן מעשי</option>
+            <option [ngValue]="true">כן עקרוני</option>
           </select>
         </div>
       </div>
