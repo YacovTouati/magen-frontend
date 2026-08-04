@@ -15,6 +15,7 @@ export type IntakeStatus = 'NEW' | 'NO_ANSWER' | 'ACTIVE' | 'CLOSED' | 'LONG_TER
 // these live in shared/intake-labels.ts, not here.
 export type CallerType = 'victim' | 'family' | 'friend' | 'unknown';
 export type MagenContactHistory = 'first_time' | 'past' | 'dont_remember';
+export type ReportingDuty = 'no' | 'yes_practical' | 'yes_principled';
 
 // The Intake model has no email/region/reportingDuty/etc columns of its own — they live on
 // the linked CallReport (the volunteer's original submission), joined in via Intake.callReport.
@@ -24,7 +25,7 @@ export interface IntakeCallReport {
     id: number;
     email: string | null;
     region: string | null;
-    reportingDuty: boolean | null;
+    reportingDuty: ReportingDuty | null;
     magenContactHistory: MagenContactHistory | null;
     callerType: CallerType | null;
     summaryNotes: string | null;

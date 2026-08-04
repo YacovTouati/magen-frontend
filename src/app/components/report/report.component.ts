@@ -77,10 +77,9 @@ import { FormsModule, NgForm } from '@angular/forms';
         <div class="form-group inline-group">
           <label>האם קיבל ליווי במרכז סיוע אחר?</label>
           <select [(ngModel)]="receivedSupportAtOtherCenter" name="receivedSupportAtOtherCenter">
-            <option [ngValue]="false">לא</option>
-            <option [ngValue]="true">כן</option>
-            <option [ngValue]="true">לא ידוע</option>
-
+            <option value="no">לא</option>
+            <option value="yes">כן</option>
+            <option value="unknown">לא ידוע</option>
           </select>
         </div>
 
@@ -104,9 +103,9 @@ import { FormsModule, NgForm } from '@angular/forms';
         <div class="form-group inline-group">
           <label>האם יש חובת דיווח?</label>
           <select [(ngModel)]="reportingDuty" name="reportingDuty">
-            <option [ngValue]="false">לא</option>
-            <option [ngValue]="true">כן מעשי</option>
-            <option [ngValue]="true">כן עקרוני</option>
+            <option value="no">לא</option>
+            <option value="yes_practical">כן מעשי</option>
+            <option value="yes_principled">כן עקרוני</option>
           </select>
         </div>
       </div>
@@ -134,10 +133,10 @@ export class ReportComponent {
   @Input() region = '';
   @Input() gender = 'unknown';
   @Input() sector = 'secular';
-  @Input() receivedSupportAtOtherCenter = false;
+  @Input() receivedSupportAtOtherCenter = 'no';
   @Input() isFamilyMemberOrAcquaintance = false;
   @Input() magenContactHistory = 'first_time';
-  @Input() reportingDuty = false;
+  @Input() reportingDuty = 'no';
 
   @Output() reportSubmit = new EventEmitter<any>();
 
@@ -163,10 +162,10 @@ export class ReportComponent {
       phone: '',
       email: '',
       region: '',
-      receivedSupportAtOtherCenter: false,
+      receivedSupportAtOtherCenter: 'no',
       isFamilyMemberOrAcquaintance: false,
       magenContactHistory: 'first_time',
-      reportingDuty: false
+      reportingDuty: 'no'
     });
   }
 

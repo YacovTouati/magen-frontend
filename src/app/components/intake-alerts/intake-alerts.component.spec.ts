@@ -13,7 +13,7 @@ function hoursFromNow(hours: number): Date {
 }
 
 const MIRI_CALL_REPORT: IntakeCallReport = {
-    id: 55, email: 'miri.a@example.com', reportingDuty: true,
+    id: 55, email: 'miri.a@example.com', reportingDuty: 'yes_practical',
     region: 'תל אביב', magenContactHistory: 'first_time', callerType: 'victim', summaryNotes: 'תוכן השיחה'
 };
 
@@ -162,7 +162,7 @@ describe('IntakeAlertsComponent', () => {
         const firstRowText = rows[0].nativeElement.textContent;
 
         expect(firstRowText).toContain(MIRI_CALL_REPORT.email);
-        expect(firstRowText).toContain('כן'); // reportingDuty: true
+        expect(firstRowText).toContain('כן מעשי'); // reportingDuty: 'yes_practical'
     });
 
     it('should show "—" placeholders when an intake has no linked callReport', () => {

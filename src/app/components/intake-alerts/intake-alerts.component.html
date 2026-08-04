@@ -55,7 +55,7 @@
               </td>
               <td>{{ formatCreatedAt(intake.createdAt) }}</td>
               <td>
-                <span class="duty-pill" [class.yes]="intake.callReport?.reportingDuty === true" [class.no]="intake.callReport?.reportingDuty === false">
+                <span class="duty-pill" [class.yes]="isDutyYes(intake)" [class.no]="isDutyNo(intake)">
                   {{ dutyLabel(intake) }}
                 </span>
               </td>

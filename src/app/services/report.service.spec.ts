@@ -18,10 +18,10 @@ describe('ReportService', () => {
         region: 'center',
         gender: 'unknown',
         sector: 'secular',
-        receivedSupportAtOtherCenter: false,
+        receivedSupportAtOtherCenter: 'no',
         isFamilyMemberOrAcquaintance: false,
         magenContactHistory: 'first_time',
-        reportingDuty: true
+        reportingDuty: 'yes_practical'
     };
 
     beforeEach(() => {

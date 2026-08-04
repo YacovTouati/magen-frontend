@@ -17,7 +17,7 @@ function buildIntakes(): IntakeAlert[] {
             status: 'NEW',
             expiresAt: new Date('2026-08-15T10:00:00.000Z'),
             callReport: {
-                id: 10, email: 'miri@example.com', region: 'תל אביב', reportingDuty: true,
+                id: 10, email: 'miri@example.com', region: 'תל אביב', reportingDuty: 'yes_practical',
                 magenContactHistory: 'first_time', callerType: 'victim', summaryNotes: 'סיכום שיחה ראשון'
             }
         },
@@ -87,7 +87,7 @@ describe('IntakesListComponent', () => {
         expect(firstRowCells[2]).toBe('miri@example.com');
         expect(firstRowCells[3]).toBe('תל אביב');
         expect(firstRowCells[4]).toBe('לא'); // contactedOtherCenter, shown as-is
-        expect(firstRowCells[5]).toBe('כן'); // reportingDuty: true
+        expect(firstRowCells[5]).toBe('כן מעשי'); // reportingDuty: 'yes_practical'
         expect(firstRowCells[6]).toBe('פעם ראשונה'); // magenContactHistory label
         expect(firstRowCells[7]).toBe('נפגע/ת ישיר/ה'); // callerType label
         expect(firstRowCells[8]).toContain('צפייה בפרטים'); // actions cell

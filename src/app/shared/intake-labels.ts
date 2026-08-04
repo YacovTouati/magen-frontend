@@ -1,4 +1,4 @@
-import { CallerType, IntakeStatus, IntakeUrgency, MagenContactHistory } from '../services/intake.service';
+import { CallerType, IntakeStatus, IntakeUrgency, MagenContactHistory, ReportingDuty } from '../services/intake.service';
 
 // Hebrew display labels for the Intakes Management view — mirrors the exact wording already
 // used elsewhere in the app (report.component.ts's <select> options, IntakeAlertsComponent's
@@ -32,6 +32,12 @@ const MAGEN_CONTACT_HISTORY_LABELS: Record<MagenContactHistory, string> = {
     dont_remember: 'לא זוכר'
 };
 
+const REPORTING_DUTY_LABELS: Record<ReportingDuty, string> = {
+    no: 'לא',
+    yes_practical: 'כן מעשי',
+    yes_principled: 'כן עקרוני'
+};
+
 export function getUrgencyLabel(urgency: IntakeUrgency | null | undefined): string {
     return (urgency && URGENCY_LABELS[urgency]) ?? '—';
 }
@@ -59,4 +65,11 @@ export function getYesNoLabel(value: boolean | null | undefined): string {
         return '-';
     }
     return value ? 'כן' : 'לא';
+}
+
+export function getReportingDutyLabel(reportingDuty: ReportingDuty | string | null | undefined): string {
+    if (!reportingDuty) {
+        return '-';
+    }
+    return REPORTING_DUTY_LABELS[reportingDuty as ReportingDuty] ?? reportingDuty;
 }

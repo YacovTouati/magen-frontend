@@ -6,7 +6,7 @@ import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component'
 import {
     getCallerTypeLabel,
     getMagenContactHistoryLabel,
-    getYesNoLabel
+    getReportingDutyLabel
 } from '../../shared/intake-labels';
 
 @Component({
@@ -157,7 +157,7 @@ export class IntakesListComponent implements OnInit {
     }
 
     reportingDutyLabel(intake: IntakeAlert): string {
-        return getYesNoLabel(intake.callReport?.reportingDuty);
+        return getReportingDutyLabel(intake.callReport?.reportingDuty);
     }
 
     // Already an "כן"/"לא" display string from the backend (see reportService.ts), not a

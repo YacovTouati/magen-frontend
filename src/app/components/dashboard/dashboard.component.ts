@@ -66,10 +66,10 @@ export class DashboardComponent implements OnInit {
   region: string = '';
   gender: string = 'unknown';
   sector: string = 'secular';
-  receivedSupportAtOtherCenter: boolean = false;
+  receivedSupportAtOtherCenter: string = 'no';
   isFamilyMemberOrAcquaintance: boolean = false;
   magenContactHistory: string = 'first_time';
-  reportingDuty: boolean = false;
+  reportingDuty: string = 'no';
 
   isSuccessModalOpen = false;
   successModalMessage = '';
@@ -188,10 +188,10 @@ export class DashboardComponent implements OnInit {
         this.phone = '';
         this.email = '';
         this.region = '';
-        this.receivedSupportAtOtherCenter = false;
+        this.receivedSupportAtOtherCenter = 'no';
         this.isFamilyMemberOrAcquaintance = false;
         this.magenContactHistory = 'first_time';
-        this.reportingDuty = false;
+        this.reportingDuty = 'no';
       },
       error: () => {
         alert('שגיאה בשמירת הדיווח. הנתונים נחסמו מטעמי אבטחה או אימות.');

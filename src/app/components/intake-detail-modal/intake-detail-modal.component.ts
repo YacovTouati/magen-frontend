@@ -5,9 +5,9 @@ import { IntakeAlert } from '../../services/intake.service';
 import {
     getCallerTypeLabel,
     getMagenContactHistoryLabel,
+    getReportingDutyLabel,
     getStatusLabel,
-    getUrgencyLabel,
-    getYesNoLabel
+    getUrgencyLabel
 } from '../../shared/intake-labels';
 
 // Presentational detail view for a single intake — purely @Input-driven, same convention
@@ -65,7 +65,12 @@ export class IntakeDetailModalComponent implements OnChanges {
     }
 
     reportingDutyLabel(): string {
-        return getYesNoLabel(this.intake?.callReport?.reportingDuty);
+        return getReportingDutyLabel(this.intake?.callReport?.reportingDuty);
+    }
+
+    isDutyYes(): boolean {
+        const duty = this.intake?.callReport?.reportingDuty;
+        return duty === 'yes_practical' || duty === 'yes_principled';
     }
 
     // contactedOtherCenter arrives from the backend as an already-Hebrew display string

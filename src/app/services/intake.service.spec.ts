@@ -89,7 +89,7 @@ describe('IntakeService', () => {
                     id: 55,
                     email: 'volunteer-caller@example.com',
                     region: 'תל אביב',
-                    reportingDuty: true,
+                    reportingDuty: 'yes_practical',
                     magenContactHistory: 'first_time',
                     callerType: 'victim',
                     summaryNotes: 'תוכן השיחה המלא'
@@ -100,7 +100,7 @@ describe('IntakeService', () => {
                 data: [{
                     ...rawIntake, callReport: {
                         id: 55, email: 'volunteer-caller@example.com', region: 'תל אביב',
-                        reportingDuty: true, magenContactHistory: 'first_time', callerType: 'victim',
+                        reportingDuty: 'yes_practical', magenContactHistory: 'first_time', callerType: 'victim',
                         summaryNotes: 'תוכן השיחה המלא'
                     }
                 }]

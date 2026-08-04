@@ -48,7 +48,7 @@
         </div>
 
         <div class="flags-row">
-          <span class="flag-pill" [class.yes]="it.callReport?.reportingDuty === true" [class.no]="it.callReport?.reportingDuty !== true">
+          <span class="flag-pill" [class.yes]="isDutyYes()" [class.no]="!isDutyYes()">
             חובת דיווח: {{ reportingDutyLabel() }}
           </span>
           <span class="flag-pill">

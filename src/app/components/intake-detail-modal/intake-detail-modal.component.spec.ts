@@ -15,7 +15,7 @@ const BASE_INTAKE: IntakeAlert = {
     status: 'NEW',
     expiresAt: new Date('2026-08-15T10:00:00.000Z'),
     callReport: {
-        id: 5, email: 'miri@example.com', region: 'תל אביב', reportingDuty: true,
+        id: 5, email: 'miri@example.com', region: 'תל אביב', reportingDuty: 'yes_practical',
         magenContactHistory: 'first_time', callerType: 'victim', summaryNotes: 'תוכן מלא של השיחה'
     }
 };

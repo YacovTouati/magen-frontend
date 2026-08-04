@@ -14,10 +14,10 @@ export interface CallReportPayload {
     region: string;
     gender: string;
     sector: string;
-    receivedSupportAtOtherCenter: boolean;
+    receivedSupportAtOtherCenter: string;
     isFamilyMemberOrAcquaintance: boolean;
     magenContactHistory: string;
-    reportingDuty: boolean;
+    reportingDuty: string;
 }
 
 export interface CallReportResult {

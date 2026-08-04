@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { IntakeService, IntakeAlert, IntakeUrgency, IntakeStatus } from '../../services/intake.service';
+import { getReportingDutyLabel } from '../../shared/intake-labels';
 
 const STATUS_OPTIONS: IntakeStatus[] = ['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'LONG_TERM'];
 
@@ -142,7 +143,16 @@ export class IntakeAlertsComponent implements OnInit {
             return '—';
         }
 
-        return duty ? 'כן' : 'לא';
+        return getReportingDutyLabel(duty);
+    }
+
+    isDutyYes(intake: IntakeAlert): boolean {
+        const duty = intake.callReport?.reportingDuty;
+        return duty === 'yes_practical' || duty === 'yes_principled';
+    }
+
+    isDutyNo(intake: IntakeAlert): boolean {
+        return intake.callReport?.reportingDuty === 'no';
     }
 
     formatCreatedAt(date: Date): string {
