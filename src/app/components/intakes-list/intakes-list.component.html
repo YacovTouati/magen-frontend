@@ -26,6 +26,7 @@
           <th>חובת דיווח</th>
           <th>פנה למגן</th>
           <th>סוג הפונה</th>
+          <th>סטטוס</th>
           <th>פעולות</th>
         </tr>
       </thead>
@@ -43,6 +44,18 @@
           <td>{{ reportingDutyLabel(intake) }}</td>
           <td>{{ magenContactHistoryLabel(intake) }}</td>
           <td>{{ callerTypeLabel(intake) }}</td>
+          <td class="status-cell" (click)="$event.stopPropagation()">
+            <fieldset class="status-fieldset" [disabled]="isPendingAction(intake)">
+              <select
+                #statusSelect
+                class="status-select"
+                [ngModel]="intake.status"
+                (ngModelChange)="onStatusChange(intake, $event, statusSelect)"
+              >
+                <option *ngFor="let option of statusOptions" [value]="option">{{ statusLabel(option) }}</option>
+              </select>
+            </fieldset>
+          </td>
           <td class="actions-cell">
             <button
               type="button"
@@ -63,7 +76,7 @@
           </td>
         </tr>
         <tr *ngIf="intakes.length === 0">
-          <td colspan="9" class="empty-state">אין אינטייקים להצגה כרגע.</td>
+          <td colspan="10" class="empty-state">אין אינטייקים להצגה כרגע.</td>
         </tr>
       </tbody>
     </table>
@@ -81,7 +94,7 @@
 
 <app-confirm-modal
   [isOpen]="isRowDeleteConfirmOpen"
-  title="מחיקת אינטייק"
+  [title]="rowDeleteConfirmTitle"
   [message]="rowDeleteConfirmMessage"
   confirmLabel="מחק"
   cancelLabel="ביטול"

@@ -40,7 +40,7 @@ describe('IntakesListComponent', () => {
     let intakeServiceSpy: jasmine.SpyObj<IntakeService>;
 
     beforeEach(async () => {
-        intakeServiceSpy = jasmine.createSpyObj('IntakeService', ['getIntakes', 'deleteIntake']);
+        intakeServiceSpy = jasmine.createSpyObj('IntakeService', ['getIntakes', 'deleteIntake', 'updateStatus']);
         intakeServiceSpy.getIntakes.and.returnValue(of(buildIntakes()));
 
         await TestBed.configureTestingModule({
@@ -90,8 +90,8 @@ describe('IntakesListComponent', () => {
         expect(firstRowCells[5]).toBe('כן מעשי'); // reportingDuty: 'yes_practical'
         expect(firstRowCells[6]).toBe('פעם ראשונה'); // magenContactHistory label
         expect(firstRowCells[7]).toBe('נפגע/ת ישיר/ה'); // callerType label
-        expect(firstRowCells[8]).toContain('צפייה בפרטים'); // actions cell
-        expect(rows.length && rows[0].queryAll(By.css('td')).length).toBe(9); // no content/summary column
+        expect(firstRowCells[9]).toContain('צפייה בפרטים'); // actions cell
+        expect(rows.length && rows[0].queryAll(By.css('td')).length).toBe(10); // status column added
     });
 
     it('should not render a content/summary column at all', () => {
@@ -99,7 +99,7 @@ describe('IntakesListComponent', () => {
 
         const headers = fixture.debugElement.queryAll(By.css('th')).map(th => th.nativeElement.textContent.trim());
         expect(headers).not.toContain('תוכן / סיכום השיחה');
-        expect(headers.length).toBe(9);
+        expect(headers.length).toBe(10);
     });
 
     it('should show dashes/placeholders for a row with no linked callReport', () => {
@@ -195,7 +195,7 @@ describe('IntakesListComponent', () => {
             comp.requestRowDelete(fakeEvent, comp.intakes[0]);
             comp.requestRowDelete(fakeEvent, comp.intakes[1]);
 
-            expect(comp.pendingDeleteIntake?.id).toBe(1);
+            expect(comp.pendingDeletion?.intake.id).toBe(1);
         });
 
         it('confirming should DELETE via the service and reload the full list (not a local splice)', () => {
@@ -244,6 +244,79 @@ describe('IntakesListComponent', () => {
             comp.dismissActionError();
 
             expect(comp.actionError).toBe('');
+        });
+    });
+
+    describe('status column', () => {
+        it('should render a status <select> with every status option, on every row', () => {
+            const fixture = createComponent();
+
+            const selects = fixture.debugElement.queryAll(By.css('.status-select'));
+            expect(selects.length).toBe(2);
+
+            const options = Array.from(selects[0].nativeElement.options) as HTMLOptionElement[];
+            expect(options.map(o => o.value)).toEqual(['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'LONG_TERM']);
+            expect(options.some(o => o.value === 'ACTIVE' && o.textContent?.trim() === 'בטיפול פעיל')).toBeTrue();
+        });
+
+        it('picking a non-terminal status should PATCH via the service and update the row in place', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const updated = { ...comp.intakes[0], status: 'ACTIVE' as const };
+            intakeServiceSpy.updateStatus.and.returnValue(of(updated));
+
+            comp.onStatusChange(comp.intakes[0], 'ACTIVE');
+
+            expect(intakeServiceSpy.updateStatus).toHaveBeenCalledWith(1, 'ACTIVE');
+            expect(comp.intakes[0].status).toBe('ACTIVE');
+            expect(comp.pendingActionId).toBeNull();
+        });
+
+        it('picking CLOSED should open the delete confirmation instead of calling updateStatus', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.onStatusChange(comp.intakes[0], 'CLOSED');
+
+            expect(intakeServiceSpy.updateStatus).not.toHaveBeenCalled();
+            expect(comp.isRowDeleteConfirmOpen).toBeTrue();
+            expect(comp.pendingDeletion?.trigger).toBe('status');
+        });
+
+        it('confirming a CLOSED/LONG_TERM status pick should hard-delete via the service and reload', () => {
+            intakeServiceSpy.deleteIntake.and.returnValue(of(undefined));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.onStatusChange(comp.intakes[0], 'LONG_TERM');
+            intakeServiceSpy.getIntakes.calls.reset();
+
+            comp.onConfirmRowDelete();
+
+            expect(intakeServiceSpy.deleteIntake).toHaveBeenCalledWith(1);
+            expect(comp.isRowDeleteConfirmOpen).toBeFalse();
+            expect(intakeServiceSpy.getIntakes).toHaveBeenCalledTimes(1);
+        });
+
+        it('cancelling a status-triggered deletion should leave the intake status untouched', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.onStatusChange(comp.intakes[0], 'CLOSED');
+
+            comp.onCancelRowDelete();
+
+            expect(comp.isRowDeleteConfirmOpen).toBeFalse();
+            expect(comp.intakes[0].status).toBe('NEW');
+            expect(intakeServiceSpy.deleteIntake).not.toHaveBeenCalled();
+        });
+
+        it('clicking the status cell should not also open the detail modal', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            const cell = fixture.debugElement.queryAll(By.css('td.status-cell'))[0];
+            cell.triggerEventHandler('click', { stopPropagation: () => { } });
+
+            expect(comp.isDetailOpen).toBeFalse();
         });
     });
 
