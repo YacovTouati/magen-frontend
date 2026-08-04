@@ -52,8 +52,24 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
-    min-width: 1080px;
+    /* Raised from 1080px to fit the two explicit column widths below (status-col +
+       actions-col = 410px) without squeezing the remaining 8 columns — table-layout:fixed
+       divides whatever's left over evenly among the unstyled <col>s, so under 1080px they'd
+       shrink below what the status <select>/action buttons need and start overlapping. */
+    min-width: 1300px;
     table-layout: fixed;
+}
+
+/* table-layout:fixed sizes every column from its <colgroup> <col> width — these are the only
+   two that need to be wider than an even share, to fit the status <select> and the two action
+   controls without cramping (see .table-wrap's overflow-x: auto for the horizontal scroll that
+   kicks in instead of squeezing columns on narrower viewports). */
+.status-col {
+    width: 190px;
+}
+
+.actions-col {
+    width: 220px;
 }
 
 .intakes-table th {
@@ -108,8 +124,11 @@
     overflow: visible;
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 52px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 8px 14px;
+    height: auto;
+    min-height: 52px;
 }
 
 /* Same override reasoning as .actions-cell above — beats .intakes-table td's max-width/
@@ -117,6 +136,9 @@
 .intakes-table td.status-cell {
     max-width: none;
     overflow: visible;
+    padding: 8px 14px;
+    height: auto;
+    min-height: 52px;
 }
 
 .status-fieldset {
