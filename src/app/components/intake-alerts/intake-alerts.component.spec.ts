@@ -12,7 +12,10 @@ function hoursFromNow(hours: number): Date {
     return new Date(Date.now() + hours * 60 * 60 * 1000);
 }
 
-const MIRI_CALL_REPORT: IntakeCallReport = { id: 55, email: 'miri.a@example.com', reportingDuty: true };
+const MIRI_CALL_REPORT: IntakeCallReport = {
+    id: 55, email: 'miri.a@example.com', reportingDuty: true,
+    region: 'תל אביב', magenContactHistory: 'first_time', callerType: 'victim', summaryNotes: 'תוכן השיחה'
+};
 
 function buildMockIntakes(): IntakeAlert[] {
     return [

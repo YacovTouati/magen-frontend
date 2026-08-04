@@ -118,6 +118,11 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
+    if (this.currentRoute === '/intakes') {
+      this.currentTab = 'intakes';
+      return;
+    }
+
     // '/' is the legacy tab area (report/charts/samples/future toggle purely via currentTab,
     // with no route of their own — switchTab() always navigates back to '/' for them, which
     // Router ignores as a no-op since we're already there, so this branch only runs when we
@@ -134,6 +139,10 @@ export class DashboardComponent implements OnInit {
 
   isShiftsRoute(): boolean {
     return this.currentRoute === '/shifts';
+  }
+
+  isIntakesRoute(): boolean {
+    return this.currentRoute === '/intakes';
   }
 
   switchTab(tabName: string) {

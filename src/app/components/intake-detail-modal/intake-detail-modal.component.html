@@ -1,0 +1,94 @@
+<app-modal-shell [isOpen]="isOpen" maxWidth="640px" (backdropClick)="onClose()">
+  <ng-container *ngIf="intake as it">
+    <div class="modal-header">
+      <div>
+        <p class="modal-eyebrow">פרטי אינטייק #{{ it.id }}</p>
+        <h3 class="modal-title">{{ it.callerName }}</h3>
+      </div>
+      <button type="button" class="modal-close" (click)="onClose()" aria-label="סגור">✕</button>
+    </div>
+
+    <ng-container *ngIf="!isConfirmingDelete; else confirmDeleteTpl">
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="detail-field">
+            <span class="detail-label">טלפון</span>
+            <span class="detail-value phone-value">{{ it.phone }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">מייל</span>
+            <span class="detail-value">{{ it.callReport?.email || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">אזור בארץ</span>
+            <span class="detail-value">{{ it.callReport?.region || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">סוג הפונה</span>
+            <span class="detail-value">{{ callerTypeLabel() }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">סטטוס</span>
+            <span class="detail-value">{{ statusLabel() }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">רמת דחיפות</span>
+            <span class="detail-value">
+              <span class="urgency-pill" [ngClass]="'urgency-' + it.urgency.toLowerCase()">{{ urgencyLabel() }}</span>
+            </span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">מתי נכנס</span>
+            <span class="detail-value">{{ formatCreatedAt() }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">תוקף התיק</span>
+            <span class="detail-value">{{ formatExpiresAt() }}</span>
+          </div>
+        </div>
+
+        <div class="flags-row">
+          <span class="flag-pill" [class.yes]="it.callReport?.reportingDuty === true" [class.no]="it.callReport?.reportingDuty !== true">
+            חובת דיווח: {{ reportingDutyLabel() }}
+          </span>
+          <span class="flag-pill">
+            פנה למגן בעבר: {{ magenContactHistoryLabel() }}
+          </span>
+          <span class="flag-pill" [class.yes]="it.contactedOtherCenter === 'כן'" [class.no]="it.contactedOtherCenter !== 'כן'">
+            פנה למרכז שירות נוסף: {{ contactedOtherCenterLabel() }}
+          </span>
+        </div>
+
+        <div class="content-section">
+          <h4 class="content-title">תוכן השיחה</h4>
+          <div class="content-text">{{ contentText() }}</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-delete" (click)="requestDeleteConfirmation()" [disabled]="isDeleting">
+          🗑️ מחק אינטייק
+        </button>
+        <button type="button" class="btn-close" (click)="onClose()">סגור</button>
+      </div>
+    </ng-container>
+
+    <ng-template #confirmDeleteTpl>
+      <div class="modal-body confirm-delete-body">
+        <p class="confirm-delete-message">
+          האם אתה בטוח שברצונך למחוק את התיק של <strong>{{ it.callerName }}</strong>? פעולה זו אינה הפיכה.
+        </p>
+        <p class="delete-error" *ngIf="deleteError">⚠️ {{ deleteError }}</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel-delete" (click)="cancelDeleteConfirmation()" [disabled]="isDeleting">
+          ביטול
+        </button>
+        <button type="button" class="btn-confirm-delete" (click)="confirmDelete()" [disabled]="isDeleting">
+          {{ isDeleting ? 'מוחק...' : 'מחק לצמיתות' }}
+        </button>
+      </div>
+    </ng-template>
+  </ng-container>
+</app-modal-shell>

@@ -29,7 +29,7 @@
       -->
       <router-outlet></router-outlet>
 
-      <ng-container *ngIf="!isAdminUsersRoute() && !isShiftsRoute()">
+      <ng-container *ngIf="!isAdminUsersRoute() && !isShiftsRoute() && !isIntakesRoute()">
         <app-samples *ngIf="currentTab === 'samples'" [sampleCalls]="sampleCalls"></app-samples>
 
         <app-report *ngIf="currentTab === 'report'" [callDuration]="callDuration" [callerType]="callerType"

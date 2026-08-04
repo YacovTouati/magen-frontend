@@ -83,18 +83,74 @@ describe('IntakeService', () => {
             httpMock.expectOne(apiUrl).flush({ data: [rawIntake] });
         });
 
-        it('should normalize a joined callReport into email/reportingDuty', () => {
+        it('should normalize a joined callReport into email/region/reportingDuty/magenContactHistory/callerType/summaryNotes', () => {
             service.getIntakes().subscribe(intakes => {
                 expect(intakes[0].callReport).toEqual({
                     id: 55,
                     email: 'volunteer-caller@example.com',
-                    reportingDuty: true
+                    region: 'תל אביב',
+                    reportingDuty: true,
+                    magenContactHistory: 'first_time',
+                    callerType: 'victim',
+                    summaryNotes: 'תוכן השיחה המלא'
                 });
             });
 
             httpMock.expectOne(apiUrl).flush({
-                data: [{ ...rawIntake, callReport: { id: 55, email: 'volunteer-caller@example.com', reportingDuty: true } }]
+                data: [{
+                    ...rawIntake, callReport: {
+                        id: 55, email: 'volunteer-caller@example.com', region: 'תל אביב',
+                        reportingDuty: true, magenContactHistory: 'first_time', callerType: 'victim',
+                        summaryNotes: 'תוכן השיחה המלא'
+                    }
+                }]
             });
+        });
+
+        it('should default missing callReport sub-fields to null rather than undefined', () => {
+            service.getIntakes().subscribe(intakes => {
+                expect(intakes[0].callReport).toEqual({
+                    id: 55, email: null, region: null, reportingDuty: null, magenContactHistory: null, callerType: null, summaryNotes: null
+                });
+            });
+
+            httpMock.expectOne(apiUrl).flush({ data: [{ ...rawIntake, callReport: { id: 55 } }] });
+        });
+    });
+
+    describe('getUnhandledCount', () => {
+        it('should GET /api/intakes/unhandled-count and unwrap { data: { count } }', () => {
+            service.getUnhandledCount().subscribe(count => {
+                expect(count).toBe(7);
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/unhandled-count`);
+            expect(req.request.method).toBe('GET');
+            req.flush({ success: true, data: { count: 7 } });
+        });
+
+        it('should default to 0 for an unrecognized response shape', () => {
+            service.getUnhandledCount().subscribe(count => {
+                expect(count).toBe(0);
+            });
+
+            httpMock.expectOne(`${apiUrl}/unhandled-count`).flush({ message: 'nothing here' });
+        });
+
+        it('should propagate an HTTP error as an observable error', () => {
+            let capturedError: any = null;
+
+            service.getUnhandledCount().subscribe({
+                next: () => fail('expected an error'),
+                error: (err) => { capturedError = err; }
+            });
+
+            httpMock.expectOne(`${apiUrl}/unhandled-count`).flush(
+                { message: 'אין הרשאה' },
+                { status: 403, statusText: 'Forbidden' }
+            );
+
+            expect(capturedError.status).toBe(403);
         });
     });
 

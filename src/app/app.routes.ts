@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { UserManagementComponent } from './components/user-management/user-management.component';
 import { ShiftBoardComponent } from './components/shift-board/shift-board.component';
+import { IntakesListComponent } from './components/intakes-list/intakes-list.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
@@ -8,6 +9,7 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { intakesGuard } from './guards/intakes.guard';
 
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
@@ -23,7 +25,11 @@ export const routes: Routes = [
             // No extra guard beyond the inherited authGuard — both admins and volunteers
             // use this view; admin-only actions (create/publish/release) are gated inside
             // ShiftBoardComponent itself, same way CalendarComponent gates its own admin UI.
-            { path: 'shifts', component: ShiftBoardComponent }
+            { path: 'shifts', component: ShiftBoardComponent },
+            // SUPER_ADMIN/INTAKE_ADMIN only — matches the backend's checkRole gate on the
+            // whole /intakes router, and the sidebar tab that links here is hidden from
+            // everyone else too (defense in depth, not the only gate).
+            { path: 'intakes', component: IntakesListComponent, canActivate: [intakesGuard] }
         ]
     },
     { path: '**', redirectTo: '' }

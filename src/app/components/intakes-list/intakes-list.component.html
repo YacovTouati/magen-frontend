@@ -1,0 +1,90 @@
+<section class="section-card intakes-list-card" dir="rtl">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">ניהול מערכת</p>
+      <h2>אינטייקים</h2>
+    </div>
+    <span *ngIf="isLoading" class="loading-hint">טוען...</span>
+  </div>
+
+  <div class="action-error-banner" *ngIf="actionError">
+    <span>⚠️ {{ actionError }}</span>
+    <button type="button" class="dismiss-btn" (click)="dismissActionError()" aria-label="סגור">✕</button>
+  </div>
+
+  <p *ngIf="!isLoading && loadError" class="status-message error">{{ loadError }}</p>
+
+  <div class="table-wrap" *ngIf="!isLoading && !loadError">
+    <table class="intakes-table">
+      <thead>
+        <tr>
+          <th>שם מלא</th>
+          <th>טלפון</th>
+          <th>מייל</th>
+          <th>אזור בארץ</th>
+          <th>פנה למרכז שירות</th>
+          <th>חובת דיווח</th>
+          <th>פנה למגן</th>
+          <th>סוג הפונה</th>
+          <th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let intake of intakes; trackBy: trackById"
+          class="intake-row"
+          (click)="openDetail(intake)"
+        >
+          <td>{{ intake.callerName }}</td>
+          <td class="phone-cell">{{ intake.phone }}</td>
+          <td>{{ intake.callReport?.email || '-' }}</td>
+          <td>{{ intake.callReport?.region || '-' }}</td>
+          <td>{{ contactedOtherCenterLabel(intake) }}</td>
+          <td>{{ reportingDutyLabel(intake) }}</td>
+          <td>{{ magenContactHistoryLabel(intake) }}</td>
+          <td>{{ callerTypeLabel(intake) }}</td>
+          <td class="actions-cell">
+            <button
+              type="button"
+              class="view-details-btn"
+              (click)="onViewDetailsClick($event, intake)"
+            >
+              צפייה בפרטים
+            </button>
+            <button
+              type="button"
+              class="delete-row-btn"
+              (click)="requestRowDelete($event, intake)"
+              aria-label="מחק אינטייק"
+              title="מחק אינטייק"
+            >
+              🗑️
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="intakes.length === 0">
+          <td colspan="9" class="empty-state">אין אינטייקים להצגה כרגע.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<app-intake-detail-modal
+  [isOpen]="isDetailOpen"
+  [intake]="selectedIntake"
+  [isDeleting]="isDeletingFromModal"
+  [deleteError]="modalDeleteError"
+  (closed)="closeDetail()"
+  (deleteConfirmed)="onModalDeleteConfirmed($event)"
+></app-intake-detail-modal>
+
+<app-confirm-modal
+  [isOpen]="isRowDeleteConfirmOpen"
+  title="מחיקת אינטייק"
+  [message]="rowDeleteConfirmMessage"
+  confirmLabel="מחק"
+  cancelLabel="ביטול"
+  (confirmed)="onConfirmRowDelete()"
+  (cancelled)="onCancelRowDelete()"
+></app-confirm-modal>

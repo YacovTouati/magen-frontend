@@ -110,6 +110,31 @@ describe('DashboardComponent', () => {
         expect(comp.currentTab).toBe('calendar');
     });
 
+    it('should treat /intakes as a routed view (isIntakesRoute) and highlight the intakes tab', () => {
+        const fixture = TestBed.createComponent(DashboardComponent);
+        const comp = fixture.componentInstance;
+        fixture.detectChanges();
+
+        (comp as any).currentRoute = '/intakes';
+        (comp as any).updateCurrentTabFromRoute();
+
+        expect(comp.isIntakesRoute()).toBeTrue();
+        expect(comp.currentTab).toBe('intakes');
+    });
+
+    it('should not render the legacy tab area (report/charts/samples) while on /intakes', () => {
+        const fixture = TestBed.createComponent(DashboardComponent);
+        const comp = fixture.componentInstance;
+        fixture.detectChanges();
+
+        (comp as any).currentRoute = '/intakes';
+        (comp as any).updateCurrentTabFromRoute();
+        fixture.detectChanges();
+
+        expect(comp.isIntakesRoute()).toBeTrue();
+        expect(fixture.debugElement.query(By.css('app-report'))).toBeFalsy();
+    });
+
     it('returning to "/" from /shifts falls back to the report tab, not a blank calendar tab', () => {
         const fixture = TestBed.createComponent(DashboardComponent);
         const comp = fixture.componentInstance;

@@ -1,0 +1,187 @@
+.intakes-list-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.eyebrow {
+    margin: 0 0 4px;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.page-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #0f172a;
+}
+
+.loading-hint {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.status-message {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    padding: 24px 12px;
+}
+
+.status-message.error {
+    color: #b91c1c;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.intakes-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 1080px;
+    table-layout: fixed;
+}
+
+.intakes-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-align: right;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+/* CRITICAL: every row stays a single, uniform-height line — no column is allowed to wrap
+   and stretch the row, it clips instead. Column 9 (content preview) gets its own tighter
+   max-width override below since it's the one column expected to routinely hold long text. */
+.intakes-table td {
+    padding: 0 14px;
+    height: 52px;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    color: #0f172a;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.intakes-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.intake-row {
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.intake-row:hover {
+    background: #f8fafc;
+}
+
+.phone-cell {
+    direction: ltr;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Needs to beat .intakes-table td's specificity (class+element), not just come after it in
+   source order — a bare .actions-cell selector alone is LOWER specificity and would silently
+   lose this override regardless of source position. */
+.intakes-table td.actions-cell {
+    max-width: none;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+}
+
+.view-details-btn {
+    padding: 7px 14px;
+    min-height: 36px;
+    border-radius: 8px;
+    border: 1px solid #1e3a8a;
+    background: #fff;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.view-details-btn:hover {
+    background: #eff6ff;
+}
+
+.delete-row-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid #fca5a5;
+    background: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.delete-row-btn:hover {
+    background: #fef2f2;
+}
+
+.action-error-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+.action-error-banner .dismiss-btn {
+    background: transparent;
+    border: none;
+    color: #b91c1c;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.empty-state {
+    text-align: center;
+    color: #94a3b8;
+    padding: 24px 12px;
+    white-space: normal;
+}
+
+@media (max-width: 720px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
