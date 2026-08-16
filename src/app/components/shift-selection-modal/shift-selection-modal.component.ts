@@ -39,6 +39,10 @@ export class ShiftSelectionModalComponent {
     @Output() adminAssign = new EventEmitter<AdminAssignment>();
     @Output() releaseShift = new EventEmitter<ShiftRecord>();
     @Output() closeModal = new EventEmitter<void>();
+    // Admin/scheduler only (gated by isAdmin in the template) — the caller closes this
+    // modal and opens ShiftNoteModalComponent for the emitted shift, same as clicking the
+    // note indicator directly on the calendar cell.
+    @Output() editNote = new EventEmitter<ShiftRecord>();
 
     selectedType: ShiftType | null = null;
     selectedVolunteerId: number | null = null;
@@ -108,6 +112,15 @@ export class ShiftSelectionModalComponent {
 
         this.selectedType = null;
         this.selectedVolunteerId = null;
+    }
+
+    onEditNote(type: ShiftType): void {
+        const shift = type === 'MORNING' ? this.morningShift : this.eveningShift;
+        if (!shift) {
+            return;
+        }
+
+        this.editNote.emit(shift);
     }
 
     onRelease(type: ShiftType): void {

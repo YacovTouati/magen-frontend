@@ -20,6 +20,7 @@ export interface ShiftRecord {
     type: ShiftType;
     status: ShiftStatus;
     volunteer: ShiftVolunteer | null;
+    note: string | null;
 }
 
 // Returned by /schedules, /schedules/:id/publish — neither includes the shift rows.
@@ -94,6 +95,20 @@ export class ScheduleService {
         );
     }
 
+    // Admin/scheduler only — sets or overwrites the shift's free-text note.
+    updateShiftNote(shiftId: number, note: string): Observable<ShiftRecord> {
+        return this.http.patch<any>(`${this.apiUrl}/shifts/${shiftId}/note`, { note }).pipe(
+            map(response => this.normalizeShift(response?.data ?? response))
+        );
+    }
+
+    // Admin/scheduler only — clears the note (sets it back to null server-side).
+    deleteShiftNote(shiftId: number): Observable<ShiftRecord> {
+        return this.http.delete<any>(`${this.apiUrl}/shifts/${shiftId}/note`).pipe(
+            map(response => this.normalizeShift(response?.data ?? response))
+        );
+    }
+
     private findByMonthYear(year: number, month0Indexed: number): Observable<ScheduleSummary | null> {
         const params = new HttpParams()
             .set('month', month0Indexed + 1)
@@ -139,7 +154,8 @@ export class ScheduleService {
             date: this.toDateOnly(raw?.date),
             type: raw?.type,
             status: raw?.status ?? 'OPEN',
-            volunteer: this.normalizeVolunteer(raw?.volunteer)
+            volunteer: this.normalizeVolunteer(raw?.volunteer),
+            note: raw?.note ?? null
         };
     }
 

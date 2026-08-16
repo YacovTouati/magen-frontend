@@ -45,6 +45,9 @@ export class UserManagementComponent implements OnInit {
     private pendingDeleteId: number | string | null = null;
     pendingDeleteName = '';
 
+    private pendingRevokeId: number | null = null;
+    pendingRevokeEmail = '';
+
     /** id of the user with an in-flight role-change request, if any */
     pendingRoleChangeId: number | string | null = null;
 
@@ -241,5 +244,44 @@ export class UserManagementComponent implements OnInit {
 
     onCancelDelete(): void {
         this.pendingDeleteId = null;
+    }
+
+    revokeInvitation(invite: PendingInvite): void {
+        this.pendingRevokeId = invite.id;
+        this.pendingRevokeEmail = invite.email;
+    }
+
+    get isRevokeConfirmOpen(): boolean {
+        return this.pendingRevokeId !== null;
+    }
+
+    get revokeConfirmMessage(): string {
+        return `האם למחוק את ההזמנה עבור ${this.pendingRevokeEmail}? פעולה זו אינה הפיכה.`;
+    }
+
+    onConfirmRevoke(): void {
+        const id = this.pendingRevokeId;
+        this.pendingRevokeId = null;
+
+        if (!id) {
+            return;
+        }
+
+        this.formError = '';
+        this.formSuccess = '';
+
+        this.userService.deleteInvitation(id).subscribe({
+            next: () => {
+                this.formSuccess = 'ההזמנה נמחקה בהצלחה.';
+                this.loadInvitations();
+            },
+            error: (err: HttpErrorResponse) => {
+                this.formError = extractServerErrorMessage(err, 'מחיקת ההזמנה נכשלה. נסה שוב.');
+            }
+        });
+    }
+
+    onCancelRevoke(): void {
+        this.pendingRevokeId = null;
     }
 }

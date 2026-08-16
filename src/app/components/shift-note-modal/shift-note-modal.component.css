@@ -1,0 +1,223 @@
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-eyebrow {
+    margin: 0 0 4px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.modal-close {
+    background: #f1f5f9;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #475569;
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.modal-close:hover {
+    background: #e2e8f0;
+}
+
+.modal-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.note-text {
+    margin: 0;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #0f172a;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.note-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+    color: #0f172a;
+    resize: vertical;
+    min-height: 90px;
+}
+
+.note-textarea:focus {
+    outline: none;
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
+}
+
+.note-textarea:disabled {
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+.note-char-count {
+    margin: 0;
+    align-self: flex-end;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.note-error {
+    margin: 0;
+    font-size: 13px;
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.modal-footer {
+    padding: 14px 24px 20px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.btn-close,
+.btn-cancel,
+.btn-cancel-delete {
+    padding: 9px 20px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #334155;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-close:hover,
+.btn-cancel:hover:not(:disabled),
+.btn-cancel-delete:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.btn-delete {
+    padding: 9px 20px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: 1px solid #fca5a5;
+    background: #fff;
+    color: #b91c1c;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-delete:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.btn-edit,
+.btn-save {
+    padding: 9px 20px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: none;
+    background: #0d9488;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-edit:hover:not(:disabled),
+.btn-save:hover:not(:disabled) {
+    background: #0f766e;
+}
+
+.btn-delete:disabled,
+.btn-edit:disabled,
+.btn-save:disabled,
+.btn-cancel:disabled,
+.btn-cancel-delete:disabled,
+.btn-confirm-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-confirm-delete {
+    padding: 9px 20px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: none;
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-confirm-delete:hover:not(:disabled) {
+    background: #b91c1c;
+}
+
+.confirm-delete-body {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.confirm-delete-message {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #334155;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    .modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .btn-close,
+    .btn-cancel,
+    .btn-delete,
+    .btn-edit,
+    .btn-save,
+    .btn-cancel-delete,
+    .btn-confirm-delete {
+        flex: 1;
+    }
+}

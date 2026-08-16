@@ -16,6 +16,14 @@
           משובץ: {{ morningShift?.volunteer?.name || '—' }}
         </span>
       </label>
+      <button
+        type="button"
+        class="btn-note"
+        [class.has-note]="morningShift?.note"
+        *ngIf="isAdmin && morningShift"
+        [attr.aria-label]="morningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
+        (click)="onEditNote('MORNING')"
+      >✏️</button>
       <button type="button" class="btn-release" *ngIf="canReleaseMorning" (click)="onRelease('MORNING')">
         🔓 שחרר משמרת
       </button>
@@ -29,6 +37,14 @@
           משובץ: {{ eveningShift?.volunteer?.name || '—' }}
         </span>
       </label>
+      <button
+        type="button"
+        class="btn-note"
+        [class.has-note]="eveningShift?.note"
+        *ngIf="isAdmin && eveningShift"
+        [attr.aria-label]="eveningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
+        (click)="onEditNote('EVENING')"
+      >✏️</button>
       <button type="button" class="btn-release" *ngIf="canReleaseEvening" (click)="onRelease('EVENING')">
         🔓 שחרר משמרת
       </button>

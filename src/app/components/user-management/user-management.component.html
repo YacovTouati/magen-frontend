@@ -118,10 +118,16 @@
                         <td>{{ invite.invitedBy?.name || invite.invitedBy?.email || '—' }}</td>
                         <td>{{ formatDate(invite.expiresAt) }}</td>
                         <td>
-                            <button class="reinvite-btn" type="button" (click)="reinvite(invite)"
-                                [disabled]="isPendingReinvite(invite)">
-                                {{ isPendingReinvite(invite) ? 'יוצר קישור...' : 'צור קישור חדש' }}
-                            </button>
+                            <div class="invite-actions">
+                                <button class="reinvite-btn" type="button" (click)="reinvite(invite)"
+                                    [disabled]="isPendingReinvite(invite)">
+                                    {{ isPendingReinvite(invite) ? 'יוצר קישור...' : 'צור קישור חדש' }}
+                                </button>
+                                <button class="delete-invite-btn" type="button" (click)="revokeInvitation(invite)"
+                                    aria-label="מחיקת הזמנה">
+                                    🗑️
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     <tr *ngIf="!isLoadingInvites && pendingInvites.length === 0">
@@ -140,5 +146,15 @@
         cancelLabel="ביטול"
         (confirmed)="onConfirmDelete()"
         (cancelled)="onCancelDelete()"
+    ></app-confirm-modal>
+
+    <app-confirm-modal
+        [isOpen]="isRevokeConfirmOpen"
+        title="מחיקת הזמנה"
+        [message]="revokeConfirmMessage"
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        (confirmed)="onConfirmRevoke()"
+        (cancelled)="onCancelRevoke()"
     ></app-confirm-modal>
 </section>

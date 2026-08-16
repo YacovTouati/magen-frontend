@@ -12,7 +12,7 @@ describe('UserManagementComponent', () => {
     ];
 
     beforeEach(async () => {
-        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole']);
+        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole', 'deleteInvitation']);
         userServiceSpy.getUsers.and.returnValue(of(existingUsers));
         userServiceSpy.listInvitations.and.returnValue(of([]));
 
@@ -207,6 +207,63 @@ describe('UserManagementComponent', () => {
             comp.reinvite(pending);
 
             expect(userServiceSpy.inviteUser).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('revokeInvitation', () => {
+        const pending: PendingInvite = {
+            id: 7, email: 'stale@example.com', role: 'VOLUNTEER', expiresAt: '2026-08-01T00:00:00.000Z',
+            createdAt: '2026-07-30T00:00:00.000Z', invitedBy: { id: 1, name: 'Admin', email: 'admin@example.com' }
+        };
+
+        it('should open the styled confirm modal (not window.confirm) with the target email, without calling the service yet', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            spyOn(window, 'confirm');
+
+            comp.revokeInvitation(pending);
+
+            expect(window.confirm).not.toHaveBeenCalled();
+            expect(comp.isRevokeConfirmOpen).toBeTrue();
+            expect(comp.revokeConfirmMessage).toContain('stale@example.com');
+            expect(userServiceSpy.deleteInvitation).not.toHaveBeenCalled();
+        });
+
+        it('should abort and close the modal when cancelled', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.revokeInvitation(pending);
+            comp.onCancelRevoke();
+
+            expect(comp.isRevokeConfirmOpen).toBeFalse();
+            expect(userServiceSpy.deleteInvitation).not.toHaveBeenCalled();
+        });
+
+        it('should call deleteInvitation with the exact id, close the modal, show a success message, and reload the list on confirm', () => {
+            userServiceSpy.deleteInvitation.and.returnValue(of(undefined));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            userServiceSpy.listInvitations.calls.reset();
+
+            comp.revokeInvitation(pending);
+            comp.onConfirmRevoke();
+
+            expect(userServiceSpy.deleteInvitation).toHaveBeenCalledOnceWith(7);
+            expect(comp.isRevokeConfirmOpen).toBeFalse();
+            expect(comp.formSuccess).toBe('ההזמנה נמחקה בהצלחה.');
+            expect(userServiceSpy.listInvitations).toHaveBeenCalledTimes(1);
+        });
+
+        it('should show an error and not crash when the delete request fails', () => {
+            userServiceSpy.deleteInvitation.and.returnValue(throwError(() => new Error('forbidden')));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.revokeInvitation(pending);
+            comp.onConfirmRevoke();
+
+            expect(comp.formError).toBe('מחיקת ההזמנה נכשלה. נסה שוב.');
         });
     });
 

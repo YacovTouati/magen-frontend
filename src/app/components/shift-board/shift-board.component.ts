@@ -8,6 +8,7 @@ import { UserManagementService } from '../../services/user-management.service';
 import { ScheduleService, ScheduleRecord, ShiftRecord, ShiftVolunteer } from '../../services/schedule.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ShiftSelectionModalComponent, AdminAssignment } from '../shift-selection-modal/shift-selection-modal.component';
+import { ShiftNoteModalComponent } from '../shift-note-modal/shift-note-modal.component';
 
 export interface ShiftBoardDay {
     dayNumber: number;
@@ -40,7 +41,7 @@ const POLL_INTERVAL_MS = 15000;
 @Component({
     selector: 'app-shift-board',
     standalone: true,
-    imports: [CommonModule, FormsModule, ConfirmModalComponent, ShiftSelectionModalComponent],
+    imports: [CommonModule, FormsModule, ConfirmModalComponent, ShiftSelectionModalComponent, ShiftNoteModalComponent],
     templateUrl: './shift-board.component.html',
     styleUrls: ['./shift-board.component.css']
 })
@@ -87,6 +88,13 @@ export class ShiftBoardComponent implements OnInit {
     isSaving = false;
     actionError = '';
 
+    // Shift note popup — independent of the day-selection/claim/release flow above (opened
+    // via its own indicator button on a shift chip, not through onDayClick).
+    isNoteModalOpen = false;
+    isSavingNote = false;
+    noteSaveError = '';
+    pendingNoteShift: ShiftRecord | null = null;
+
     private pendingDay: ShiftBoardDay | null = null;
     private pendingShift: ShiftRecord | null = null;
     private pendingRelease: ShiftRecord | null = null;
@@ -122,7 +130,7 @@ export class ShiftBoardComponent implements OnInit {
             timer(POLL_INTERVAL_MS, POLL_INTERVAL_MS).pipe(
                 takeUntilDestroyed(this.destroyRef)
             ).subscribe(() => {
-                if (!this.isShiftModalOpen && !this.isConfirmOpen && !this.isSaving && !this.isCreatingSchedule && !this.isPublishing) {
+                if (!this.isShiftModalOpen && !this.isConfirmOpen && !this.isSaving && !this.isCreatingSchedule && !this.isPublishing && !this.isNoteModalOpen && !this.isSavingNote) {
                     this.ngZone.run(() => this.loadSchedule(true));
                 }
             });
@@ -496,6 +504,96 @@ export class ShiftBoardComponent implements OnInit {
         }
 
         return days;
+    }
+
+    // Backs the single bottom-of-cell note indicator — one indicator per day, even though
+    // notes are per-shift. Prefers the morning shift's note when both happen to have one;
+    // the evening note is still reachable via the assignment modal's own per-shift pencil
+    // button regardless. Returns null (hiding the indicator, leaving the cell's bottom
+    // space empty) once neither shift has a note.
+    existingNoteShift(day: ShiftBoardDay): ShiftRecord | null {
+        if (day.morning?.note) {
+            return day.morning;
+        }
+        if (day.evening?.note) {
+            return day.evening;
+        }
+        return null;
+    }
+
+    // Opens the note popup for a specific shift — the calendar-cell note indicator (only
+    // ever shown once a note already exists) reaches this via a real DOM click, so it needs
+    // to stop that click from bubbling up to the day-cell's own (click)="onDayClick(...)",
+    // which would otherwise also try to open the day-selection modal underneath it.
+    // Deliberately independent of isCellClickable(day): notes are for hours-deviation
+    // record-keeping, so past/locked days must stay editable even once the cell itself is
+    // no longer selectable.
+    onNoteIndicatorClick(event: Event, shift: ShiftRecord): void {
+        event.stopPropagation();
+        this.openNoteModalFor(shift);
+    }
+
+    // Reached from ShiftSelectionModalComponent's own "✏️" per-shift button (the day/shift
+    // assignment modal, opened via the normal onDayClick flow) — no DOM event to stop here,
+    // just swap which modal is showing.
+    onEditNoteFromModal(shift: ShiftRecord): void {
+        this.isShiftModalOpen = false;
+        this.pendingDay = null;
+        this.openNoteModalFor(shift);
+    }
+
+    private openNoteModalFor(shift: ShiftRecord): void {
+        this.pendingNoteShift = shift;
+        this.isNoteModalOpen = true;
+        this.noteSaveError = '';
+    }
+
+    closeNoteModal(): void {
+        this.isNoteModalOpen = false;
+        this.pendingNoteShift = null;
+        this.noteSaveError = '';
+    }
+
+    onNoteSaved(note: string): void {
+        if (!this.pendingNoteShift) {
+            return;
+        }
+
+        this.isSavingNote = true;
+        this.noteSaveError = '';
+
+        this.scheduleService.updateShiftNote(this.pendingNoteShift.id, note).subscribe({
+            next: (updated) => {
+                this.applyShiftLocally(updated);
+                this.isSavingNote = false;
+                this.closeNoteModal();
+            },
+            error: () => {
+                this.isSavingNote = false;
+                this.noteSaveError = 'שמירת ההערה נכשלה. נסה/י שוב.';
+            }
+        });
+    }
+
+    onNoteDeleted(): void {
+        if (!this.pendingNoteShift) {
+            return;
+        }
+
+        this.isSavingNote = true;
+        this.noteSaveError = '';
+
+        this.scheduleService.deleteShiftNote(this.pendingNoteShift.id).subscribe({
+            next: (updated) => {
+                this.applyShiftLocally(updated);
+                this.isSavingNote = false;
+                this.closeNoteModal();
+            },
+            error: () => {
+                this.isSavingNote = false;
+                this.noteSaveError = 'מחיקת ההערה נכשלה. נסה/י שוב.';
+            }
+        });
     }
 
     private applyShiftLocally(updated: ShiftRecord): void {

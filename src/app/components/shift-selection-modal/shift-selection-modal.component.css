@@ -103,6 +103,28 @@
     min-width: 0;
 }
 
+.btn-note {
+    flex-shrink: 0;
+    width: 40px;
+    min-height: 40px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-note:hover {
+    background: #f1f5f9;
+}
+
+.btn-note.has-note {
+    border-color: #99d8ce;
+    background: #ecfdf5;
+}
+
 .btn-release {
     flex-shrink: 0;
     padding: 8px 12px;
@@ -214,6 +236,10 @@
 
     .shift-row .shift-option {
         flex-basis: 100%;
+    }
+
+    .btn-note {
+        min-height: 44px;
     }
 
     .btn-release {

@@ -68,6 +68,13 @@ export class UserManagementService {
         );
     }
 
+    // Revokes a still-pending invite (expired or no longer needed) — doesn't emit
+    // usersChanged$, same reasoning as inviteUser: a pending InvitedUser row isn't part of
+    // the active roster other views (e.g. the shift calendar) care about.
+    deleteInvitation(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/invitations/${id}`);
+    }
+
     // Mirrors the backend's PATCH /intakes/:id/status convention (see intake.service.ts) —
     // updates just the role rather than requiring a full delete+recreate, which would
     // orphan every Intake/CallReport/Shift foreign key pointing at that user.

@@ -1,0 +1,61 @@
+<app-modal-shell [isOpen]="isOpen" maxWidth="440px" (backdropClick)="onClose()">
+  <ng-container *ngIf="shift as s">
+    <div class="modal-header">
+      <div>
+        <p class="modal-eyebrow">הערה למשמרת</p>
+        <h3 class="modal-title">{{ shiftTypeLabel }}</h3>
+      </div>
+      <button type="button" class="modal-close" (click)="onClose()" aria-label="סגור">✕</button>
+    </div>
+
+    <ng-container *ngIf="!isConfirmingDelete; else confirmDeleteTpl">
+      <div class="modal-body">
+        <ng-container *ngIf="isEditing; else viewTpl">
+          <textarea
+            class="note-textarea"
+            [(ngModel)]="draftNote"
+            [maxlength]="maxLength"
+            rows="4"
+            placeholder="הזן הערה למשמרת..."
+            [disabled]="isSaving"
+          ></textarea>
+          <p class="note-char-count">{{ draftNote.length }}/{{ maxLength }}</p>
+        </ng-container>
+        <ng-template #viewTpl>
+          <p class="note-text">{{ s.note }}</p>
+        </ng-template>
+
+        <p class="note-error" *ngIf="saveError">⚠️ {{ saveError }}</p>
+      </div>
+
+      <div class="modal-footer" *ngIf="isEditing">
+        <button type="button" class="btn-cancel" (click)="cancelEditing()" [disabled]="isSaving">ביטול</button>
+        <button type="button" class="btn-save" (click)="saveNote()" [disabled]="isSaving || !draftNote.trim()">
+          {{ isSaving ? 'שומר...' : 'שמור הערה' }}
+        </button>
+      </div>
+
+      <div class="modal-footer" *ngIf="!isEditing && canManage">
+        <button type="button" class="btn-delete" (click)="requestDeleteConfirmation()" [disabled]="isSaving">🗑️ מחק הערה</button>
+        <button type="button" class="btn-edit" (click)="startEditing()" [disabled]="isSaving">✏️ ערוך הערה</button>
+      </div>
+
+      <div class="modal-footer" *ngIf="!isEditing && !canManage">
+        <button type="button" class="btn-close" (click)="onClose()">סגור</button>
+      </div>
+    </ng-container>
+
+    <ng-template #confirmDeleteTpl>
+      <div class="modal-body confirm-delete-body">
+        <p class="confirm-delete-message">האם אתה בטוח שברצונך למחוק את ההערה?</p>
+        <p class="note-error" *ngIf="saveError">⚠️ {{ saveError }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel-delete" (click)="cancelDeleteConfirmation()" [disabled]="isSaving">ביטול</button>
+        <button type="button" class="btn-confirm-delete" (click)="confirmDelete()" [disabled]="isSaving">
+          {{ isSaving ? 'מוחק...' : 'מחק לצמיתות' }}
+        </button>
+      </div>
+    </ng-template>
+  </ng-container>
+</app-modal-shell>

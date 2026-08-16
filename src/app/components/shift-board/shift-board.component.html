@@ -76,6 +76,14 @@
                   🌙 {{ c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי' }}
                 </span>
               </div>
+
+              <button
+                *ngIf="existingNoteShift(c.day) as noted"
+                type="button"
+                class="day-note-indicator"
+                aria-label="צפייה בהערת המשמרת"
+                (click)="onNoteIndicatorClick($event, noted)"
+              >📝 הערה</button>
             </ng-container>
           </div>
         </ng-container>
@@ -95,6 +103,7 @@
     (adminAssign)="onAdminAssign($event)"
     (releaseShift)="onReleaseShift($event)"
     (closeModal)="closeShiftModal()"
+    (editNote)="onEditNoteFromModal($event)"
   ></app-shift-selection-modal>
 
   <app-confirm-modal
@@ -106,4 +115,15 @@
     (confirmed)="onConfirmAccept()"
     (cancelled)="onConfirmCancel()"
   ></app-confirm-modal>
+
+  <app-shift-note-modal
+    [isOpen]="isNoteModalOpen"
+    [shift]="pendingNoteShift"
+    [canManage]="canManageSchedule"
+    [isSaving]="isSavingNote"
+    [saveError]="noteSaveError"
+    (closed)="closeNoteModal()"
+    (noteSaved)="onNoteSaved($event)"
+    (noteDeleted)="onNoteDeleted()"
+  ></app-shift-note-modal>
 </section>
