@@ -43,6 +43,21 @@ import { FormsModule, NgForm } from '@angular/forms';
       </div>
 
       <div class="form-group">
+        <label>מי הכניס את הדיווח (חובה):</label>
+        <input
+          type="text"
+          [(ngModel)]="reportedBy"
+          #reportedByModel="ngModel"
+          name="reportedBy"
+          required
+          placeholder="שם המתנדב/ת המדווח/ת"
+        >
+        <p class="field-error" *ngIf="reportedByModel.invalid && (reportedByModel.dirty || reportedByModel.touched)">
+          חובה להזין את שם מכניס/ת הדיווח
+        </p>
+      </div>
+
+      <div class="form-group">
         <label>אזור בארץ:</label>
         <input type="text" [(ngModel)]="region" name="region" required placeholder="לדוגמה: תל אביב, מרכז, ירושלים והסביבה">
       </div>
@@ -130,6 +145,7 @@ export class ReportComponent {
   @Input() callerName = '';
   @Input() phone = '';
   @Input() email = '';
+  @Input() reportedBy = '';
   @Input() region = '';
   @Input() gender = 'unknown';
   @Input() sector = 'secular';
@@ -161,6 +177,7 @@ export class ReportComponent {
       callerName: '',
       phone: '',
       email: '',
+      reportedBy: '',
       region: '',
       receivedSupportAtOtherCenter: 'no',
       isFamilyMemberOrAcquaintance: false,
@@ -182,6 +199,7 @@ export class ReportComponent {
       callerName: this.callerName,
       phone: this.phone,
       email: this.email,
+      reportedBy: this.reportedBy,
       region: this.region,
       gender: this.gender,
       sector: this.sector,

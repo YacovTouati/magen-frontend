@@ -14,6 +14,7 @@ function buildIntakes(): IntakeAlert[] {
             createdAt: new Date('2026-08-01T10:00:00.000Z'),
             contactedOtherCenter: 'לא',
             caseDescription: 'תיאור מקרה ראשון',
+            reportedBy: 'דנה לוי',
             status: 'NEW',
             expiresAt: new Date('2026-08-15T10:00:00.000Z'),
             callReport: {
@@ -29,6 +30,7 @@ function buildIntakes(): IntakeAlert[] {
             createdAt: new Date('2026-08-02T10:00:00.000Z'),
             contactedOtherCenter: 'כן',
             caseDescription: 'תיאור מקרה שני',
+            reportedBy: 'יוסי מתנדב',
             status: 'ACTIVE',
             expiresAt: new Date('2026-08-16T10:00:00.000Z'),
             callReport: null
@@ -85,13 +87,14 @@ describe('IntakesListComponent', () => {
         expect(firstRowCells[0]).toBe('מירי אברהם');
         expect(firstRowCells[1]).toBe('0501234567');
         expect(firstRowCells[2]).toBe('miri@example.com');
-        expect(firstRowCells[3]).toBe('תל אביב');
-        expect(firstRowCells[4]).toBe('לא'); // contactedOtherCenter, shown as-is
-        expect(firstRowCells[5]).toBe('כן מעשי'); // reportingDuty: 'yes_practical'
-        expect(firstRowCells[6]).toBe('פעם ראשונה'); // magenContactHistory label
-        expect(firstRowCells[7]).toBe('נפגע/ת ישיר/ה'); // callerType label
-        expect(firstRowCells[9]).toContain('צפייה בפרטים'); // actions cell
-        expect(rows.length && rows[0].queryAll(By.css('td')).length).toBe(10); // status column added
+        expect(firstRowCells[3]).toBe('דנה לוי'); // reportedBy
+        expect(firstRowCells[4]).toBe('תל אביב');
+        expect(firstRowCells[5]).toBe('לא'); // contactedOtherCenter, shown as-is
+        expect(firstRowCells[6]).toBe('כן מעשי'); // reportingDuty: 'yes_practical'
+        expect(firstRowCells[7]).toBe('פעם ראשונה'); // magenContactHistory label
+        expect(firstRowCells[8]).toBe('נפגע/ת ישיר/ה'); // callerType label
+        expect(firstRowCells[10]).toContain('צפייה בפרטים'); // actions cell
+        expect(rows.length && rows[0].queryAll(By.css('td')).length).toBe(11); // reportedBy column added
     });
 
     it('should not render a content/summary column at all', () => {
@@ -99,7 +102,8 @@ describe('IntakesListComponent', () => {
 
         const headers = fixture.debugElement.queryAll(By.css('th')).map(th => th.nativeElement.textContent.trim());
         expect(headers).not.toContain('תוכן / סיכום השיחה');
-        expect(headers.length).toBe(10);
+        expect(headers).toContain('מי הכניס את הדיווח');
+        expect(headers.length).toBe(11);
     });
 
     it('should show dashes/placeholders for a row with no linked callReport', () => {
@@ -108,11 +112,12 @@ describe('IntakesListComponent', () => {
         const rows = fixture.debugElement.queryAll(By.css('tbody tr.intake-row'));
         const secondRowCells = rows[1].queryAll(By.css('td')).map(td => td.nativeElement.textContent.trim());
         expect(secondRowCells[2]).toBe('-'); // email
-        expect(secondRowCells[3]).toBe('-'); // region
-        expect(secondRowCells[4]).toBe('כן'); // contactedOtherCenter still shown (Intake-level field)
-        expect(secondRowCells[5]).toBe('-'); // reportingDuty: null -> dash, not "לא"
-        expect(secondRowCells[6]).toBe('-'); // magenContactHistory
-        expect(secondRowCells[7]).toBe('-'); // callerType
+        expect(secondRowCells[3]).toBe('יוסי מתנדב'); // reportedBy — a top-level Intake field, always populated regardless of callReport
+        expect(secondRowCells[4]).toBe('-'); // region
+        expect(secondRowCells[5]).toBe('כן'); // contactedOtherCenter still shown (Intake-level field)
+        expect(secondRowCells[6]).toBe('-'); // reportingDuty: null -> dash, not "לא"
+        expect(secondRowCells[7]).toBe('-'); // magenContactHistory
+        expect(secondRowCells[8]).toBe('-'); // callerType
     });
 
     it('should not silently coerce contactedOtherCenter with a truthy check (regression guard)', () => {

@@ -11,6 +11,7 @@ export interface CallReportPayload {
     callerName: string;
     phone: string;
     email: string;
+    reportedBy: string;
     region: string;
     gender: string;
     sector: string;

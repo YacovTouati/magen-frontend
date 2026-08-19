@@ -27,6 +27,7 @@ function buildMockIntakes(): IntakeAlert[] {
             createdAt: minutesAgo(12),
             contactedOtherCenter: 'לא',
             caseDescription: 'פנייה דחופה בנוגע לחשש ממצוקה מיידית.',
+            reportedBy: 'רותם מתנדבת',
             status: 'NEW',
             expiresAt: hoursFromNow(24 * 13), // ~13 days left, not urgent
             callReport: MIRI_CALL_REPORT
@@ -39,6 +40,7 @@ function buildMockIntakes(): IntakeAlert[] {
             createdAt: minutesAgo(35),
             contactedOtherCenter: 'כן - ער"ן',
             caseDescription: 'שיחת המשך לבירור מצב לאחר פנייה קודמת.',
+            reportedBy: 'אבי מתנדב',
             status: 'NEW',
             expiresAt: hoursFromNow(24 * 13),
             callReport: null
@@ -51,6 +53,7 @@ function buildMockIntakes(): IntakeAlert[] {
             createdAt: minutesAgo(58),
             contactedOtherCenter: 'לא',
             caseDescription: 'בקשה למידע כללי על שירותי התמיכה.',
+            reportedBy: 'שירה מתנדבת',
             status: 'NO_ANSWER',
             expiresAt: hoursFromNow(10), // within the 24h urgent window
             callReport: null
@@ -63,6 +66,7 @@ function buildMockIntakes(): IntakeAlert[] {
             createdAt: minutesAgo(120),
             contactedOtherCenter: 'כן - עמותת "אחווה"',
             caseDescription: 'פנייה כללית, נסגרה בשיחה קצרה.',
+            reportedBy: 'גיל מתנדב',
             status: 'ACTIVE',
             expiresAt: hoursFromNow(24 * 5),
             callReport: null
@@ -158,11 +162,13 @@ describe('IntakeAlertsComponent', () => {
 
     it('should bind email and reporting-duty from the nested callReport when present', () => {
         const fixture = setup();
+        const comp = fixture.componentInstance;
         const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
         const firstRowText = rows[0].nativeElement.textContent;
 
         expect(firstRowText).toContain(MIRI_CALL_REPORT.email);
         expect(firstRowText).toContain('כן מעשי'); // reportingDuty: 'yes_practical'
+        expect(firstRowText).toContain(comp.intakes[0].reportedBy);
     });
 
     it('should show "—" placeholders when an intake has no linked callReport', () => {

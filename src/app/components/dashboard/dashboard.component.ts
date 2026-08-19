@@ -63,6 +63,7 @@ export class DashboardComponent implements OnInit {
   callerName: string = '';
   phone: string = '';
   email: string = '';
+  reportedBy: string = '';
   region: string = '';
   gender: string = 'unknown';
   sector: string = 'secular';
@@ -187,6 +188,7 @@ export class DashboardComponent implements OnInit {
         this.callerName = '';
         this.phone = '';
         this.email = '';
+        this.reportedBy = '';
         this.region = '';
         this.receivedSupportAtOtherCenter = 'no';
         this.isFamilyMemberOrAcquaintance = false;

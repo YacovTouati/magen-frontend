@@ -80,6 +80,7 @@ describe('ReportComponent', () => {
 
             const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
             const phoneInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
+            const reportedByInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
             const regionInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="region"]')).nativeElement;
             const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
             const submitBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.submit-btn')).nativeElement;
@@ -90,6 +91,8 @@ describe('ReportComponent', () => {
             nameInput.dispatchEvent(new Event('input'));
             phoneInput.value = '12345'; // invalid — too short
             phoneInput.dispatchEvent(new Event('input'));
+            reportedByInput.value = 'דנה לוי';
+            reportedByInput.dispatchEvent(new Event('input'));
             regionInput.value = 'מרכז';
             regionInput.dispatchEvent(new Event('input'));
             summary.value = 'תקציר שיחה לדוגמה';
@@ -158,6 +161,92 @@ describe('ReportComponent', () => {
             comp.onSubmit();
 
             expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('reportedBy field (mandatory)', () => {
+        it('the reportedBy input should be marked required', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
+
+            expect(input.required).toBeTrue();
+        });
+
+        it('should show a Hebrew error hint once the field is touched and left empty', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
+
+            input.dispatchEvent(new Event('input'));
+            input.dispatchEvent(new Event('blur'));
+            fixture.detectChanges();
+
+            const error = fixture.debugElement.query(By.css('input[name="reportedBy"] ~ .field-error'));
+            expect(error).toBeTruthy();
+            expect(error.nativeElement.textContent).toContain('חובה להזין את שם מכניס');
+        });
+
+        it('should NOT show an error once a value is entered', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
+
+            input.value = 'דנה לוי';
+            input.dispatchEvent(new Event('input'));
+            input.dispatchEvent(new Event('blur'));
+            fixture.detectChanges();
+
+            expect(fixture.debugElement.query(By.css('input[name="reportedBy"] ~ .field-error'))).toBeFalsy();
+        });
+
+        it('the submit button should stay disabled while reportedBy is empty, even with every other field valid', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+
+            const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
+            const phoneInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
+            const regionInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="region"]')).nativeElement;
+            const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
+            const submitBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.submit-btn')).nativeElement;
+
+            nameInput.value = 'ישראל ישראלי';
+            nameInput.dispatchEvent(new Event('input'));
+            phoneInput.value = '0501234567';
+            phoneInput.dispatchEvent(new Event('input'));
+            regionInput.value = 'מרכז';
+            regionInput.dispatchEvent(new Event('input'));
+            summary.value = 'תקציר שיחה לדוגמה';
+            summary.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+
+            expect(submitBtn.disabled).toBeTrue(); // reportedBy still empty
+
+            const reportedByInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
+            reportedByInput.value = 'דנה לוי';
+            reportedByInput.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+
+            expect(submitBtn.disabled).toBeFalse();
+        });
+
+        it('onSubmit() payload should include reportedBy', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            let emitted: any = null;
+            comp.reportSubmit.subscribe((v: any) => emitted = v);
+            comp.phone = '0501234567';
+            comp.reportedBy = 'דנה לוי';
+
+            comp.onSubmit();
+
+            expect(emitted.reportedBy).toBe('דנה לוי');
         });
     });
 

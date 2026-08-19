@@ -25,6 +25,7 @@
         <col>
         <col>
         <col>
+        <col>
         <col class="status-col">
         <col class="actions-col">
       </colgroup>
@@ -33,6 +34,7 @@
           <th>שם מלא</th>
           <th>טלפון</th>
           <th>מייל</th>
+          <th>מי הכניס את הדיווח</th>
           <th>אזור בארץ</th>
           <th>פנה למרכז שירות</th>
           <th>חובת דיווח</th>
@@ -51,6 +53,7 @@
           <td>{{ intake.callerName }}</td>
           <td class="phone-cell">{{ intake.phone }}</td>
           <td>{{ intake.callReport?.email || '-' }}</td>
+          <td>{{ intake.reportedBy || '-' }}</td>
           <td>{{ intake.callReport?.region || '-' }}</td>
           <td>{{ contactedOtherCenterLabel(intake) }}</td>
           <td>{{ reportingDutyLabel(intake) }}</td>
@@ -88,7 +91,7 @@
           </td>
         </tr>
         <tr *ngIf="intakes.length === 0">
-          <td colspan="10" class="empty-state">אין אינטייקים להצגה כרגע.</td>
+          <td colspan="11" class="empty-state">אין אינטייקים להצגה כרגע.</td>
         </tr>
       </tbody>
     </table>

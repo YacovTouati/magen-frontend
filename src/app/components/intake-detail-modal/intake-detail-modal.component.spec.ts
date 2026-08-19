@@ -12,6 +12,7 @@ const BASE_INTAKE: IntakeAlert = {
     createdAt: new Date('2026-08-01T10:00:00.000Z'),
     contactedOtherCenter: 'לא',
     caseDescription: 'תיאור מקרה מלא לבדיקה',
+    reportedBy: 'דנה לוי',
     status: 'NEW',
     expiresAt: new Date('2026-08-15T10:00:00.000Z'),
     callReport: {

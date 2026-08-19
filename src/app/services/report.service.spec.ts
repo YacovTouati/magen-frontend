@@ -15,6 +15,7 @@ describe('ReportService', () => {
         callerName: 'פונה לדוגמה',
         phone: '0501234567',
         email: 'caller@example.com',
+        reportedBy: 'דנה לוי',
         region: 'center',
         gender: 'unknown',
         sector: 'secular',

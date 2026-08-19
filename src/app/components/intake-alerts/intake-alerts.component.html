@@ -28,6 +28,7 @@
               <th>שם הפונה</th>
               <th>טלפון</th>
               <th>מייל</th>
+              <th>מי הכניס את הדיווח</th>
               <th>רמת דחיפות</th>
               <th>מתי נכנס</th>
               <th>חובת דיווח</th>
@@ -48,6 +49,7 @@
               <td class="caller-name">{{ intake.callerName }}</td>
               <td class="phone-cell">{{ intake.phone }}</td>
               <td>{{ intake.callReport?.email || '—' }}</td>
+              <td>{{ intake.reportedBy || '—' }}</td>
               <td>
                 <span class="urgency-pill" [ngClass]="'urgency-' + intake.urgency.toLowerCase()">
                   {{ urgencyLabel(intake.urgency) }}
@@ -105,7 +107,7 @@
               </td>
             </tr>
             <tr *ngIf="intakes.length === 0">
-              <td colspan="11" class="empty-state">אין דיווחי אינטייק להצגה כרגע.</td>
+              <td colspan="12" class="empty-state">אין דיווחי אינטייק להצגה כרגע.</td>
             </tr>
           </tbody>
         </table>

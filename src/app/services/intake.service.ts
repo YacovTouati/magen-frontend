@@ -39,6 +39,10 @@ export interface IntakeAlert {
     createdAt: Date;
     contactedOtherCenter: string;
     caseDescription: string;
+    // "מי הכניס את הדיווח" — a real Intake column (not under callReport), always
+    // populated: copied from the call report at submission time, or provided directly
+    // when an admin creates an intake manually.
+    reportedBy: string;
     status: IntakeStatus;
     // Data-retention deadline (14 days from creation, +7 per PATCH .../extend), not a
     // business date — see prisma/schema.prisma's Intake.expiresAt and the hourly
@@ -106,6 +110,7 @@ export class IntakeService {
             createdAt: raw?.createdAt ? new Date(raw.createdAt) : new Date(),
             contactedOtherCenter: raw?.contactedOtherCenter ?? raw?.contacted_other_center ?? '',
             caseDescription: raw?.caseDescription ?? raw?.case_description ?? '',
+            reportedBy: raw?.reportedBy ?? raw?.reported_by ?? '',
             status: raw?.status ?? 'NEW',
             expiresAt: raw?.expiresAt ? new Date(raw.expiresAt) : new Date(),
             callReport: this.normalizeCallReport(raw?.callReport ?? raw?.call_report)
