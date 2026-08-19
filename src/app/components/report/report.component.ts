@@ -43,21 +43,6 @@ import { FormsModule, NgForm } from '@angular/forms';
       </div>
 
       <div class="form-group">
-        <label>מי הכניס את הדיווח (חובה):</label>
-        <input
-          type="text"
-          [(ngModel)]="reportedBy"
-          #reportedByModel="ngModel"
-          name="reportedBy"
-          required
-          placeholder="שם המתנדב/ת המדווח/ת"
-        >
-        <p class="field-error" *ngIf="reportedByModel.invalid && (reportedByModel.dirty || reportedByModel.touched)">
-          חובה להזין את שם מכניס/ת הדיווח
-        </p>
-      </div>
-
-      <div class="form-group">
         <label>אזור בארץ:</label>
         <input type="text" [(ngModel)]="region" name="region" required placeholder="לדוגמה: תל אביב, מרכז, ירושלים והסביבה">
       </div>
@@ -128,6 +113,21 @@ import { FormsModule, NgForm } from '@angular/forms';
       <div class="form-group full-width">
         <label>תוכן וסיכום השיחה (דגשים חשובים, תהליך ומצב נוכחי):</label>
         <textarea [(ngModel)]="summaryNotes" name="summaryNotes" rows="5" required placeholder="הקלד כאן נקודות מפתח מתוך השיחה..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>מי הכניס את הדיווח (חובה):</label>
+        <input
+          type="text"
+          [(ngModel)]="reportedBy"
+          #reportedByModel="ngModel"
+          name="reportedBy"
+          required
+          placeholder="שם המתנדב/ת המדווח/ת"
+        >
+        <p class="field-error" *ngIf="reportedByModel.invalid && (reportedByModel.dirty || reportedByModel.touched)">
+          חובה להזין את שם מכניס/ת הדיווח
+        </p>
       </div>
 
       <button type="submit" class="submit-btn" [disabled]="reportForm.invalid">💾 שמור דיווח שיחה במערכת</button>

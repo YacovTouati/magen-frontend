@@ -52,24 +52,29 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
-    /* Raised from 1080px to fit the two explicit column widths below (status-col +
-       actions-col = 410px) without squeezing the remaining 8 columns — table-layout:fixed
-       divides whatever's left over evenly among the unstyled <col>s, so under 1080px they'd
+    /* Raised to fit the three explicit column widths below (status-col + actions-col +
+       reported-by-col = 560px) without squeezing the remaining 7 columns — table-layout:fixed
+       divides whatever's left over evenly among the unstyled <col>s, so below this they'd
        shrink below what the status <select>/action buttons need and start overlapping. */
-    min-width: 1300px;
+    min-width: 1420px;
     table-layout: fixed;
 }
 
 /* table-layout:fixed sizes every column from its <colgroup> <col> width — these are the only
-   two that need to be wider than an even share, to fit the status <select> and the two action
-   controls without cramping (see .table-wrap's overflow-x: auto for the horizontal scroll that
-   kicks in instead of squeezing columns on narrower viewports). */
+   ones that need to be wider than an even share: status-col/actions-col for the status
+   <select> and the two action controls, reported-by-col because "מי הכניס את הדיווח" is
+   long enough to overflow an even share (see .table-wrap's overflow-x: auto for the
+   horizontal scroll that kicks in instead of squeezing columns on narrower viewports). */
 .status-col {
     width: 190px;
 }
 
 .actions-col {
     width: 220px;
+}
+
+.reported-by-col {
+    width: 150px;
 }
 
 .intakes-table th {
@@ -80,6 +85,13 @@
     padding: 12px 14px;
     border-bottom: 1px solid #e2e8f0;
     white-space: nowrap;
+    /* table-layout:fixed does NOT clip header text the way it clips <td> content below —
+       without this, a header wider than its column silently overflows into the next one
+       instead of ellipsizing (the exact bug this comment is here to prevent regressing).
+       Same max-width value as .intakes-table td below, for identical clipping behavior. */
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* CRITICAL: every row stays a single, uniform-height line — no column is allowed to wrap
