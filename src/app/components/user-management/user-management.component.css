@@ -61,6 +61,10 @@
 
 .table-wrapper {
     overflow-x: auto;
+    /* Caps the list at ~6 rows so the panel stops growing as users/invites pile
+       up — beyond that it scrolls internally instead of stretching the card. */
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 table {
@@ -78,6 +82,13 @@ td {
 th {
     color: #475569;
     font-size: 13px;
+    /* Sticks to the top of .table-wrapper's own scroll area (not the page) while
+       rows scroll underneath it. Needs an opaque background — sticky elements
+       are otherwise transparent and rows would show through. */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
 }
 
 .delete-btn,
