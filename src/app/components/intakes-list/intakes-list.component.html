@@ -51,7 +51,7 @@
           (click)="openDetail(intake)"
         >
           <td>{{ intake.callerName }}</td>
-          <td class="phone-cell">{{ intake.phone }}</td>
+          <td class="phone-cell">{{ intake.phone || '-' }}</td>
           <td>{{ intake.callReport?.email || '-' }}</td>
           <td>{{ intake.reportedBy || '-' }}</td>
           <td>{{ intake.callReport?.region || '-' }}</td>

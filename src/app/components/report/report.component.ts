@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
+import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-report',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   template: `
   <section class="section-card">
     <h3>📝 דיווח וסיכום שיחת סיוע</h3>
@@ -19,13 +20,12 @@ import { FormsModule, NgForm } from '@angular/forms';
         </div>
 
         <div class="form-group inline-group">
-          <label>טלפון (חובה):</label>
+          <label>טלפון:</label>
           <input
             type="tel"
             [(ngModel)]="phone"
             #phoneModel="ngModel"
             name="phone"
-            required
             maxlength="10"
             pattern="^[0-9]{7,10}$"
             placeholder="0500000000"
@@ -133,6 +133,16 @@ import { FormsModule, NgForm } from '@angular/forms';
       <button type="submit" class="submit-btn" [disabled]="reportForm.invalid">💾 שמור דיווח שיחה במערכת</button>
     </form>
   </section>
+
+  <app-confirm-modal
+    [isOpen]="isEmptyPhoneConfirmOpen"
+    title="שמירה ללא מספר טלפון"
+    message="האם ברצונך לשמור שיחה ללא מספר טלפון של הפונה?"
+    confirmLabel="אישור"
+    cancelLabel="ביטול"
+    (confirmed)="onConfirmEmptyPhoneSubmit()"
+    (cancelled)="onCancelEmptyPhoneSubmit()"
+  ></app-confirm-modal>
   `
   ,
   styleUrls: ['./report.component.css']
@@ -155,6 +165,8 @@ export class ReportComponent {
   @Input() reportingDuty = 'no';
 
   @Output() reportSubmit = new EventEmitter<any>();
+
+  isEmptyPhoneConfirmOpen = false;
 
   // Every field here is an @Input bound one-way from DashboardComponent, but [(ngModel)]
   // mutates this component's own copy directly — so once the user types, this instance's
@@ -187,10 +199,30 @@ export class ReportComponent {
   }
 
   onSubmit() {
-    if (!this.phonePattern.test(this.phone)) {
+    const trimmedPhone = this.phone.trim();
+
+    if (trimmedPhone && !this.phonePattern.test(trimmedPhone)) {
       return;
     }
 
+    if (!trimmedPhone) {
+      this.isEmptyPhoneConfirmOpen = true;
+      return;
+    }
+
+    this.submitReport();
+  }
+
+  onConfirmEmptyPhoneSubmit(): void {
+    this.isEmptyPhoneConfirmOpen = false;
+    this.submitReport();
+  }
+
+  onCancelEmptyPhoneSubmit(): void {
+    this.isEmptyPhoneConfirmOpen = false;
+  }
+
+  private submitReport(): void {
     const data = {
       callDuration: this.callDuration,
       callerType: this.callerType,

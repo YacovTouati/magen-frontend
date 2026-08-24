@@ -23,6 +23,14 @@ describe('ReportComponent', () => {
             expect(input.getAttribute('pattern')).toBe('^[0-9]{7,10}$');
         });
 
+        it('the phone input should not be marked required — the field is optional', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const input: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
+
+            expect(input.required).toBeFalse();
+        });
+
         it('onlyNumbers() should allow digit keys and block any non-digit key (letters, dash, symbols)', () => {
             const fixture = TestBed.createComponent(ReportComponent);
             const comp = fixture.componentInstance;
@@ -161,6 +169,81 @@ describe('ReportComponent', () => {
             comp.onSubmit();
 
             expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('empty phone confirmation dialog', () => {
+        it('onSubmit() with an empty phone should open the confirm dialog instead of emitting immediately', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '';
+
+            comp.onSubmit();
+
+            expect(comp.isEmptyPhoneConfirmOpen).toBeTrue();
+            expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+
+        it('onSubmit() with a whitespace-only phone should also open the confirm dialog', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '   ';
+
+            comp.onSubmit();
+
+            expect(comp.isEmptyPhoneConfirmOpen).toBeTrue();
+            expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+
+        it('onConfirmEmptyPhoneSubmit() should close the dialog and emit the report', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '';
+            comp.onSubmit();
+
+            comp.onConfirmEmptyPhoneSubmit();
+
+            expect(comp.isEmptyPhoneConfirmOpen).toBeFalse();
+            expect(comp.reportSubmit.emit).toHaveBeenCalled();
+        });
+
+        it('onCancelEmptyPhoneSubmit() should close the dialog without emitting', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '';
+            comp.onSubmit();
+
+            comp.onCancelEmptyPhoneSubmit();
+
+            expect(comp.isEmptyPhoneConfirmOpen).toBeFalse();
+            expect(comp.reportSubmit.emit).not.toHaveBeenCalled();
+        });
+
+        it('should render the app-confirm-modal with the exact Hebrew prompt text', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const modal = fixture.debugElement.query(By.css('app-confirm-modal'));
+
+            expect(modal).toBeTruthy();
+            expect(modal.componentInstance.message).toBe('האם ברצונך לשמור שיחה ללא מספר טלפון של הפונה?');
+            expect(modal.componentInstance.confirmLabel).toBe('אישור');
+            expect(modal.componentInstance.cancelLabel).toBe('ביטול');
+        });
+
+        it('a filled-in valid phone should submit directly without opening the confirm dialog', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+            spyOn(comp.reportSubmit, 'emit');
+            comp.phone = '0501234567';
+
+            comp.onSubmit();
+
+            expect(comp.isEmptyPhoneConfirmOpen).toBeFalse();
+            expect(comp.reportSubmit.emit).toHaveBeenCalled();
         });
     });
 
