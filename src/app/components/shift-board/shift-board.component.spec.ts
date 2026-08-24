@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { of, throwError, Subject } from 'rxjs';
-import { ShiftBoardComponent } from './shift-board.component';
+import { ShiftBoardComponent, ShiftBoardDay } from './shift-board.component';
 import { AuthService } from '../../services/auth.service';
 import { UserManagementService } from '../../services/user-management.service';
 import { ScheduleService, ScheduleRecord, ShiftRecord } from '../../services/schedule.service';
@@ -263,5 +263,65 @@ describe('ShiftBoardComponent (shift notes)', () => {
         expect(comp.isNoteModalOpen).toBeFalse();
         expect(comp.pendingNoteShift).toBeNull();
         expect(comp.noteSaveError).toBe('');
+    });
+
+    describe('isCellClickable / isPast (past-date shift editing)', () => {
+        // Computed against the real clock (no jasmine.clock() mocking elsewhere in this
+        // file/app) rather than a hardcoded date, so this stays correct no matter when the
+        // suite actually runs. isPast()/isCellClickable() only look at day.dateString vs.
+        // "now" — they don't read the component's selected year/month — so the fixed
+        // YEAR/MONTH0 schedule fixture above is irrelevant here.
+        function formatDate(date: Date): string {
+            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+        }
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        function buildPastDay(morningStatus: 'OPEN' | 'LOCKED'): ShiftBoardDay {
+            return {
+                dayNumber: yesterday.getDate(),
+                dateString: formatDate(yesterday),
+                isToday: false,
+                morning: buildShift({ id: 99, date: yesterday.toISOString().slice(0, 10), status: morningStatus }),
+                evening: null
+            };
+        }
+
+        it('isPast() should be true for a day before today', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isPast(buildPastDay('OPEN'))).toBeTrue();
+        });
+
+        it('should block a volunteer from opening a past day even with an open slot', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isCellClickable(buildPastDay('OPEN'))).toBeFalse();
+        });
+
+        it('should let an admin open a past day with an open slot', () => {
+            configure(true);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isCellClickable(buildPastDay('OPEN'))).toBeTrue();
+        });
+
+        it('should let an admin open a past day even when every slot is already LOCKED', () => {
+            configure(true);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isCellClickable(buildPastDay('LOCKED'))).toBeTrue();
+        });
+
+        it('should still block an admin while a save is in flight, past day or not', () => {
+            configure(true);
+            const fixture = createWithSchedule([]);
+            fixture.componentInstance.isSaving = true;
+
+            expect(fixture.componentInstance.isCellClickable(buildPastDay('OPEN'))).toBeFalse();
+        });
     });
 });

@@ -89,6 +89,16 @@ export class UserManagementService {
         );
     }
 
+    // General profile edit (name/email/role together) — distinct from updateUserRole
+    // above, which stays as its own narrower endpoint. Emits usersChanged$ since role
+    // (and the volunteer's display name) can change here too, same as updateUserRole.
+    updateUser(id: number | string, payload: { name: string; email: string; role: UserRole }): Observable<User> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}`, payload).pipe(
+            map(response => this.normalizeUser(response?.data ?? response)),
+            tap(() => this.usersChangedSource.next())
+        );
+    }
+
     deleteUser(id: number | string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
             tap(() => this.usersChangedSource.next())

@@ -1,0 +1,53 @@
+<app-modal-shell [isOpen]="isOpen" maxWidth="440px" (backdropClick)="onClose()">
+  <ng-container *ngIf="user">
+    <div class="modal-header">
+      <div>
+        <p class="modal-eyebrow">עריכת משתמש</p>
+        <h3 class="modal-title">{{ user.name }}</h3>
+      </div>
+      <button type="button" class="modal-close" (click)="onClose()" aria-label="סגור">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <label class="field-label">
+        שם
+        <input
+          type="text"
+          class="field-input"
+          [(ngModel)]="draftName"
+          name="editName"
+          [disabled]="isSaving"
+          autocomplete="off"
+        >
+      </label>
+
+      <label class="field-label">
+        אימייל
+        <input
+          type="email"
+          class="field-input"
+          [(ngModel)]="draftEmail"
+          name="editEmail"
+          [disabled]="isSaving"
+          autocomplete="off"
+        >
+      </label>
+
+      <label class="field-label">
+        תפקיד
+        <select class="field-input" [(ngModel)]="draftRole" name="editRole" [disabled]="isSaving">
+          <option *ngFor="let opt of roleOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </label>
+
+      <p class="field-error" *ngIf="saveError">⚠️ {{ saveError }}</p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onClose()" [disabled]="isSaving">ביטול</button>
+      <button type="button" class="btn-save" (click)="onSave()" [disabled]="isSaving || !isValid">
+        {{ isSaving ? 'שומר...' : 'שמור שינויים' }}
+      </button>
+    </div>
+  </ng-container>
+</app-modal-shell>

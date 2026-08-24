@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { UserManagementService, User, InviteResult, PendingInvite } from '../../services/user-management.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
+import { UserEditModalComponent, UserEditPayload } from '../user-edit-modal/user-edit-modal.component';
 import { ROLE_OPTIONS, UserRole, getRoleLabel } from '../../shared/role-labels';
 import { extractServerErrorMessage } from '../../shared/http-error';
 
@@ -17,7 +18,7 @@ const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('he-IL', {
 @Component({
     selector: 'app-user-management',
     standalone: true,
-    imports: [CommonModule, FormsModule, ConfirmModalComponent],
+    imports: [CommonModule, FormsModule, ConfirmModalComponent, UserEditModalComponent],
     templateUrl: './user-management.component.html',
     styleUrls: ['./user-management.component.css']
 })
@@ -56,6 +57,10 @@ export class UserManagementComponent implements OnInit {
 
     /** email of the invite with an in-flight re-invite request, if any */
     pendingReinviteEmail: string | null = null;
+
+    editingUser: User | null = null;
+    isSavingEdit = false;
+    editSaveError = '';
 
     constructor(private userService: UserManagementService) { }
 
@@ -141,6 +146,45 @@ export class UserManagementComponent implements OnInit {
                 if (checkboxEl) {
                     checkboxEl.checked = !!user.receiveIntakeAlerts;
                 }
+            }
+        });
+    }
+
+    openEditModal(user: User): void {
+        this.editingUser = user;
+        this.editSaveError = '';
+    }
+
+    get isEditModalOpen(): boolean {
+        return this.editingUser !== null;
+    }
+
+    closeEditModal(): void {
+        this.editingUser = null;
+        this.editSaveError = '';
+        this.isSavingEdit = false;
+    }
+
+    onSaveUserEdit(payload: UserEditPayload): void {
+        const user = this.editingUser;
+        if (!user?.id || this.isSavingEdit) {
+            return;
+        }
+
+        this.isSavingEdit = true;
+        this.editSaveError = '';
+
+        this.userService.updateUser(user.id, payload).subscribe({
+            next: (updated) => {
+                Object.assign(user, updated);
+                this.isSavingEdit = false;
+                this.editingUser = null;
+                this.formError = '';
+                this.formSuccess = `פרטי ${updated.name} עודכנו בהצלחה.`;
+            },
+            error: (err: HttpErrorResponse) => {
+                this.isSavingEdit = false;
+                this.editSaveError = extractServerErrorMessage(err, 'עדכון פרטי המשתמש נכשל. נסה שוב.');
             }
         });
     }

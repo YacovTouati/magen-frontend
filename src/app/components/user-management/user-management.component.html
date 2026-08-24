@@ -77,7 +77,16 @@
                                 </ng-template>
                             </td>
                             <td>
-                                <button class="delete-btn" type="button" (click)="deleteUser(user)">מחק</button>
+                                <div class="row-actions">
+                                    <button
+                                        class="edit-btn"
+                                        type="button"
+                                        (click)="openEditModal(user)"
+                                        [attr.aria-label]="'עריכת פרטי ' + (user.name || user.email)"
+                                        title="עריכת משתמש"
+                                    >✏️</button>
+                                    <button class="delete-btn" type="button" (click)="deleteUser(user)">מחק</button>
+                                </div>
                             </td>
                         </tr>
                         <tr *ngIf="!isLoading && users.length === 0">
@@ -176,4 +185,13 @@
         (confirmed)="onConfirmRevoke()"
         (cancelled)="onCancelRevoke()"
     ></app-confirm-modal>
+
+    <app-user-edit-modal
+        [isOpen]="isEditModalOpen"
+        [user]="editingUser"
+        [isSaving]="isSavingEdit"
+        [saveError]="editSaveError"
+        (closed)="closeEditModal()"
+        (saved)="onSaveUserEdit($event)"
+    ></app-user-edit-modal>
 </section>

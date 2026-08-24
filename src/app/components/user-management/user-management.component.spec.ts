@@ -12,8 +12,11 @@ describe('UserManagementComponent', () => {
     ];
 
     beforeEach(async () => {
-        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole', 'deleteInvitation', 'updateIntakeAlerts']);
-        userServiceSpy.getUsers.and.returnValue(of(existingUsers));
+        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole', 'deleteInvitation', 'updateIntakeAlerts', 'updateUser']);
+        // Fresh clones each time — some tests mutate a row in place (onRoleChange,
+        // onSaveUserEdit) via the exact same object the component holds onto, and without
+        // cloning that mutation would otherwise leak into every later test sharing this array.
+        userServiceSpy.getUsers.and.returnValue(of(existingUsers.map(u => ({ ...u }))));
         userServiceSpy.listInvitations.and.returnValue(of([]));
 
         await TestBed.configureTestingModule({
@@ -332,6 +335,101 @@ describe('UserManagementComponent', () => {
 
             expect(userServiceSpy.updateIntakeAlerts).not.toHaveBeenCalled();
             expect(checkboxEl.checked).toBeFalse();
+        });
+    });
+
+    describe('user edit modal', () => {
+        it('openEditModal() should set editingUser and open the modal', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const alice = comp.users.find(u => u.id === 1)!;
+
+            comp.openEditModal(alice);
+
+            expect(comp.editingUser).toBe(alice);
+            expect(comp.isEditModalOpen).toBeTrue();
+        });
+
+        it('closeEditModal() should clear editingUser and any error', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.openEditModal(comp.users[0]);
+            comp.editSaveError = 'שגיאה כלשהי';
+
+            comp.closeEditModal();
+
+            expect(comp.editingUser).toBeNull();
+            expect(comp.isEditModalOpen).toBeFalse();
+            expect(comp.editSaveError).toBe('');
+        });
+
+        it('onSaveUserEdit() should do nothing when no user is being edited', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.onSaveUserEdit({ name: 'X', email: 'x@example.com', role: 'VOLUNTEER' });
+
+            expect(userServiceSpy.updateUser).not.toHaveBeenCalled();
+        });
+
+        it('onSaveUserEdit() should call updateUser with the exact id and payload, update the row in place, close the modal, and show a success message', () => {
+            userServiceSpy.updateUser.and.returnValue(of({ id: 2, name: 'Robert', email: 'robert@example.com', role: 'SCHEDULER_ADMIN' }));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const bob = comp.users.find(u => u.id === 2)!;
+            comp.openEditModal(bob);
+
+            comp.onSaveUserEdit({ name: 'Robert', email: 'robert@example.com', role: 'SCHEDULER_ADMIN' });
+
+            expect(userServiceSpy.updateUser).toHaveBeenCalledOnceWith(2, { name: 'Robert', email: 'robert@example.com', role: 'SCHEDULER_ADMIN' });
+            expect(bob.name).toBe('Robert');
+            expect(bob.email).toBe('robert@example.com');
+            expect(bob.role).toBe('SCHEDULER_ADMIN');
+            expect(comp.isEditModalOpen).toBeFalse();
+            expect(comp.isSavingEdit).toBeFalse();
+            expect(comp.formSuccess).toContain('Robert');
+        });
+
+        it('onSaveUserEdit() should mark isSavingEdit while the request is in flight', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const bob = comp.users.find(u => u.id === 2)!;
+            comp.openEditModal(bob);
+            userServiceSpy.updateUser.and.callFake(() => {
+                expect(comp.isSavingEdit).toBeTrue();
+                return of({ id: 2, name: 'Robert', email: 'robert@example.com', role: 'VOLUNTEER' });
+            });
+
+            comp.onSaveUserEdit({ name: 'Robert', email: 'robert@example.com', role: 'VOLUNTEER' });
+
+            expect(comp.isSavingEdit).toBeFalse();
+        });
+
+        it('onSaveUserEdit() should keep the modal open and surface the backend 409 message on email conflict, without touching the row', () => {
+            const serverError = { error: { success: false, message: 'כתובת המייל כבר בשימוש על ידי משתמש אחר' } };
+            userServiceSpy.updateUser.and.returnValue(throwError(() => serverError));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const bob = comp.users.find(u => u.id === 2)!;
+            comp.openEditModal(bob);
+
+            comp.onSaveUserEdit({ name: 'Robert', email: 'alice@example.com', role: 'VOLUNTEER' });
+
+            expect(comp.editSaveError).toBe('כתובת המייל כבר בשימוש על ידי משתמש אחר');
+            expect(comp.isEditModalOpen).toBeTrue();
+            expect(comp.isSavingEdit).toBeFalse();
+            expect(bob.name).toBe('Bob');
+        });
+
+        it('onSaveUserEdit() should not start a second save while one is already in flight', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.openEditModal(comp.users[0]);
+            comp.isSavingEdit = true;
+
+            comp.onSaveUserEdit({ name: 'X', email: 'x@example.com', role: 'VOLUNTEER' });
+
+            expect(userServiceSpy.updateUser).not.toHaveBeenCalled();
         });
     });
 

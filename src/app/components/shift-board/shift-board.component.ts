@@ -249,16 +249,21 @@ export class ShiftBoardComponent implements OnInit {
         return day.morning?.status === 'OPEN' || day.evening?.status === 'OPEN';
     }
 
-    // Admins face no lock/draft restrictions when opening a day — they can inspect and
-    // release any non-past day regardless of schedule status or whether both slots are
-    // already LOCKED. Volunteers keep the original gate: only open, published days.
+    // Admins face no lock/draft/past-date restrictions when opening a day — they can
+    // assign/release any day at all, including past ones (e.g. to correct a historical
+    // shift record), regardless of schedule status or whether both slots are already
+    // LOCKED. Volunteers keep the original gate: only open, published, non-past days.
     isCellClickable(day: ShiftBoardDay): boolean {
-        if (this.isPast(day) || this.isSaving) {
+        if (this.isSaving) {
             return false;
         }
 
         if (this.canManageSchedule) {
             return true;
+        }
+
+        if (this.isPast(day)) {
+            return false;
         }
 
         return this.schedule?.status === 'OPEN' && this.hasOpenSlot(day);

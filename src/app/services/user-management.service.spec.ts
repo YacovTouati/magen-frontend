@@ -185,6 +185,57 @@ describe('UserManagementService', () => {
         });
     });
 
+    describe('updateUser', () => {
+        const payload = { name: 'Updated Name', email: 'updated@example.com', role: 'SCHEDULER_ADMIN' as const };
+
+        it('should issue a PATCH to /users/:id (no suffix) with the full payload and normalize the response', () => {
+            service.updateUser(5, payload).subscribe(user => {
+                expect(user.id).toBe(5);
+                expect(user.name).toBe('Updated Name');
+                expect(user.email).toBe('updated@example.com');
+                expect(user.role).toBe('SCHEDULER_ADMIN');
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/5`);
+            expect(req.request.method).toBe('PATCH');
+            expect(req.request.body).toEqual(payload);
+            req.flush({ success: true, data: { id: 5, name: 'Updated Name', email: 'updated@example.com', role: 'SCHEDULER_ADMIN' } });
+        });
+
+        it('should unwrap a bare (non-enveloped) response too', () => {
+            service.updateUser(5, payload).subscribe(user => {
+                expect(user.name).toBe('Updated Name');
+            });
+
+            httpMock.expectOne(`${apiUrl}/5`).flush({ id: 5, name: 'Updated Name', email: 'updated@example.com', role: 'SCHEDULER_ADMIN' });
+        });
+
+        it('should emit on usersChanged$ after a successful update', () => {
+            let emitCount = 0;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.updateUser(5, payload).subscribe();
+            httpMock.expectOne(`${apiUrl}/5`).flush({ id: 5, name: 'Updated Name', email: 'updated@example.com', role: 'SCHEDULER_ADMIN' });
+
+            expect(emitCount).toBe(1);
+        });
+
+        it('should not emit on usersChanged$ and should surface a 409 email-conflict message when the update fails', () => {
+            let emitCount = 0;
+            let capturedError: any = null;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.updateUser(5, payload).subscribe({ error: (err) => { capturedError = err; } });
+            httpMock.expectOne(`${apiUrl}/5`).flush(
+                { success: false, message: 'כתובת המייל כבר בשימוש על ידי משתמש אחר' },
+                { status: 409, statusText: 'Conflict' }
+            );
+
+            expect(emitCount).toBe(0);
+            expect(capturedError.error.message).toBe('כתובת המייל כבר בשימוש על ידי משתמש אחר');
+        });
+    });
+
     describe('updateIntakeAlerts', () => {
         it('should issue a PATCH to /users/:id/intake-alerts with the new flag and normalize the response', () => {
             service.updateIntakeAlerts(5, true).subscribe(user => {
