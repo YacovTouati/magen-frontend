@@ -12,7 +12,7 @@ describe('UserManagementComponent', () => {
     ];
 
     beforeEach(async () => {
-        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole', 'deleteInvitation']);
+        userServiceSpy = jasmine.createSpyObj('UserManagementService', ['getUsers', 'inviteUser', 'listInvitations', 'deleteUser', 'updateUserRole', 'deleteInvitation', 'updateIntakeAlerts']);
         userServiceSpy.getUsers.and.returnValue(of(existingUsers));
         userServiceSpy.listInvitations.and.returnValue(of([]));
 
@@ -264,6 +264,74 @@ describe('UserManagementComponent', () => {
             comp.onConfirmRevoke();
 
             expect(comp.formError).toBe('מחיקת ההזמנה נכשלה. נסה שוב.');
+        });
+    });
+
+    describe('onIntakeAlertsToggle', () => {
+        it('should do nothing when the user has no id', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+
+            comp.onIntakeAlertsToggle({ id: undefined, name: 'Ghost', email: 'x@example.com', role: 'SUPER_ADMIN' }, true);
+
+            expect(userServiceSpy.updateIntakeAlerts).not.toHaveBeenCalled();
+        });
+
+        it('should call updateIntakeAlerts with the exact id and flag, then update the row in place on success', () => {
+            userServiceSpy.updateIntakeAlerts.and.returnValue(of({ id: 1, name: 'Alice', email: 'alice@example.com', role: 'SUPER_ADMIN', receiveIntakeAlerts: true }));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const alice = comp.users.find(u => u.id === 1)!;
+
+            comp.onIntakeAlertsToggle(alice, true);
+
+            expect(userServiceSpy.updateIntakeAlerts).toHaveBeenCalledOnceWith(1, true);
+            expect(alice.receiveIntakeAlerts).toBeTrue();
+            expect(comp.formSuccess).toContain('Alice');
+            expect(comp.pendingIntakeAlertsId).toBeNull();
+        });
+
+        it('should mark the row pending while the request is in flight', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const alice = comp.users.find(u => u.id === 1)!;
+            userServiceSpy.updateIntakeAlerts.and.callFake(() => {
+                expect(comp.isPendingIntakeAlertsChange(alice)).toBeTrue();
+                return of({ id: 1, name: 'Alice', email: 'alice@example.com', role: 'SUPER_ADMIN', receiveIntakeAlerts: true });
+            });
+
+            comp.onIntakeAlertsToggle(alice, true);
+
+            expect(comp.isPendingIntakeAlertsChange(alice)).toBeFalse();
+        });
+
+        it('should show an error, leave the row unpending, and revert the checkbox when the update fails', () => {
+            userServiceSpy.updateIntakeAlerts.and.returnValue(throwError(() => new Error('forbidden')));
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            const alice = comp.users.find(u => u.id === 1)!;
+            alice.receiveIntakeAlerts = false;
+            const checkboxEl = { checked: true } as HTMLInputElement;
+
+            comp.onIntakeAlertsToggle(alice, true, checkboxEl);
+
+            expect(comp.formError).toBe('עדכון התראות האינטייק נכשל. נסה שוב.');
+            expect(comp.pendingIntakeAlertsId).toBeNull();
+            expect(checkboxEl.checked).toBeFalse();
+        });
+
+        it('should not start a second toggle while one is already in flight for another row, and revert its checkbox', () => {
+            const fixture = createComponent();
+            const comp = fixture.componentInstance;
+            comp.pendingIntakeAlertsId = 99;
+            const alice = comp.users.find(u => u.id === 1)!;
+            alice.receiveIntakeAlerts = false;
+            const checkboxEl = { checked: true } as HTMLInputElement;
+
+            comp.onIntakeAlertsToggle(alice, true, checkboxEl);
+
+            expect(userServiceSpy.updateIntakeAlerts).not.toHaveBeenCalled();
+            expect(checkboxEl.checked).toBeFalse();
         });
     });
 

@@ -51,6 +51,9 @@ export class UserManagementComponent implements OnInit {
     /** id of the user with an in-flight role-change request, if any */
     pendingRoleChangeId: number | string | null = null;
 
+    /** id of the user with an in-flight intake-alerts toggle request, if any */
+    pendingIntakeAlertsId: number | string | null = null;
+
     /** email of the invite with an in-flight re-invite request, if any */
     pendingReinviteEmail: string | null = null;
 
@@ -99,6 +102,45 @@ export class UserManagementComponent implements OnInit {
             error: (err: HttpErrorResponse) => {
                 this.pendingRoleChangeId = null;
                 this.formError = extractServerErrorMessage(err, 'עדכון התפקיד נכשל. נסה שוב.');
+            }
+        });
+    }
+
+    isPendingIntakeAlertsChange(user: User): boolean {
+        return user.id !== undefined && this.pendingIntakeAlertsId === user.id;
+    }
+
+    // Pessimistic update, same convention as onRoleChange/IntakeAlertsComponent's status
+    // <select>: the checkbox's [checked] binding won't revert on its own if the request
+    // fails (Angular only re-writes the DOM property when the bound *value* changes, and
+    // user.receiveIntakeAlerts never changes on failure) — so checkboxEl.checked is reset
+    // by hand, same as onStatusChange does for its selectEl.
+    onIntakeAlertsToggle(user: User, checked: boolean, checkboxEl?: HTMLInputElement): void {
+        if (!user.id || this.pendingIntakeAlertsId !== null) {
+            if (checkboxEl) {
+                checkboxEl.checked = !!user.receiveIntakeAlerts;
+            }
+            return;
+        }
+
+        this.pendingIntakeAlertsId = user.id;
+        this.formError = '';
+        this.formSuccess = '';
+
+        this.userService.updateIntakeAlerts(user.id, checked).subscribe({
+            next: (updated) => {
+                user.receiveIntakeAlerts = updated.receiveIntakeAlerts;
+                this.pendingIntakeAlertsId = null;
+                this.formSuccess = updated.receiveIntakeAlerts
+                    ? `התראות אינטייק הופעלו עבור ${user.name}.`
+                    : `התראות אינטייק כובו עבור ${user.name}.`;
+            },
+            error: (err: HttpErrorResponse) => {
+                this.pendingIntakeAlertsId = null;
+                this.formError = extractServerErrorMessage(err, 'עדכון התראות האינטייק נכשל. נסה שוב.');
+                if (checkboxEl) {
+                    checkboxEl.checked = !!user.receiveIntakeAlerts;
+                }
             }
         });
     }

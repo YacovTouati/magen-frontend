@@ -14,6 +14,10 @@ export interface User {
     lastName?: string;
     fullName?: string;
     userRole?: string;
+    // Only ever meaningful for SUPER_ADMIN rows (see PATCH /users/:id/intake-alerts,
+    // which the backend refuses to apply to any other role) — a stray true on a
+    // non-admin row is harmless since the UI only renders the toggle for SUPER_ADMIN.
+    receiveIntakeAlerts?: boolean;
 }
 
 export interface InviteResult {
@@ -91,6 +95,15 @@ export class UserManagementService {
         );
     }
 
+    // Doesn't emit usersChanged$, same reasoning as inviteUser/deleteInvitation: this is
+    // a private notification preference, not part of the active roster other views
+    // (e.g. the shift calendar) care about.
+    updateIntakeAlerts(id: number | string, receiveIntakeAlerts: boolean): Observable<User> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}/intake-alerts`, { receiveIntakeAlerts }).pipe(
+            map(response => this.normalizeUser(response?.data ?? response))
+        );
+    }
+
     private normalizeUser(rawUser: any): User {
         const firstName = rawUser?.firstName ?? rawUser?.first_name ?? rawUser?.firstname ?? '';
         const lastName = rawUser?.lastName ?? rawUser?.last_name ?? rawUser?.lastname ?? '';
@@ -106,7 +119,8 @@ export class UserManagementService {
             role,
             firstName,
             lastName,
-            fullName: fullName || [firstName, lastName].filter(Boolean).join(' ').trim()
+            fullName: fullName || [firstName, lastName].filter(Boolean).join(' ').trim(),
+            receiveIntakeAlerts: rawUser?.receiveIntakeAlerts ?? rawUser?.receive_intake_alerts ?? false
         };
     }
 

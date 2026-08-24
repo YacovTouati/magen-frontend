@@ -38,6 +38,7 @@
                             <th>שם</th>
                             <th>אימייל</th>
                             <th>תפקיד</th>
+                            <th>קבלת התראות אינטייק</th>
                             <th>פעולה</th>
                         </tr>
                     </thead>
@@ -57,12 +58,30 @@
                                 </select>
                                 <span *ngIf="isPendingRoleChange(user)" class="pending-hint">מעדכן...</span>
                             </td>
+                            <td class="intake-alerts-cell">
+                                <ng-container *ngIf="user.role === 'SUPER_ADMIN'; else noIntakeAlertsToggle">
+                                    <label class="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            #alertsCheckbox
+                                            [checked]="user.receiveIntakeAlerts"
+                                            (change)="onIntakeAlertsToggle(user, alertsCheckbox.checked, alertsCheckbox)"
+                                            [disabled]="isPendingIntakeAlertsChange(user)"
+                                            [attr.aria-label]="'קבלת התראות אינטייק עבור ' + (user.name || user.email)"
+                                        >
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </ng-container>
+                                <ng-template #noIntakeAlertsToggle>
+                                    <span class="toggle-disabled" aria-hidden="true">—</span>
+                                </ng-template>
+                            </td>
                             <td>
                                 <button class="delete-btn" type="button" (click)="deleteUser(user)">מחק</button>
                             </td>
                         </tr>
                         <tr *ngIf="!isLoading && users.length === 0">
-                            <td colspan="4" class="empty-state">אין משתמשים להצגה.</td>
+                            <td colspan="5" class="empty-state">אין משתמשים להצגה.</td>
                         </tr>
                     </tbody>
                 </table>

@@ -185,6 +185,38 @@ describe('UserManagementService', () => {
         });
     });
 
+    describe('updateIntakeAlerts', () => {
+        it('should issue a PATCH to /users/:id/intake-alerts with the new flag and normalize the response', () => {
+            service.updateIntakeAlerts(5, true).subscribe(user => {
+                expect(user.id).toBe(5);
+                expect(user.receiveIntakeAlerts).toBeTrue();
+            });
+
+            const req = httpMock.expectOne(`${apiUrl}/5/intake-alerts`);
+            expect(req.request.method).toBe('PATCH');
+            expect(req.request.body).toEqual({ receiveIntakeAlerts: true });
+            req.flush({ success: true, data: { id: 5, name: 'Test User', email: 'test@example.com', role: 'SUPER_ADMIN', receiveIntakeAlerts: true } });
+        });
+
+        it('should unwrap a bare (non-enveloped) response too', () => {
+            service.updateIntakeAlerts(5, false).subscribe(user => {
+                expect(user.receiveIntakeAlerts).toBeFalse();
+            });
+
+            httpMock.expectOne(`${apiUrl}/5/intake-alerts`).flush({ id: 5, name: 'Test User', email: 'test@example.com', role: 'SUPER_ADMIN', receiveIntakeAlerts: false });
+        });
+
+        it('should not emit on usersChanged$ — a notification preference has no effect on the active roster', () => {
+            let emitCount = 0;
+            service.usersChanged$.subscribe(() => emitCount++);
+
+            service.updateIntakeAlerts(5, true).subscribe();
+            httpMock.expectOne(`${apiUrl}/5/intake-alerts`).flush({ id: 5, name: 'Test User', email: 'test@example.com', role: 'SUPER_ADMIN', receiveIntakeAlerts: true });
+
+            expect(emitCount).toBe(0);
+        });
+    });
+
     it('deleteUser should issue a DELETE to the user-specific endpoint and not touch other users', () => {
         service.deleteUser(2).subscribe(response => {
             expect(response).toBeNull();
