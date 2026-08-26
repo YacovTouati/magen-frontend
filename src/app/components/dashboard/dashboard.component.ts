@@ -177,6 +177,9 @@ export class DashboardComponent implements OnInit {
         // below has no effect on what's currently rendered (see the comment on
         // ReportComponent.resetForm()).
         this.reportComponent?.resetForm();
+        // Only cleared on a confirmed server save, not on a bare click of "save" —
+        // a failed/offline submission still needs its draft for the next attempt.
+        this.reportComponent?.clearDraft();
 
         // Still reset our own mirrored copies too: if the user switches tabs away and
         // back, app-report (behind *ngIf) is destroyed and recreated, and the fresh

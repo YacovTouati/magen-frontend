@@ -100,6 +100,17 @@
     color: #b91c1c;
 }
 
+.draft-restored-hint {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-block;
+}
+
 .submit-btn {
     background-color: #10b981;
     color: white;

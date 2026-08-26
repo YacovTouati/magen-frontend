@@ -1,10 +1,21 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { ReportComponent } from './report.component';
 
+// No AuthService mock is provided in this spec, so getUser() resolves to null (no stored
+// session) and the component's draft key falls back to its 'anonymous' suffix.
+const DRAFT_KEY = 'magen_report_draft_anonymous';
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 describe('ReportComponent', () => {
     beforeEach(async () => {
-        await TestBed.configureTestingModule({ imports: [ReportComponent] }).compileComponents();
+        localStorage.clear();
+        await TestBed.configureTestingModule({ imports: [ReportComponent, HttpClientTestingModule] }).compileComponents();
+    });
+
+    afterEach(() => {
+        localStorage.clear();
     });
 
     it('should create', () => {
@@ -384,5 +395,126 @@ describe('ReportComponent', () => {
             expect(emitted.magenContactHistory).toBe('past');
             expect(emitted.contactedOtherCenterBefore).toBeUndefined();
         });
+    });
+
+    describe('local draft auto-save', () => {
+        it('should debounce-save the form to localStorage as the user types', fakeAsync(() => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            tick(); // template-driven forms register controls via a resolved promise
+            fixture.detectChanges();
+            const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
+
+            nameInput.value = 'ישראל ישראלי';
+            nameInput.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+
+            expect(localStorage.getItem(DRAFT_KEY)).toBeNull(); // not yet — still debouncing
+            tick(500);
+
+            const raw = localStorage.getItem(DRAFT_KEY);
+            expect(raw).toBeTruthy();
+            const draft = JSON.parse(raw!);
+            expect(draft.data.callerName).toBe('ישראל ישראלי');
+            expect(Math.abs(Date.now() - draft.savedAt)).toBeLessThan(2000);
+
+            tick(3000); // let the draft-restored toast timer (irrelevant here) settle, avoid pending-timer errors
+            fixture.destroy();
+        }));
+
+        it('should restore a fresh draft (<1h old) on init and show the "טיוטה שוחזרה" hint', () => {
+            const draft = { savedAt: Date.now() - 1000, data: { callerName: 'משוחזר', reportedBy: 'בודק', region: 'מרכז' } };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const comp = fixture.componentInstance;
+
+            expect(comp.callerName).toBe('משוחזר');
+            expect(comp.reportedBy).toBe('בודק');
+            expect(comp.region).toBe('מרכז');
+            expect(comp.draftRestored).toBeTrue();
+            expect(fixture.debugElement.query(By.css('.draft-restored-hint')).nativeElement.textContent).toContain('טיוטה שוחזרה');
+        });
+
+        it('should purge and ignore a draft older than 1 hour', () => {
+            const draft = { savedAt: Date.now() - ONE_HOUR_MS - 1000, data: { callerName: 'ישן מדי' } };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const comp = fixture.componentInstance;
+
+            expect(comp.callerName).toBe('');
+            expect(comp.draftRestored).toBeFalse();
+            expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+        });
+
+        it('should purge a corrupted draft without throwing', () => {
+            localStorage.setItem(DRAFT_KEY, '{not valid json');
+
+            expect(() => {
+                const fixture = TestBed.createComponent(ReportComponent);
+                fixture.detectChanges();
+            }).not.toThrow();
+
+            expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+        });
+
+        it('should do nothing when no draft exists', () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const comp = fixture.componentInstance;
+
+            expect(comp.callerName).toBe('');
+            expect(comp.draftRestored).toBeFalse();
+        });
+
+        it('clearDraft() should remove the saved draft from localStorage', () => {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify({ savedAt: Date.now(), data: {} }));
+            const fixture = TestBed.createComponent(ReportComponent);
+            const comp = fixture.componentInstance;
+
+            comp.clearDraft();
+
+            expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+        });
+
+        it('the "טיוטה שוחזרה" hint should self-clear a few seconds after being shown', fakeAsync(() => {
+            const draft = { savedAt: Date.now(), data: { callerName: 'משוחזר' } };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            const comp = fixture.componentInstance;
+            expect(comp.draftRestored).toBeTrue();
+
+            tick(3500);
+
+            expect(comp.draftRestored).toBeFalse();
+            fixture.destroy();
+        }));
+
+        it('clearDraft() should discard a save still sitting in the debounce buffer, not let it rewrite a blank draft afterward', fakeAsync(() => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            tick();
+            fixture.detectChanges();
+            const comp = fixture.componentInstance;
+            const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
+
+            // Types something, then clears (e.g. resetForm()) and confirms the draft is
+            // gone within the same debounce window — mirrors DashboardComponent.onReportSubmit
+            // calling resetForm() then clearDraft() back-to-back on a successful save.
+            nameInput.value = 'טיוטה שלא אמורה להישמר';
+            nameInput.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+            comp.clearDraft();
+
+            tick(500); // past the 400ms debounce — the stale pending save, if any, would fire here
+
+            expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+            fixture.destroy();
+        }));
     });
 });

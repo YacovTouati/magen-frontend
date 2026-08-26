@@ -1,7 +1,17 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription, debounceTime } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
+import { AuthService } from '../../services/auth.service';
+
+const DRAFT_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+interface ReportDraft {
+  savedAt: number;
+  data: Record<string, unknown>;
+}
 
 @Component({
   selector: 'app-report',
@@ -11,6 +21,8 @@ import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component'
   <section class="section-card">
     <h3>📝 דיווח וסיכום שיחת סיוע</h3>
     <p class="section-desc">מלא את פרטי הפונה דמוגרפית ופרטי השיחה. כל המידע עובר אימות קפדני ונשמר בצורה מאובטחת.</p>
+
+    <p class="draft-restored-hint" *ngIf="draftRestored">📝 טיוטה שוחזרה</p>
 
     <form #reportForm="ngForm" (ngSubmit)="onSubmit()" class="report-form" novalidate>
       <div class="compact-row">
@@ -147,7 +159,7 @@ import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component'
   ,
   styleUrls: ['./report.component.css']
 })
-export class ReportComponent {
+export class ReportComponent implements OnInit, AfterViewInit {
   @Input() callDuration = 30;
   @Input() callerType = 'victim';
   @Input() callPurpose = 'counseling';
@@ -179,6 +191,126 @@ export class ReportComponent {
   @ViewChild('reportForm') private ngForm!: NgForm;
 
   private readonly phonePattern = /^[0-9]{7,10}$/;
+
+  draftRestored = false;
+  private draftRestoredTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // Scoped per-user (not a flat key) — this form runs on shared call-center stations
+  // where different volunteers log in/out on the same browser, and a stray draft
+  // leaking into the wrong person's session would be worse than losing it outright.
+  private get draftStorageKey(): string {
+    const email = this.authService.getUser()?.email ?? 'anonymous';
+    return `magen_report_draft_${email}`;
+  }
+
+  ngOnInit(): void {
+    this.restoreDraftIfFresh();
+  }
+
+  private formSub: Subscription | null = null;
+
+  // ngForm (from @ViewChild) only resolves after the view is initialized — its
+  // form.valueChanges observable isn't available any earlier than this.
+  ngAfterViewInit(): void {
+    this.subscribeToFormChanges();
+  }
+
+  private subscribeToFormChanges(): void {
+    // Not ready yet if called from ngOnInit's restoreDraftIfFresh() (e.g. purging an
+    // expired/corrupt draft) — ngForm only resolves once ngAfterViewInit runs, which
+    // will set up the real subscription itself right after. Nothing pending to discard
+    // this early anyway.
+    if (!this.ngForm) {
+      return;
+    }
+
+    this.formSub?.unsubscribe();
+    this.formSub = this.ngForm.form.valueChanges.pipe(
+      debounceTime(400),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.saveDraft());
+  }
+
+  private saveDraft(): void {
+    const draft: ReportDraft = {
+      savedAt: Date.now(),
+      data: this.ngForm.form.value
+    };
+
+    try {
+      localStorage.setItem(this.draftStorageKey, JSON.stringify(draft));
+    } catch {
+      // localStorage can throw (private browsing, quota exceeded) — a draft is a
+      // nice-to-have, never worth failing the form over.
+    }
+  }
+
+  private restoreDraftIfFresh(): void {
+    let raw: string | null;
+    try {
+      raw = localStorage.getItem(this.draftStorageKey);
+    } catch {
+      return;
+    }
+
+    if (!raw) {
+      return;
+    }
+
+    let draft: ReportDraft;
+    try {
+      draft = JSON.parse(raw);
+    } catch {
+      this.clearDraft();
+      return;
+    }
+
+    if (!draft?.savedAt || Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) {
+      this.clearDraft();
+      return;
+    }
+
+    Object.entries(draft.data ?? {}).forEach(([key, value]) => {
+      if (key in this) {
+        (this as any)[key] = value;
+      }
+    });
+
+    this.showDraftRestoredToast();
+  }
+
+  // Called by the parent (DashboardComponent) alongside resetForm() once a submission
+  // has actually been confirmed saved server-side — never on a bare click of "save",
+  // which is exactly the case a failed/offline submission still needs the draft for.
+  clearDraft(): void {
+    // resetForm() (called just before this) changes the form's value too, which would
+    // otherwise still be sitting in the debounce buffer — left alone, that pending save
+    // fires ~400ms later and silently rewrites a blank draft right after we clear it.
+    // Restarting the subscription discards debounceTime's in-flight timer along with it.
+    this.subscribeToFormChanges();
+
+    try {
+      localStorage.removeItem(this.draftStorageKey);
+    } catch {
+      // ignore — nothing to clean up if storage isn't available
+    }
+  }
+
+  // "Brief toast" — same self-clearing convention as IntakeAlertsComponent's
+  // showSuccessToast, so it doesn't require a dismiss click.
+  private showDraftRestoredToast(): void {
+    if (this.draftRestoredTimeoutId !== null) {
+      clearTimeout(this.draftRestoredTimeoutId);
+    }
+    this.draftRestored = true;
+    this.draftRestoredTimeoutId = setTimeout(() => {
+      this.draftRestored = false;
+      this.draftRestoredTimeoutId = null;
+    }, 3000);
+  }
 
   resetForm(): void {
     this.ngForm.resetForm({

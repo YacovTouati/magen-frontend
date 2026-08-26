@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 describe('DashboardComponent', () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
@@ -159,6 +160,24 @@ describe('DashboardComponent', () => {
         (comp as any).updateCurrentTabFromRoute();
 
         expect(comp.currentTab).toBe('charts');
+    });
+
+    it('onReportSubmit() should reset the form AND clear its local draft once the server confirms the save', () => {
+        const fixture = TestBed.createComponent(DashboardComponent);
+        const comp = fixture.componentInstance;
+        fixture.detectChanges();
+        const httpMock = TestBed.inject(HttpTestingController);
+        const reportComponent = (comp as any).reportComponent;
+        spyOn(reportComponent, 'resetForm');
+        spyOn(reportComponent, 'clearDraft');
+
+        comp.onReportSubmit({ callerName: 'ישראל ישראלי' } as any);
+        httpMock.expectOne(`${environment.apiBaseUrl}/api/reports`).flush({ success: true, data: { report: { id: 1 }, intake: { id: 1 } } });
+
+        expect(reportComponent.resetForm).toHaveBeenCalled();
+        expect(reportComponent.clearDraft).toHaveBeenCalled();
+        // Not httpMock.verify() here — the SUPER_ADMIN intake-alerts panel mounted
+        // alongside the report tab fires its own unrelated background GET on init.
     });
 
     it('logout should clear the session and navigate to /login', () => {
