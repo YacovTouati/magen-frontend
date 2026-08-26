@@ -51,23 +51,23 @@
     </div>
 
     <div class="chart-panel trend-panel">
-      <h4 class="chart-title">מגמת אינטייקים יומית</h4>
+      <h4 class="chart-title">פילוח שעות שיא (זמן ישראל)</h4>
 
       <div
         class="trend-chart"
-        *ngIf="maxDailyValue > 0; else emptyTrend"
+        *ngIf="maxHourlyValue > 0; else emptyTrend"
         role="img"
-        [attr.aria-label]="'תרשים עמודות של אינטייקים יומיים לחודש ' + monthLabel"
+        [attr.aria-label]="'תרשים עמודות של אינטייקים לפי שעה ביום לחודש ' + monthLabel"
       >
         <div
           class="trend-bar-col"
-          *ngFor="let bar of dailyBars"
-          (mouseenter)="hoveredDay = bar"
-          (mouseleave)="hoveredDay = null"
+          *ngFor="let bar of hourlyBars"
+          (mouseenter)="hoveredHour = bar"
+          (mouseleave)="hoveredHour = null"
         >
-          <span class="trend-tooltip" *ngIf="hoveredDay === bar">{{ bar.day }}: {{ bar.value }}</span>
+          <span class="trend-tooltip" *ngIf="hoveredHour === bar">{{ bar.hour }}:00 — {{ bar.value }}</span>
           <div class="trend-bar" [style.height.%]="barHeightPercent(bar)"></div>
-          <span class="trend-bar-daynum" *ngIf="bar.day === 1 || bar.day % 5 === 0">{{ bar.day }}</span>
+          <span class="trend-bar-daynum" *ngIf="+bar.hour % 3 === 0">{{ bar.hour }}</span>
         </div>
       </div>
 
@@ -168,6 +168,151 @@
       </div>
     </div>
 
+    <h4 class="chart-title extra-breakdowns-title">פילוח נוסף</h4>
+
+    <div class="analytics-grid">
+      <div class="chart-panel">
+        <h4 class="chart-title">סוג פונה</h4>
+
+        <div class="donut-wrap" *ngIf="monthlyCallerTypeTotal > 0; else emptyMonthlyCallerType">
+          <div
+            class="donut"
+            [style.background]="monthlyCallerTypeGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של סוג הפונה, סך הכל ' + monthlyCallerTypeTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ monthlyCallerTypeTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of monthlyCallerTypeSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyMonthlyCallerType>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel">
+        <h4 class="chart-title">האם קיבל/ה ליווי במרכז סיוע אחר?</h4>
+
+        <div class="donut-wrap" *ngIf="supportElsewhereTotal > 0; else emptySupportElsewhere">
+          <div
+            class="donut"
+            [style.background]="supportElsewhereGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של ליווי במרכז סיוע אחר, סך הכל ' + supportElsewhereTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ supportElsewhereTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of supportElsewhereSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptySupportElsewhere>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel">
+        <h4 class="chart-title">האם פנה/תה למגן בעבר?</h4>
+
+        <div class="donut-wrap" *ngIf="previousContactTotal > 0; else emptyPreviousContact">
+          <div
+            class="donut"
+            [style.background]="previousContactGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של פנייה קודמת למגן, סך הכל ' + previousContactTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ previousContactTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of previousContactSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyPreviousContact>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel">
+        <h4 class="chart-title">האם יש חובת דיווח?</h4>
+
+        <div class="donut-wrap" *ngIf="reportingDutyTotal > 0; else emptyReportingDuty">
+          <div
+            class="donut"
+            [style.background]="reportingDutyGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של חובת דיווח, סך הכל ' + reportingDutyTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ reportingDutyTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of reportingDutySegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyReportingDuty>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel chart-panel-wide">
+        <h4 class="chart-title">אזור בארץ (Top 10)</h4>
+
+        <div class="region-list" *ngIf="regionRows.length > 0; else emptyRegions">
+          <div class="region-row" *ngFor="let row of regionRows; let i = index">
+            <div class="region-row-header">
+              <span class="region-rank">{{ i + 1 }}</span>
+              <span class="bar-name">{{ row.label }}</span>
+              <span class="bar-value">{{ row.value }} ({{ row.percent | number: '1.0-0' }}%)</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="regionBarWidthPercent(row)" [style.background]="regionBarColor"></div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #emptyRegions>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+    </div>
+
     <div class="analytics-table-wrap">
       <details>
         <summary>הצג נתונים חודשיים כטבלה</summary>
@@ -198,6 +343,36 @@
               <td>{{ seg.label }}</td>
               <td>{{ seg.value }}</td>
               <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of monthlyCallerTypeSegments">
+              <td>סוג פונה</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of supportElsewhereSegments">
+              <td>ליווי במרכז סיוע אחר</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of previousContactSegments">
+              <td>פנייה קודמת למגן</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of reportingDutySegments">
+              <td>חובת דיווח</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let row of regionRows">
+              <td>אזור בארץ</td>
+              <td>{{ row.label }}</td>
+              <td>{{ row.value }}</td>
+              <td>{{ row.percent | number: '1.0-0' }}%</td>
             </tr>
           </tbody>
         </table>

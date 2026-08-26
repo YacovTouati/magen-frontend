@@ -12,14 +12,27 @@ describe('ChartsComponent', () => {
         callPurposes: { coercion: 2, counseling: 5, crisis: 3 }
     };
 
+    function buildHourlyDistribution(overrides: Record<string, number>): Record<string, number> {
+        const hours: Record<string, number> = {};
+        for (let hour = 0; hour < 24; hour++) {
+            hours[String(hour).padStart(2, '0')] = 0;
+        }
+        return { ...hours, ...overrides };
+    }
+
     const mockMonthly: MonthlyIntakeAnalytics = {
         year: 2026,
         month: 8,
         totalIntakes: 10,
         statusBreakdown: { NEW: 3, NO_ANSWER: 1, ACTIVE: 2, CLOSED: 3, LONG_TERM: 1 },
         reporterBreakdown: { 'דנה לוי': 6, 'יוסי כהן': 4 },
-        caseTypeBreakdown: { counseling: 4, crisis: 2, coercion: 1, 'ללא נושא': 3 },
-        dailyActivity: { '2026-08-01': 2, '2026-08-02': 0, '2026-08-03': 5, '2026-08-04': 3 },
+        callPurposeBreakdown: { counseling: 4, crisis: 2, coercion: 1, 'לא צוין': 3 },
+        callerTypeBreakdown: { victim: 8, family: 1, friend: 1 },
+        receivedSupportBreakdown: { yes: 2, no: 5, unknown: 3 },
+        magenContactHistoryBreakdown: { first_time: 6, past: 3, dont_remember: 1 },
+        reportingDutyBreakdown: { no: 7, yes_practical: 2, yes_principled: 1 },
+        regionBreakdown: { 'תל אביב': 4, 'ירושלים': 3, 'חיפה': 3 },
+        hourlyDistribution: buildHourlyDistribution({ '09': 2, '14': 5, '18': 3 }),
         resolutionStats: { resolvedCount: 4, averageResolutionHours: 12.5, completionRate: 0.4 }
     };
 
@@ -200,7 +213,7 @@ describe('ChartsComponent', () => {
 
         it('should derive total call reports as intakes minus the "no linked report" bucket', () => {
             const fixture = setup();
-            // totalIntakes (10) - caseTypeBreakdown['ללא נושא'] (3) = 7
+            // totalIntakes (10) - callPurposeBreakdown['לא צוין'] (3) = 7
             expect(fixture.componentInstance.totalCallReports).toBe(7);
         });
 
@@ -233,39 +246,42 @@ describe('ChartsComponent', () => {
         });
     });
 
-    describe('daily trend chart', () => {
-        it('should build one bar per day present in dailyActivity, sorted by date', () => {
+    describe('hourly distribution chart', () => {
+        it('should build one zero-filled bar per hour of the day, in hour order', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.dailyBars.map(b => b.day)).toEqual([1, 2, 3, 4]);
-            expect(comp.dailyBars.map(b => b.value)).toEqual([2, 0, 5, 3]);
+            expect(comp.hourlyBars.length).toBe(24);
+            expect(comp.hourlyBars.map(b => b.hour)).toEqual(Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')));
+            expect(comp.hourlyBars.find(b => b.hour === '09')?.value).toBe(2);
+            expect(comp.hourlyBars.find(b => b.hour === '14')?.value).toBe(5);
+            expect(comp.hourlyBars.find(b => b.hour === '00')?.value).toBe(0);
         });
 
         it('should compute the max value for bar scaling', () => {
             const fixture = setup();
-            expect(fixture.componentInstance.maxDailyValue).toBe(5);
+            expect(fixture.componentInstance.maxHourlyValue).toBe(5);
         });
 
         it('the tallest bar should scale to 100% height', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
-            const tallest = comp.dailyBars.find(b => b.value === 5)!;
+            const tallest = comp.hourlyBars.find(b => b.value === 5)!;
 
             expect(comp.barHeightPercent(tallest)).toBe(100);
         });
 
-        it('should show the empty state when every day is zero', () => {
-            const fixture = setup({ ...mockMonthly, dailyActivity: { '2026-08-01': 0, '2026-08-02': 0 } });
+        it('should show the empty state when every hour is zero', () => {
+            const fixture = setup({ ...mockMonthly, hourlyDistribution: buildHourlyDistribution({}) });
 
-            expect(fixture.componentInstance.maxDailyValue).toBe(0);
+            expect(fixture.componentInstance.maxHourlyValue).toBe(0);
             expect(fixture.debugElement.query(By.css('.trend-chart'))).toBeFalsy();
             expect(fixture.debugElement.query(By.css('.empty-chart-message'))).toBeTruthy();
         });
 
-        it('should render one column per day in the DOM', () => {
+        it('should render 24 columns (one per hour) in the DOM', () => {
             const fixture = setup();
-            expect(fixture.debugElement.queryAll(By.css('.trend-bar-col')).length).toBe(4);
+            expect(fixture.debugElement.queryAll(By.css('.trend-bar-col')).length).toBe(24);
         });
     });
 
@@ -281,13 +297,13 @@ describe('ChartsComponent', () => {
     });
 
     describe('case type breakdown (donut)', () => {
-        it('should build segments including the "ללא נושא" bucket for intakes with no linked report', () => {
+        it('should build segments including the "לא צוין" bucket for intakes with no linked report', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.caseTypeSegments.map(s => s.key)).toEqual(['counseling', 'crisis', 'coercion', 'ללא נושא']);
+            expect(comp.caseTypeSegments.map(s => s.key)).toEqual(['counseling', 'crisis', 'coercion', 'לא צוין']);
             expect(comp.caseTypeSegments[0].label).toBe('ייעוץ ותמיכה רגשית');
-            expect(comp.caseTypeSegments[3].label).toBe('ללא נושא');
+            expect(comp.caseTypeSegments[3].label).toBe('לא צוין');
             expect(comp.caseTypeTotal).toBe(10);
         });
     });
@@ -314,6 +330,99 @@ describe('ChartsComponent', () => {
             const other = comp.reporterSegments[7];
             expect(other.label).toBe('אחר');
             expect(other.value).toBe(1 + 2); // the two smallest (מתנדב 1, מתנדב 2) folded in
+        });
+    });
+
+    describe('caller-type breakdown (monthly donut)', () => {
+        it('should build segments in fixed order (victim, family, friend, unknown, לא צוין) with Hebrew labels', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.monthlyCallerTypeSegments.map(s => s.key)).toEqual(['victim', 'family', 'friend', 'unknown', 'לא צוין']);
+            expect(comp.monthlyCallerTypeSegments[0].label).toBe('נפגע/ת ישיר/ה');
+            expect(comp.monthlyCallerTypeTotal).toBe(10);
+        });
+
+        it('should build a conic-gradient for the caller-type donut', () => {
+            const fixture = setup();
+            expect(fixture.componentInstance.monthlyCallerTypeGradient).toContain('conic-gradient(');
+        });
+    });
+
+    describe('support-elsewhere breakdown (donut)', () => {
+        it('should build segments in fixed order (yes, no, unknown, לא צוין) with Hebrew labels', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.supportElsewhereSegments.map(s => s.key)).toEqual(['yes', 'no', 'unknown', 'לא צוין']);
+            expect(comp.supportElsewhereSegments[0].label).toBe('כן');
+            expect(comp.supportElsewhereTotal).toBe(10);
+        });
+    });
+
+    describe('previous-contact breakdown (donut)', () => {
+        it('should build segments in fixed order (first_time, past, dont_remember, לא צוין) with Hebrew labels', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.previousContactSegments.map(s => s.key)).toEqual(['first_time', 'past', 'dont_remember', 'לא צוין']);
+            expect(comp.previousContactSegments[0].label).toBe('פעם ראשונה');
+            expect(comp.previousContactTotal).toBe(10);
+        });
+    });
+
+    describe('reporting-duty breakdown (donut)', () => {
+        it('should build segments in fixed order (no, yes_practical, yes_principled, לא צוין) with Hebrew labels', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.reportingDutySegments.map(s => s.key)).toEqual(['no', 'yes_practical', 'yes_principled', 'לא צוין']);
+            expect(comp.reportingDutySegments[0].label).toBe('לא');
+            expect(comp.reportingDutyTotal).toBe(10);
+        });
+    });
+
+    describe('region ranked list', () => {
+        it('should sort regions by value descending', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.regionRows.map(r => r.key)).toEqual(['תל אביב', 'ירושלים', 'חיפה']);
+            expect(comp.regionRows[0].value).toBe(4);
+        });
+
+        it('should fold anything past the 10th region into a single "אחר" row', () => {
+            const many: Record<string, number> = {};
+            for (let i = 1; i <= 12; i++) {
+                many[`אזור ${i}`] = i;
+            }
+            const fixture = setup({ ...mockMonthly, regionBreakdown: many });
+            const comp = fixture.componentInstance;
+
+            expect(comp.regionRows.length).toBe(11); // 10 named + 1 "אחר"
+            const other = comp.regionRows[10];
+            expect(other.label).toBe('אחר');
+            expect(other.value).toBe(1 + 2); // the two smallest (אזור 1, אזור 2) folded in
+        });
+
+        it('should scale bar width against the max region value', () => {
+            const fixture = setup();
+            const comp = fixture.componentInstance;
+
+            expect(comp.regionMaxValue).toBe(4);
+            expect(comp.regionBarWidthPercent(comp.regionRows[0])).toBe(100);
+        });
+
+        it('should show the empty state when there is no region data', () => {
+            const fixture = setup({ ...mockMonthly, regionBreakdown: {} });
+
+            expect(fixture.componentInstance.regionRows.length).toBe(0);
+            expect(fixture.debugElement.query(By.css('.region-list'))).toBeFalsy();
+        });
+
+        it('should render one region row per entry in the DOM', () => {
+            const fixture = setup();
+            expect(fixture.debugElement.queryAll(By.css('.region-row')).length).toBe(3);
         });
     });
 
@@ -413,7 +522,8 @@ describe('ChartsComponent', () => {
         const fixture = setup();
         const tableRows = fixture.debugElement.queryAll(By.css('.analytics-table-wrap'))[0].queryAll(By.css('tbody tr'));
 
-        // 2 reporters + 5 statuses + 4 case types
-        expect(tableRows.length).toBe(11);
+        // 2 reporters + 5 statuses + 4 case types + 5 caller types + 4 support-elsewhere
+        // + 4 previous-contact + 4 reporting-duty + 3 regions
+        expect(tableRows.length).toBe(31);
     });
 });

@@ -2,7 +2,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AnalyticsService, MonthlyIntakeAnalytics } from '../../services/analytics.service';
 import { IntakeStatus } from '../../services/intake.service';
-import { getCallPurposeLabel, getStatusLabel } from '../../shared/intake-labels';
+import {
+    getCallPurposeLabel,
+    getCallerTypeLabel,
+    getMagenContactHistoryLabel,
+    getReceivedSupportLabel,
+    getReportingDutyLabel,
+    getStatusLabel
+} from '../../shared/intake-labels';
 
 export interface ChartSegment {
     key: string;
@@ -12,10 +19,16 @@ export interface ChartSegment {
     color: string;
 }
 
-export interface DailyBar {
-    date: string; // "YYYY-MM-DD"
-    day: number;
+export interface HourlyBar {
+    hour: string; // "00".."23"
     value: number;
+}
+
+export interface RegionRow {
+    key: string;
+    label: string;
+    value: number;
+    percent: number;
 }
 
 // Fixed categorical slot order (blue, aqua, yellow, ...) — assigned by display order,
@@ -40,14 +53,29 @@ const CALL_PURPOSE_LABELS: Record<string, string> = {
 const STATUS_ORDER: IntakeStatus[] = ['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'LONG_TERM'];
 
 // Bucket label the backend uses for an intake with no linked CallReport — kept in sync
-// with AnalyticsService.NO_CASE_TYPE_BUCKET (src/services/analyticsService.ts).
-const NO_CASE_TYPE_BUCKET = 'ללא נושא';
+// with AnalyticsService.NO_CALL_REPORT_BUCKET (src/services/analyticsService.ts).
+const NO_CASE_TYPE_BUCKET = 'לא צוין';
 const CASE_TYPE_ORDER = [...CALL_PURPOSE_ORDER, NO_CASE_TYPE_BUCKET];
+
+const CALLER_TYPE_BREAKDOWN_ORDER = ['victim', 'family', 'friend', 'unknown', NO_CASE_TYPE_BUCKET];
+const RECEIVED_SUPPORT_ORDER = ['yes', 'no', 'unknown', NO_CASE_TYPE_BUCKET];
+const MAGEN_CONTACT_HISTORY_ORDER = ['first_time', 'past', 'dont_remember', NO_CASE_TYPE_BUCKET];
+const REPORTING_DUTY_ORDER = ['no', 'yes_practical', 'yes_principled', NO_CASE_TYPE_BUCKET];
+
+// "00".."23", in order, for a fixed-order 24-column hourly chart.
+const HOUR_ORDER = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 
 // Categorical slots are capped at 8 validated colors — a reporter list longer than that
 // folds the smallest tail into "אחר" rather than generating a 9th, uncontrolled hue.
 const MAX_REPORTER_SLOTS = 7;
 const OTHER_REPORTER_KEY = '__other__';
+
+// Region is unbounded free text (typed in by volunteers), like reportedBy — but shown
+// as a ranked bar list rather than a donut, so identity-per-hue isn't needed: every
+// bar uses one consistent accent color and the label itself carries identity.
+const MAX_REGION_SLOTS = 10;
+const OTHER_REGION_KEY = '__other__';
+const REGION_BAR_COLOR = CATEGORICAL_COLORS[0];
 
 @Component({
     selector: 'app-charts',
@@ -72,8 +100,16 @@ export class ChartsComponent implements OnInit {
     reporterSegments: ChartSegment[] = [];
     statusSegments: ChartSegment[] = [];
     caseTypeSegments: ChartSegment[] = [];
-    dailyBars: DailyBar[] = [];
-    hoveredDay: DailyBar | null = null;
+    hourlyBars: HourlyBar[] = [];
+    hoveredHour: HourlyBar | null = null;
+
+    // Newly available monthly breakdowns — named "monthly*" to stay distinct from the
+    // all-time callerTypeSegments/callPurposeSegments (getSummary()) below.
+    monthlyCallerTypeSegments: ChartSegment[] = [];
+    supportElsewhereSegments: ChartSegment[] = [];
+    previousContactSegments: ChartSegment[] = [];
+    reportingDutySegments: ChartSegment[] = [];
+    regionRows: RegionRow[] = [];
 
     // Kept from the previous all-time view — still meaningful alongside the new
     // monthly breakdowns below, since caller-type has no equivalent in monthly data.
@@ -139,8 +175,13 @@ export class ChartsComponent implements OnInit {
                 this.analytics = data;
                 this.reporterSegments = this.buildReporterSegments(data.reporterBreakdown);
                 this.statusSegments = this.buildFixedOrderSegments(data.statusBreakdown, STATUS_ORDER, (key) => getStatusLabel(key as IntakeStatus));
-                this.caseTypeSegments = this.buildFixedOrderSegments(data.caseTypeBreakdown, CASE_TYPE_ORDER, getCallPurposeLabel);
-                this.dailyBars = this.buildDailyBars(data.dailyActivity);
+                this.caseTypeSegments = this.buildFixedOrderSegments(data.callPurposeBreakdown, CASE_TYPE_ORDER, getCallPurposeLabel);
+                this.hourlyBars = this.buildHourlyBars(data.hourlyDistribution);
+                this.monthlyCallerTypeSegments = this.buildFixedOrderSegments(data.callerTypeBreakdown, CALLER_TYPE_BREAKDOWN_ORDER, getCallerTypeLabel);
+                this.supportElsewhereSegments = this.buildFixedOrderSegments(data.receivedSupportBreakdown, RECEIVED_SUPPORT_ORDER, getReceivedSupportLabel);
+                this.previousContactSegments = this.buildFixedOrderSegments(data.magenContactHistoryBreakdown, MAGEN_CONTACT_HISTORY_ORDER, getMagenContactHistoryLabel);
+                this.reportingDutySegments = this.buildFixedOrderSegments(data.reportingDutyBreakdown, REPORTING_DUTY_ORDER, getReportingDutyLabel);
+                this.regionRows = this.buildRegionRows(data.regionBreakdown);
                 this.isLoading = false;
             },
             error: (err) => {
@@ -209,7 +250,7 @@ export class ChartsComponent implements OnInit {
         if (!this.analytics) {
             return 0;
         }
-        const withoutReport = this.analytics.caseTypeBreakdown[NO_CASE_TYPE_BUCKET] ?? 0;
+        const withoutReport = this.analytics.callPurposeBreakdown[NO_CASE_TYPE_BUCKET] ?? 0;
         return this.analytics.totalIntakes - withoutReport;
     }
 
@@ -228,24 +269,21 @@ export class ChartsComponent implements OnInit {
         return `${(hours / 24).toFixed(1)} ימים`;
     }
 
-    // Daily trend chart
+    // Hourly distribution chart ("peak call hours")
 
-    get maxDailyValue(): number {
-        return Math.max(...this.dailyBars.map(d => d.value), 0);
+    get maxHourlyValue(): number {
+        return Math.max(...this.hourlyBars.map(b => b.value), 0);
     }
 
-    barHeightPercent(bar: DailyBar): number {
-        return this.maxDailyValue > 0 ? (bar.value / this.maxDailyValue) * 100 : 0;
+    barHeightPercent(bar: HourlyBar): number {
+        return this.maxHourlyValue > 0 ? (bar.value / this.maxHourlyValue) * 100 : 0;
     }
 
-    private buildDailyBars(dailyActivity: Record<string, number>): DailyBar[] {
-        return Object.keys(dailyActivity)
-            .sort()
-            .map(date => ({
-                date,
-                day: Number(date.slice(8, 10)),
-                value: dailyActivity[date]
-            }));
+    private buildHourlyBars(hourlyDistribution: Record<string, number>): HourlyBar[] {
+        return HOUR_ORDER.map(hour => ({
+            hour,
+            value: hourlyDistribution[hour] ?? 0
+        }));
     }
 
     // Segment builders
@@ -284,6 +322,78 @@ export class ChartsComponent implements OnInit {
 
     get caseTypeGradient(): string {
         return this.buildGradient(this.caseTypeSegments, this.caseTypeTotal);
+    }
+
+    get monthlyCallerTypeTotal(): number {
+        return this.monthlyCallerTypeSegments.reduce((sum, seg) => sum + seg.value, 0);
+    }
+
+    get monthlyCallerTypeGradient(): string {
+        return this.buildGradient(this.monthlyCallerTypeSegments, this.monthlyCallerTypeTotal);
+    }
+
+    get supportElsewhereTotal(): number {
+        return this.supportElsewhereSegments.reduce((sum, seg) => sum + seg.value, 0);
+    }
+
+    get supportElsewhereGradient(): string {
+        return this.buildGradient(this.supportElsewhereSegments, this.supportElsewhereTotal);
+    }
+
+    get previousContactTotal(): number {
+        return this.previousContactSegments.reduce((sum, seg) => sum + seg.value, 0);
+    }
+
+    get previousContactGradient(): string {
+        return this.buildGradient(this.previousContactSegments, this.previousContactTotal);
+    }
+
+    get reportingDutyTotal(): number {
+        return this.reportingDutySegments.reduce((sum, seg) => sum + seg.value, 0);
+    }
+
+    get reportingDutyGradient(): string {
+        return this.buildGradient(this.reportingDutySegments, this.reportingDutyTotal);
+    }
+
+    // Region ranked list ("אזור בארץ")
+
+    get regionMaxValue(): number {
+        return Math.max(...this.regionRows.map(r => r.value), 0);
+    }
+
+    regionBarWidthPercent(row: RegionRow): number {
+        return this.regionMaxValue > 0 ? (row.value / this.regionMaxValue) * 100 : 0;
+    }
+
+    readonly regionBarColor = REGION_BAR_COLOR;
+
+    // Free-text, like reportedBy — sorted by value, top MAX_REGION_SLOTS shown, the
+    // rest folded into a single "אחר" row rather than an ever-growing list.
+    private buildRegionRows(data: Record<string, number>): RegionRow[] {
+        const entries = Object.entries(data).sort(([, a], [, b]) => b - a);
+        const total = entries.reduce((sum, [, value]) => sum + value, 0);
+
+        const head = entries.slice(0, MAX_REGION_SLOTS);
+        const tailTotal = entries.slice(MAX_REGION_SLOTS).reduce((sum, [, value]) => sum + value, 0);
+
+        const rows: RegionRow[] = head.map(([key, value]) => ({
+            key,
+            label: key,
+            value,
+            percent: total > 0 ? (value / total) * 100 : 0
+        }));
+
+        if (tailTotal > 0) {
+            rows.push({
+                key: OTHER_REGION_KEY,
+                label: 'אחר',
+                value: tailTotal,
+                percent: total > 0 ? (tailTotal / total) * 100 : 0
+            });
+        }
+
+        return rows;
     }
 
     private buildGradient(segments: ChartSegment[], total: number): string {

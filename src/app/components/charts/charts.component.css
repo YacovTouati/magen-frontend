@@ -201,6 +201,44 @@
     margin-top: 8px;
 }
 
+.extra-breakdowns-title {
+    margin: 32px 0 8px;
+}
+
+.chart-panel-wide {
+    grid-column: 1 / -1;
+}
+
+/* Region ranked list */
+
+.region-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.region-row-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.region-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
 .chart-panel {
     border: 1px solid #e2e8f0;
     border-radius: 14px;

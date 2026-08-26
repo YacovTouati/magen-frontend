@@ -45,6 +45,13 @@ const CALL_PURPOSE_LABELS: Record<string, string> = {
     coercion: 'דיווח על כפייה או פגיעה'
 };
 
+// Matches report.component.ts's <select name="receivedSupportAtOtherCenter"> option labels.
+const RECEIVED_SUPPORT_LABELS: Record<string, string> = {
+    no: 'לא',
+    yes: 'כן',
+    unknown: 'לא ידוע'
+};
+
 export function getUrgencyLabel(urgency: IntakeUrgency | null | undefined): string {
     return (urgency && URGENCY_LABELS[urgency]) ?? '—';
 }
@@ -82,11 +89,18 @@ export function getReportingDutyLabel(reportingDuty: ReportingDuty | string | nu
 }
 
 // Falls through to the raw value for anything unrecognized — covers the analytics
-// backend's 'ללא נושא' bucket (intakes with no linked CallReport), which arrives
+// backend's 'לא צוין' bucket (intakes with no linked CallReport), which arrives
 // already in Hebrew and needs no translation.
 export function getCallPurposeLabel(purpose: string | null | undefined): string {
     if (!purpose) {
         return '-';
     }
     return CALL_PURPOSE_LABELS[purpose] ?? purpose;
+}
+
+export function getReceivedSupportLabel(value: string | null | undefined): string {
+    if (!value) {
+        return '-';
+    }
+    return RECEIVED_SUPPORT_LABELS[value] ?? value;
 }

@@ -14,9 +14,18 @@ export interface MonthlyIntakeAnalytics {
     totalIntakes: number;
     statusBreakdown: Record<string, number>;
     reporterBreakdown: Record<string, number>;
-    caseTypeBreakdown: Record<string, number>;
-    // One entry per calendar day of the month ("YYYY-MM-DD"), zero-filled by the backend.
-    dailyActivity: Record<string, number>;
+    callPurposeBreakdown: Record<string, number>;
+    // Not yet visualized anywhere in ChartsComponent — available from the backend for
+    // a future breakdown panel (caller type / support-elsewhere / prior-contact /
+    // reporting-duty / region are all still just raw counts here).
+    callerTypeBreakdown: Record<string, number>;
+    receivedSupportBreakdown: Record<string, number>;
+    magenContactHistoryBreakdown: Record<string, number>;
+    reportingDutyBreakdown: Record<string, number>;
+    regionBreakdown: Record<string, number>;
+    // One entry per hour of the day ("00".."23"), zero-filled by the backend, bucketed
+    // by Israel local time — replaces the old per-day dailyActivity shape.
+    hourlyDistribution: Record<string, number>;
     resolutionStats: {
         resolvedCount: number;
         averageResolutionHours: number | null;
@@ -71,8 +80,13 @@ export class AnalyticsService {
             totalIntakes: payload?.totalIntakes ?? 0,
             statusBreakdown: payload?.statusBreakdown ?? {},
             reporterBreakdown: payload?.reporterBreakdown ?? {},
-            caseTypeBreakdown: payload?.caseTypeBreakdown ?? {},
-            dailyActivity: payload?.dailyActivity ?? {},
+            callPurposeBreakdown: payload?.callPurposeBreakdown ?? {},
+            callerTypeBreakdown: payload?.callerTypeBreakdown ?? {},
+            receivedSupportBreakdown: payload?.receivedSupportBreakdown ?? {},
+            magenContactHistoryBreakdown: payload?.magenContactHistoryBreakdown ?? {},
+            reportingDutyBreakdown: payload?.reportingDutyBreakdown ?? {},
+            regionBreakdown: payload?.regionBreakdown ?? {},
+            hourlyDistribution: payload?.hourlyDistribution ?? {},
             resolutionStats: {
                 resolvedCount: payload?.resolutionStats?.resolvedCount ?? 0,
                 averageResolutionHours: payload?.resolutionStats?.averageResolutionHours ?? null,
