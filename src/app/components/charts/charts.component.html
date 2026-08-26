@@ -1,8 +1,216 @@
 <section class="section-card analytics-card">
-  <h3>📊 דוחות חודשיים וכלי ניהול מנהלי</h3>
-  <p class="section-desc">פילוח סטטיסטי של סוגי הפונים ומטרות השיחה שהתקבלו במערכת.</p>
+  <div class="analytics-header">
+    <div>
+      <h3>📊 דוחות ואנליטיקה</h3>
+      <p class="section-desc">פילוח חודשי של תיקי האינטייק שנפתחו במערכת.</p>
+    </div>
+
+    <button type="button" class="export-btn" [disabled]="isExporting" (click)="exportCsv()">
+      {{ isExporting ? 'מייצא...' : '⬇️ ייצוא ל-Google Sheets / Excel' }}
+    </button>
+  </div>
+
+  <p class="export-error" *ngIf="exportError">⚠️ {{ exportError }}</p>
+
+  <div class="month-picker">
+    <button type="button" class="month-nav-btn" (click)="goToPreviousMonth()" aria-label="חודש קודם">‹ חודש קודם</button>
+    <span class="month-label">{{ monthLabel }}</span>
+    <button type="button" class="month-nav-btn" (click)="goToNextMonth()" [disabled]="isCurrentMonth" aria-label="חודש הבא">חודש הבא ›</button>
+    <button type="button" class="current-month-btn" *ngIf="!isCurrentMonth" (click)="goToCurrentMonth()">החודש הנוכחי</button>
+  </div>
 
   <div class="analytics-loading" *ngIf="isLoading">
+    <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4]">
+      <div class="skeleton-line"></div>
+    </div>
+  </div>
+
+  <div class="analytics-error" *ngIf="!isLoading && loadError">
+    <p>{{ loadError }}</p>
+    <button type="button" class="retry-btn" (click)="loadMonthlyAnalytics()">נסה/י שוב</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !loadError && analytics">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">סה"כ אינטייקים</span>
+        <span class="kpi-value">{{ totalIntakes }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">סה"כ דיווחי שיחה</span>
+        <span class="kpi-value">{{ totalCallReports }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">אחוז השלמה</span>
+        <span class="kpi-value">{{ completionRatePercent | number: '1.0-0' }}%</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">זמן טיפול ממוצע</span>
+        <span class="kpi-value">{{ averageResolutionLabel }}</span>
+      </div>
+    </div>
+
+    <div class="chart-panel trend-panel">
+      <h4 class="chart-title">מגמת אינטייקים יומית</h4>
+
+      <div
+        class="trend-chart"
+        *ngIf="maxDailyValue > 0; else emptyTrend"
+        role="img"
+        [attr.aria-label]="'תרשים עמודות של אינטייקים יומיים לחודש ' + monthLabel"
+      >
+        <div
+          class="trend-bar-col"
+          *ngFor="let bar of dailyBars"
+          (mouseenter)="hoveredDay = bar"
+          (mouseleave)="hoveredDay = null"
+        >
+          <span class="trend-tooltip" *ngIf="hoveredDay === bar">{{ bar.day }}: {{ bar.value }}</span>
+          <div class="trend-bar" [style.height.%]="barHeightPercent(bar)"></div>
+          <span class="trend-bar-daynum" *ngIf="bar.day === 1 || bar.day % 5 === 0">{{ bar.day }}</span>
+        </div>
+      </div>
+
+      <ng-template #emptyTrend>
+        <p class="empty-chart-message">אין עדיין נתונים להצגה החודש.</p>
+      </ng-template>
+    </div>
+
+    <div class="analytics-grid">
+      <div class="chart-panel">
+        <h4 class="chart-title">מי הכניס את הדיווח</h4>
+
+        <div class="donut-wrap" *ngIf="reporterTotal > 0; else emptyReporters">
+          <div
+            class="donut"
+            [style.background]="reporterGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של דיווחים לפי מדווח/ת, סך הכל ' + reporterTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ reporterTotal }}</span>
+              <span class="donut-total-label">דיווחים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of reporterSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyReporters>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel">
+        <h4 class="chart-title">סטטוס טיפול</h4>
+
+        <div class="donut-wrap" *ngIf="statusTotal > 0; else emptyStatus">
+          <div
+            class="donut"
+            [style.background]="statusGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של סטטוס טיפול, סך הכל ' + statusTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ statusTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of statusSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyStatus>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+
+      <div class="chart-panel">
+        <h4 class="chart-title">סוג / מטרת הפנייה</h4>
+
+        <div class="donut-wrap" *ngIf="caseTypeTotal > 0; else emptyCaseType">
+          <div
+            class="donut"
+            [style.background]="caseTypeGradient"
+            role="img"
+            [attr.aria-label]="'תרשים עוגה של סוגי פנייה, סך הכל ' + caseTypeTotal"
+          >
+            <div class="donut-hole">
+              <span class="donut-total">{{ caseTypeTotal }}</span>
+              <span class="donut-total-label">תיקים</span>
+            </div>
+          </div>
+
+          <ul class="chart-legend">
+            <li *ngFor="let seg of caseTypeSegments">
+              <span class="legend-swatch" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }} ({{ seg.percent | number: '1.0-0' }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #emptyCaseType>
+          <p class="empty-chart-message">אין עדיין נתונים להצגה.</p>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="analytics-table-wrap">
+      <details>
+        <summary>הצג נתונים חודשיים כטבלה</summary>
+        <table class="analytics-table">
+          <thead>
+            <tr>
+              <th>מדד</th>
+              <th>קטגוריה</th>
+              <th>ערך</th>
+              <th>אחוז</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let seg of reporterSegments">
+              <td>מי הכניס את הדיווח</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of statusSegments">
+              <td>סטטוס</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+            <tr *ngFor="let seg of caseTypeSegments">
+              <td>סוג פנייה</td>
+              <td>{{ seg.label }}</td>
+              <td>{{ seg.value }}</td>
+              <td>{{ seg.percent | number: '1.0-0' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </div>
+  </ng-container>
+
+  <hr class="section-divider">
+
+  <h3 class="all-time-title">📚 פילוח כללי (כל הזמנים)</h3>
+  <p class="section-desc">פילוח סטטיסטי של סוגי הפונים ומטרות השיחה שהתקבלו במערכת, ללא הגבלת חודש.</p>
+
+  <div class="analytics-loading" *ngIf="isLoadingSummary">
     <div class="skeleton-card">
       <div class="skeleton-donut"></div>
       <div class="skeleton-legend">
@@ -16,12 +224,12 @@
     </div>
   </div>
 
-  <div class="analytics-error" *ngIf="!isLoading && loadError">
-    <p>{{ loadError }}</p>
+  <div class="analytics-error" *ngIf="!isLoadingSummary && summaryLoadError">
+    <p>{{ summaryLoadError }}</p>
     <button type="button" class="retry-btn" (click)="loadSummary()">נסה/י שוב</button>
   </div>
 
-  <div class="analytics-grid" *ngIf="!isLoading && !loadError">
+  <div class="analytics-grid" *ngIf="!isLoadingSummary && !summaryLoadError">
     <div class="chart-panel">
       <h4 class="chart-title">סוגי פונים</h4>
 
@@ -74,7 +282,7 @@
     </div>
   </div>
 
-  <div class="analytics-table-wrap" *ngIf="!isLoading && !loadError && (callerTypeTotal > 0 || maxPurposeValue > 0)">
+  <div class="analytics-table-wrap" *ngIf="!isLoadingSummary && !summaryLoadError && (callerTypeTotal > 0 || maxPurposeValue > 0)">
     <details>
       <summary>הצג נתונים כטבלה</summary>
       <table class="analytics-table">

@@ -38,6 +38,13 @@ const REPORTING_DUTY_LABELS: Record<ReportingDuty, string> = {
     yes_principled: 'כן עקרוני'
 };
 
+// Matches report.component.ts's <select name="callPurpose"> option labels exactly.
+const CALL_PURPOSE_LABELS: Record<string, string> = {
+    counseling: 'ייעוץ ותמיכה רגשית',
+    crisis: 'מצב משבר קריטי',
+    coercion: 'דיווח על כפייה או פגיעה'
+};
+
 export function getUrgencyLabel(urgency: IntakeUrgency | null | undefined): string {
     return (urgency && URGENCY_LABELS[urgency]) ?? '—';
 }
@@ -72,4 +79,14 @@ export function getReportingDutyLabel(reportingDuty: ReportingDuty | string | nu
         return '-';
     }
     return REPORTING_DUTY_LABELS[reportingDuty as ReportingDuty] ?? reportingDuty;
+}
+
+// Falls through to the raw value for anything unrecognized — covers the analytics
+// backend's 'ללא נושא' bucket (intakes with no linked CallReport), which arrives
+// already in Hebrew and needs no translation.
+export function getCallPurposeLabel(purpose: string | null | undefined): string {
+    if (!purpose) {
+        return '-';
+    }
+    return CALL_PURPOSE_LABELS[purpose] ?? purpose;
 }
