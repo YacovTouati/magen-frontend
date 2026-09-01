@@ -59,23 +59,31 @@ interface ReportDraft {
         <input type="text" [(ngModel)]="region" name="region" required placeholder="לדוגמה: תל אביב, מרכז, ירושלים והסביבה">
       </div>
 
-      <div class="form-grid secondary-grid">
-        <div class="form-group">
-          <label>סוג הפונה:</label>
-          <select [(ngModel)]="callerType" name="callerType">
-            <option value="victim">נפגע/ת ישיר/ה</option>
-            <option value="family">בן/בת משפחה</option>
-            <option value="friend">חבר/ה או מכר/ה</option>
-            <option value="unknown">אנונימי</option>
-          </select>
+      <div class="form-group full-width">
+        <label>סוג הפונה:</label>
+        <div class="caller-type-grid" role="radiogroup" aria-label="סוג הפונה">
+          <label
+            class="caller-type-card"
+            *ngFor="let opt of callerTypeOptions"
+            [class.selected]="callerType === opt.value"
+          >
+            <input type="radio" name="callerType" [value]="opt.value" [(ngModel)]="callerType">
+            <span class="caller-type-icon">{{ opt.icon }}</span>
+            <span class="caller-type-label">{{ opt.label }}</span>
+          </label>
         </div>
+      </div>
 
+      <div class="form-grid secondary-grid">
         <div class="form-group">
           <label>מטרת השיחה המרכזית:</label>
           <select [(ngModel)]="callPurpose" name="callPurpose">
             <option value="counseling">ייעוץ ותמיכה רגשית</option>
-            <option value="crisis">מצב משבר קריטי</option>
-            <option value="coercion">דיווח על כפייה או פגיעה</option>
+            <option value="referral">הפנייה לטיפול</option>
+            <option value="legal_process">ליווי בהליך משפטי</option>
+            <option value="rights_advocacy">מיצוי זכויות</option>
+            <option value="crisis">מצב חירום אקוטי</option>
+            <option value="other">אחר / מספר נושאים</option>
           </select>
         </div>
 
@@ -108,7 +116,7 @@ interface ReportDraft {
           <select [(ngModel)]="magenContactHistory" name="magenContactHistory">
             <option value="first_time">פעם ראשונה</option>
             <option value="past">פנה בעבר</option>
-            <option value="dont_remember">לא זוכר</option>
+            <option value="dont_remember">לא ידוע</option>
           </select>
         </div>
 
@@ -177,6 +185,14 @@ export class ReportComponent implements OnInit, AfterViewInit {
   @Input() reportingDuty = 'no';
 
   @Output() reportSubmit = new EventEmitter<any>();
+
+  readonly callerTypeOptions = [
+    { value: 'victim', label: 'נפגע/ת ישיר/ה', icon: '🧍' },
+    { value: 'family', label: 'בן/בת משפחה', icon: '👪' },
+    { value: 'friend', label: 'חבר/ה או מכר/ה', icon: '🤝' },
+    { value: 'unknown', label: 'אנונימי', icon: '🕵️' },
+    { value: 'general_inquiry', label: 'נועץ כללי', icon: '💬' }
+  ];
 
   isEmptyPhoneConfirmOpen = false;
 

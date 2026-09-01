@@ -13,7 +13,7 @@ export type IntakeStatus = 'NEW' | 'NO_ANSWER' | 'ACTIVE' | 'CLOSED' | 'LONG_TER
 // text. callerType/magenContactHistory are raw enum-like strings ('victim'/'first_time'/etc,
 // same vocabulary as report.component.ts's own <select> option values) — Hebrew labels for
 // these live in shared/intake-labels.ts, not here.
-export type CallerType = 'victim' | 'family' | 'friend' | 'unknown';
+export type CallerType = 'victim' | 'family' | 'friend' | 'unknown' | 'general_inquiry';
 export type MagenContactHistory = 'first_time' | 'past' | 'dont_remember';
 export type ReportingDuty = 'no' | 'yes_practical' | 'yes_principled';
 

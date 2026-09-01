@@ -48,7 +48,7 @@ describe('intake-labels', () => {
         it('should map every known value to its Hebrew label', () => {
             expect(getMagenContactHistoryLabel('first_time')).toBe('פעם ראשונה');
             expect(getMagenContactHistoryLabel('past')).toBe('פנה בעבר');
-            expect(getMagenContactHistoryLabel('dont_remember')).toBe('לא זוכר');
+            expect(getMagenContactHistoryLabel('dont_remember')).toBe('לא ידוע');
         });
 
         it('should show a dash for a missing value', () => {

@@ -9,7 +9,7 @@ describe('ChartsComponent', () => {
 
     const mockSummary: AnalyticsSummary = {
         callerTypes: { victim: 8, family: 1, friend: 1 },
-        callPurposes: { coercion: 2, counseling: 5, crisis: 3 }
+        callPurposes: { referral: 2, counseling: 5, crisis: 3 }
     };
 
     function buildHourlyDistribution(overrides: Record<string, number>): Record<string, number> {
@@ -26,7 +26,7 @@ describe('ChartsComponent', () => {
         totalIntakes: 10,
         statusBreakdown: { NEW: 3, NO_ANSWER: 1, ACTIVE: 2, CLOSED: 3, LONG_TERM: 1 },
         reporterBreakdown: { 'דנה לוי': 6, 'יוסי כהן': 4 },
-        callPurposeBreakdown: { counseling: 4, crisis: 2, coercion: 1, 'לא צוין': 3 },
+        callPurposeBreakdown: { counseling: 4, crisis: 2, referral: 1, 'לא צוין': 3 },
         callerTypeBreakdown: { victim: 8, family: 1, friend: 1 },
         receivedSupportBreakdown: { yes: 2, no: 5, unknown: 3 },
         magenContactHistoryBreakdown: { first_time: 6, past: 3, dont_remember: 1 },
@@ -301,9 +301,11 @@ describe('ChartsComponent', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.caseTypeSegments.map(s => s.key)).toEqual(['counseling', 'crisis', 'coercion', 'לא צוין']);
+            expect(comp.caseTypeSegments.map(s => s.key)).toEqual(
+                ['counseling', 'referral', 'legal_process', 'rights_advocacy', 'crisis', 'other', 'coercion', 'לא צוין']
+            );
             expect(comp.caseTypeSegments[0].label).toBe('ייעוץ ותמיכה רגשית');
-            expect(comp.caseTypeSegments[3].label).toBe('לא צוין');
+            expect(comp.caseTypeSegments[7].label).toBe('לא צוין');
             expect(comp.caseTypeTotal).toBe(10);
         });
     });
@@ -334,11 +336,11 @@ describe('ChartsComponent', () => {
     });
 
     describe('caller-type breakdown (monthly donut)', () => {
-        it('should build segments in fixed order (victim, family, friend, unknown, לא צוין) with Hebrew labels', () => {
+        it('should build segments in fixed order (victim, family, friend, unknown, general_inquiry, לא צוין) with Hebrew labels', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.monthlyCallerTypeSegments.map(s => s.key)).toEqual(['victim', 'family', 'friend', 'unknown', 'לא צוין']);
+            expect(comp.monthlyCallerTypeSegments.map(s => s.key)).toEqual(['victim', 'family', 'friend', 'unknown', 'general_inquiry', 'לא צוין']);
             expect(comp.monthlyCallerTypeSegments[0].label).toBe('נפגע/ת ישיר/ה');
             expect(comp.monthlyCallerTypeTotal).toBe(10);
         });
@@ -484,7 +486,7 @@ describe('ChartsComponent', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.callerTypeSegments.map(s => s.key)).toEqual(['victim', 'family', 'friend']);
+            expect(comp.callerTypeSegments.map(s => s.key)).toEqual(['victim', 'family', 'friend', 'unknown', 'general_inquiry']);
             expect(comp.callerTypeTotal).toBe(10);
             expect(comp.callerTypeSegments[0].percent).toBeCloseTo(80, 0);
         });
@@ -498,7 +500,9 @@ describe('ChartsComponent', () => {
             const fixture = setup();
             const comp = fixture.componentInstance;
 
-            expect(comp.callPurposeSegments.map(s => s.key)).toEqual(['counseling', 'crisis', 'coercion']);
+            expect(comp.callPurposeSegments.map(s => s.key)).toEqual(
+                ['counseling', 'referral', 'legal_process', 'rights_advocacy', 'crisis', 'other', 'coercion']
+            );
             expect(comp.maxPurposeValue).toBe(5);
         });
 
@@ -522,8 +526,9 @@ describe('ChartsComponent', () => {
         const fixture = setup();
         const tableRows = fixture.debugElement.queryAll(By.css('.analytics-table-wrap'))[0].queryAll(By.css('tbody tr'));
 
-        // 2 reporters + 5 statuses + 4 case types + 5 caller types + 4 support-elsewhere
+        // 2 reporters + 5 statuses + 8 case types (6 current + coercion legacy + לא צוין)
+        // + 6 caller types (4 current + general_inquiry + לא צוין) + 4 support-elsewhere
         // + 4 previous-contact + 4 reporting-duty + 3 regions
-        expect(tableRows.length).toBe(31);
+        expect(tableRows.length).toBe(36);
     });
 });

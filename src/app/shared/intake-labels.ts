@@ -23,13 +23,14 @@ const CALLER_TYPE_LABELS: Record<CallerType, string> = {
     victim: 'נפגע/ת ישיר/ה',
     family: 'בן/בת משפחה',
     friend: 'חבר/ה או מכר/ה',
-    unknown: 'אנונימי'
+    unknown: 'אנונימי',
+    general_inquiry: 'נועץ כללי'
 };
 
 const MAGEN_CONTACT_HISTORY_LABELS: Record<MagenContactHistory, string> = {
     first_time: 'פעם ראשונה',
     past: 'פנה בעבר',
-    dont_remember: 'לא זוכר'
+    dont_remember: 'לא ידוע'
 };
 
 const REPORTING_DUTY_LABELS: Record<ReportingDuty, string> = {
@@ -41,8 +42,13 @@ const REPORTING_DUTY_LABELS: Record<ReportingDuty, string> = {
 // Matches report.component.ts's <select name="callPurpose"> option labels exactly.
 const CALL_PURPOSE_LABELS: Record<string, string> = {
     counseling: 'ייעוץ ותמיכה רגשית',
-    crisis: 'מצב משבר קריטי',
-    coercion: 'דיווח על כפייה או פגיעה'
+    referral: 'הפנייה לטיפול',
+    legal_process: 'ליווי בהליך משפטי',
+    rights_advocacy: 'מיצוי זכויות',
+    crisis: 'מצב חירום אקוטי',
+    other: 'אחר / מספר נושאים',
+    // Legacy value — no longer selectable, kept so historical data still renders in Hebrew.
+    coercion: 'דיווח על כפייה או פגיעה (ערך ישן)'
 };
 
 // Matches report.component.ts's <select name="receivedSupportAtOtherCenter"> option labels.

@@ -36,18 +36,27 @@ export interface RegionRow {
 // Validated (CVD-safe adjacent pairs) via the dataviz skill's palette validator.
 const CATEGORICAL_COLORS = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834'];
 
-const CALLER_TYPE_ORDER = ['victim', 'family', 'friend'];
+const CALLER_TYPE_ORDER = ['victim', 'family', 'friend', 'unknown', 'general_inquiry'];
 const CALLER_TYPE_LABELS: Record<string, string> = {
     victim: 'נפגע/ת',
     family: 'בן/בת משפחה',
-    friend: 'חבר/ה'
+    friend: 'חבר/ה',
+    unknown: 'אנונימי',
+    general_inquiry: 'נועץ כללי'
 };
 
-const CALL_PURPOSE_ORDER = ['counseling', 'crisis', 'coercion'];
+// 'coercion' is a legacy value (see intake-labels.ts's CALL_PURPOSE_LABELS) — no longer
+// selectable on new reports, appended at the end rather than dropped so an older
+// month's data doesn't just silently disappear from this fixed-order chart.
+const CALL_PURPOSE_ORDER = ['counseling', 'referral', 'legal_process', 'rights_advocacy', 'crisis', 'other', 'coercion'];
 const CALL_PURPOSE_LABELS: Record<string, string> = {
     counseling: 'ייעוץ',
-    crisis: 'משבר',
-    coercion: 'כפייה/פגיעה'
+    referral: 'הפנייה לטיפול',
+    legal_process: 'ליווי משפטי',
+    rights_advocacy: 'מיצוי זכויות',
+    crisis: 'חירום אקוטי',
+    other: 'אחר',
+    coercion: 'כפייה/פגיעה (ישן)'
 };
 
 const STATUS_ORDER: IntakeStatus[] = ['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'LONG_TERM'];
@@ -57,7 +66,7 @@ const STATUS_ORDER: IntakeStatus[] = ['NEW', 'NO_ANSWER', 'ACTIVE', 'CLOSED', 'L
 const NO_CASE_TYPE_BUCKET = 'לא צוין';
 const CASE_TYPE_ORDER = [...CALL_PURPOSE_ORDER, NO_CASE_TYPE_BUCKET];
 
-const CALLER_TYPE_BREAKDOWN_ORDER = ['victim', 'family', 'friend', 'unknown', NO_CASE_TYPE_BUCKET];
+const CALLER_TYPE_BREAKDOWN_ORDER = ['victim', 'family', 'friend', 'unknown', 'general_inquiry', NO_CASE_TYPE_BUCKET];
 const RECEIVED_SUPPORT_ORDER = ['yes', 'no', 'unknown', NO_CASE_TYPE_BUCKET];
 const MAGEN_CONTACT_HISTORY_ORDER = ['first_time', 'past', 'dont_remember', NO_CASE_TYPE_BUCKET];
 const REPORTING_DUTY_ORDER = ['no', 'yes_practical', 'yes_principled', NO_CASE_TYPE_BUCKET];
