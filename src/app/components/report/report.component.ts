@@ -59,22 +59,18 @@ interface ReportDraft {
         <input type="text" [(ngModel)]="region" name="region" required placeholder="לדוגמה: תל אביב, מרכז, ירושלים והסביבה">
       </div>
 
-      <div class="form-group full-width">
-        <label>סוג הפונה:</label>
-        <div class="caller-type-grid" role="radiogroup" aria-label="סוג הפונה">
-          <label
-            class="caller-type-card"
-            *ngFor="let opt of callerTypeOptions"
-            [class.selected]="callerType === opt.value"
-          >
-            <input type="radio" name="callerType" [value]="opt.value" [(ngModel)]="callerType">
-            <span class="caller-type-icon">{{ opt.icon }}</span>
-            <span class="caller-type-label">{{ opt.label }}</span>
-          </label>
-        </div>
-      </div>
-
       <div class="form-grid secondary-grid">
+        <div class="form-group">
+          <label>סוג הפונה:</label>
+          <select [(ngModel)]="callerType" name="callerType">
+            <option value="victim">נפגע/ת ישיר/ה</option>
+            <option value="family">בן/בת משפחה</option>
+            <option value="friend">חבר/ה או מכר/ה</option>
+            <option value="unknown">אנונימי</option>
+            <option value="general_inquiry">נועץ כללי</option>
+          </select>
+        </div>
+
         <div class="form-group">
           <label>מטרת השיחה המרכזית:</label>
           <select [(ngModel)]="callPurpose" name="callPurpose">
@@ -185,14 +181,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
   @Input() reportingDuty = 'no';
 
   @Output() reportSubmit = new EventEmitter<any>();
-
-  readonly callerTypeOptions = [
-    { value: 'victim', label: 'נפגע/ת ישיר/ה', icon: '🧍' },
-    { value: 'family', label: 'בן/בת משפחה', icon: '👪' },
-    { value: 'friend', label: 'חבר/ה או מכר/ה', icon: '🤝' },
-    { value: 'unknown', label: 'אנונימי', icon: '🕵️' },
-    { value: 'general_inquiry', label: 'נועץ כללי', icon: '💬' }
-  ];
 
   isEmptyPhoneConfirmOpen = false;
 
