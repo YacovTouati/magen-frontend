@@ -68,7 +68,6 @@ export class DashboardComponent implements OnInit {
   gender: string = 'unknown';
   sector: string = 'secular';
   receivedSupportAtOtherCenter: string = 'no';
-  isFamilyMemberOrAcquaintance: boolean = false;
   magenContactHistory: string = 'first_time';
   reportingDuty: string = 'no';
 
@@ -194,7 +193,6 @@ export class DashboardComponent implements OnInit {
         this.reportedBy = '';
         this.region = '';
         this.receivedSupportAtOtherCenter = 'no';
-        this.isFamilyMemberOrAcquaintance = false;
         this.magenContactHistory = 'first_time';
         this.reportingDuty = 'no';
       },

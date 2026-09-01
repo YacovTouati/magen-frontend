@@ -11,12 +11,6 @@
     gap: 12px;
 }
 
-.compact-row-quad {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 12px;
-}
-
 .form-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -69,18 +63,8 @@
         grid-template-columns: 1fr;
     }
 
-    .compact-row-quad {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .secondary-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 560px) {
-    .compact-row-quad {
-        grid-template-columns: 1fr;
     }
 }
 

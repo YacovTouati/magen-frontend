@@ -89,8 +89,8 @@ interface ReportDraft {
         </div>
       </div>
 
-      <div class="compact-row-quad">
-        <div class="form-group inline-group">
+      <div class="form-grid secondary-grid">
+        <div class="form-group">
           <label>האם קיבל ליווי במרכז סיוע אחר?</label>
           <select [(ngModel)]="receivedSupportAtOtherCenter" name="receivedSupportAtOtherCenter">
             <option value="no">לא</option>
@@ -99,15 +99,7 @@ interface ReportDraft {
           </select>
         </div>
 
-        <div class="form-group inline-group">
-          <label>האם מכר או בן משפחה של נפגע?</label>
-          <select [(ngModel)]="isFamilyMemberOrAcquaintance" name="isFamilyMemberOrAcquaintance">
-            <option [ngValue]="false">לא</option>
-            <option [ngValue]="true">כן</option>
-          </select>
-        </div>
-
-        <div class="form-group inline-group">
+        <div class="form-group">
           <label>האם פנה למגן בעבר?</label>
           <select [(ngModel)]="magenContactHistory" name="magenContactHistory">
             <option value="first_time">פעם ראשונה</option>
@@ -116,7 +108,7 @@ interface ReportDraft {
           </select>
         </div>
 
-        <div class="form-group inline-group">
+        <div class="form-group">
           <label>האם יש חובת דיווח?</label>
           <select [(ngModel)]="reportingDuty" name="reportingDuty">
             <option value="no">לא</option>
@@ -176,7 +168,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
   @Input() gender = 'unknown';
   @Input() sector = 'secular';
   @Input() receivedSupportAtOtherCenter = 'no';
-  @Input() isFamilyMemberOrAcquaintance = false;
   @Input() magenContactHistory = 'first_time';
   @Input() reportingDuty = 'no';
 
@@ -328,7 +319,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
       reportedBy: '',
       region: '',
       receivedSupportAtOtherCenter: 'no',
-      isFamilyMemberOrAcquaintance: false,
       magenContactHistory: 'first_time',
       reportingDuty: 'no'
     });
@@ -372,7 +362,6 @@ export class ReportComponent implements OnInit, AfterViewInit {
       gender: this.gender,
       sector: this.sector,
       receivedSupportAtOtherCenter: this.receivedSupportAtOtherCenter,
-      isFamilyMemberOrAcquaintance: this.isFamilyMemberOrAcquaintance,
       magenContactHistory: this.magenContactHistory,
       reportingDuty: this.reportingDuty
     };

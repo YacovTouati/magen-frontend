@@ -16,7 +16,6 @@ export interface CallReportPayload {
     gender: string;
     sector: string;
     receivedSupportAtOtherCenter: string;
-    isFamilyMemberOrAcquaintance: boolean;
     magenContactHistory: string;
     reportingDuty: string;
 }

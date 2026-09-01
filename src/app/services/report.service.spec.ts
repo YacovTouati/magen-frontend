@@ -20,7 +20,6 @@ describe('ReportService', () => {
         gender: 'unknown',
         sector: 'secular',
         receivedSupportAtOtherCenter: 'no',
-        isFamilyMemberOrAcquaintance: false,
         magenContactHistory: 'first_time',
         reportingDuty: 'yes_practical'
     };

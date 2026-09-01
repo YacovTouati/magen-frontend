@@ -385,14 +385,13 @@ describe('ReportComponent', () => {
             comp.reportSubmit.subscribe((v: any) => emitted = v);
             comp.phone = '0501234567';
             comp.receivedSupportAtOtherCenter = 'yes';
-            comp.isFamilyMemberOrAcquaintance = true;
             comp.magenContactHistory = 'past';
 
             comp.onSubmit();
 
             expect(emitted.receivedSupportAtOtherCenter).toBe('yes');
-            expect(emitted.isFamilyMemberOrAcquaintance).toBeTrue();
             expect(emitted.magenContactHistory).toBe('past');
+            expect(emitted.isFamilyMemberOrAcquaintance).toBeUndefined();
             expect(emitted.contactedOtherCenterBefore).toBeUndefined();
         });
     });
