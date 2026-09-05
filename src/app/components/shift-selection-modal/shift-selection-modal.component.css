@@ -92,6 +92,16 @@
     color: #64748b;
 }
 
+.shabbat-option {
+    cursor: default;
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+}
+
+.shabbat-option .shift-option-label {
+    color: #5b21b6;
+}
+
 .shift-row {
     display: flex;
     align-items: center;

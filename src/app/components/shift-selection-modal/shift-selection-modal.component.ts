@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ModalShellComponent } from '../modal-shell/modal-shell.component';
 import { ShiftRecord, ShiftType, ShiftVolunteer } from '../../services/schedule.service';
 import { getRoleLabel } from '../../shared/role-labels';
+import { isShabbatBlockedShift } from '../../shared/shabbat';
 
 export interface AdminAssignment {
     shift: ShiftRecord;
@@ -48,21 +49,38 @@ export class ShiftSelectionModalComponent {
     selectedVolunteerId: number | null = null;
 
     // Admins face no lock restriction at all here — /admin-assign works whether the shift
-    // is OPEN or LOCKED. Volunteers keep the original OPEN-only gate.
+    // is OPEN or LOCKED. Volunteers keep the original OPEN-only gate. Shabbat shifts are
+    // blocked for everyone, admins included — this is an organizational policy, not a
+    // scheduling conflict an admin should be able to override (see scheduleService's
+    // identical server-side check).
     get canSelectMorning(): boolean {
+        if (this.isShabbatMorning) {
+            return false;
+        }
         return this.isAdmin || this.morningShift?.status === 'OPEN';
     }
 
     get canSelectEvening(): boolean {
+        if (this.isShabbatEvening) {
+            return false;
+        }
         return this.isAdmin || this.eveningShift?.status === 'OPEN';
     }
 
+    get isShabbatMorning(): boolean {
+        return !!this.morningShift && isShabbatBlockedShift(this.morningShift.date, this.morningShift.type);
+    }
+
+    get isShabbatEvening(): boolean {
+        return !!this.eveningShift && isShabbatBlockedShift(this.eveningShift.date, this.eveningShift.type);
+    }
+
     get canReleaseMorning(): boolean {
-        return this.isAdmin && this.morningShift?.status === 'LOCKED';
+        return this.isAdmin && this.morningShift?.status === 'LOCKED' && !this.isShabbatMorning;
     }
 
     get canReleaseEvening(): boolean {
-        return this.isAdmin && this.eveningShift?.status === 'LOCKED';
+        return this.isAdmin && this.eveningShift?.status === 'LOCKED' && !this.isShabbatEvening;
     }
 
     get selectedShift(): ShiftRecord | null {
@@ -95,6 +113,14 @@ export class ShiftSelectionModalComponent {
     onConfirmSelection(): void {
         const shift = this.selectedShift;
         if (!shift) {
+            return;
+        }
+
+        // Belt-and-suspenders: the radio for a Shabbat shift is removed from the DOM
+        // entirely (see canSelectMorning/Evening), but selectedType is plain component
+        // state — checking again here means a stale/forced value can never slip through
+        // even if the template guard is ever bypassed.
+        if (isShabbatBlockedShift(shift.date, shift.type)) {
             return;
         }
 

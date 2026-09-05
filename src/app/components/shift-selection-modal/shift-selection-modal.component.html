@@ -8,47 +8,63 @@
   </div>
 
   <div class="modal-body">
-    <div class="shift-row">
-      <label class="shift-option" [class.disabled]="!canSelectMorning">
-        <input type="radio" name="shiftType" value="MORNING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectMorning" />
-        <span class="shift-option-label">☀️ משמרת בוקר</span>
-        <span class="shift-option-status" *ngIf="morningShift?.status === 'LOCKED'">
-          משובץ: {{ morningShift?.volunteer?.name || '—' }}
-        </span>
-      </label>
-      <button
-        type="button"
-        class="btn-note"
-        [class.has-note]="morningShift?.note"
-        *ngIf="isAdmin && morningShift"
-        [attr.aria-label]="morningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
-        (click)="onEditNote('MORNING')"
-      >✏️</button>
-      <button type="button" class="btn-release" *ngIf="canReleaseMorning" (click)="onRelease('MORNING')">
-        🔓 שחרר משמרת
-      </button>
+    <div class="shift-row" *ngIf="isShabbatMorning; else morningOption">
+      <span class="shift-option shabbat-option">
+        <span class="shift-option-label">🕯️ שבת מנוחה</span>
+        <span class="shift-option-status">משמרת בוקר חסומה לשיבוץ</span>
+      </span>
     </div>
+    <ng-template #morningOption>
+      <div class="shift-row">
+        <label class="shift-option" [class.disabled]="!canSelectMorning">
+          <input type="radio" name="shiftType" value="MORNING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectMorning" />
+          <span class="shift-option-label">☀️ משמרת בוקר</span>
+          <span class="shift-option-status" *ngIf="morningShift?.status === 'LOCKED'">
+            משובץ: {{ morningShift?.volunteer?.name || '—' }}
+          </span>
+        </label>
+        <button
+          type="button"
+          class="btn-note"
+          [class.has-note]="morningShift?.note"
+          *ngIf="isAdmin && morningShift"
+          [attr.aria-label]="morningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
+          (click)="onEditNote('MORNING')"
+        >✏️</button>
+        <button type="button" class="btn-release" *ngIf="canReleaseMorning" (click)="onRelease('MORNING')">
+          🔓 שחרר משמרת
+        </button>
+      </div>
+    </ng-template>
 
-    <div class="shift-row">
-      <label class="shift-option" [class.disabled]="!canSelectEvening">
-        <input type="radio" name="shiftType" value="EVENING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectEvening" />
-        <span class="shift-option-label">🌙 משמרת ערב</span>
-        <span class="shift-option-status" *ngIf="eveningShift?.status === 'LOCKED'">
-          משובץ: {{ eveningShift?.volunteer?.name || '—' }}
-        </span>
-      </label>
-      <button
-        type="button"
-        class="btn-note"
-        [class.has-note]="eveningShift?.note"
-        *ngIf="isAdmin && eveningShift"
-        [attr.aria-label]="eveningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
-        (click)="onEditNote('EVENING')"
-      >✏️</button>
-      <button type="button" class="btn-release" *ngIf="canReleaseEvening" (click)="onRelease('EVENING')">
-        🔓 שחרר משמרת
-      </button>
+    <div class="shift-row" *ngIf="isShabbatEvening; else eveningOption">
+      <span class="shift-option shabbat-option">
+        <span class="shift-option-label">🕯️ שבת מנוחה</span>
+        <span class="shift-option-status">משמרת ערב חסומה לשיבוץ</span>
+      </span>
     </div>
+    <ng-template #eveningOption>
+      <div class="shift-row">
+        <label class="shift-option" [class.disabled]="!canSelectEvening">
+          <input type="radio" name="shiftType" value="EVENING" [(ngModel)]="selectedType" (ngModelChange)="onTypeChange()" [disabled]="!canSelectEvening" />
+          <span class="shift-option-label">🌙 משמרת ערב</span>
+          <span class="shift-option-status" *ngIf="eveningShift?.status === 'LOCKED'">
+            משובץ: {{ eveningShift?.volunteer?.name || '—' }}
+          </span>
+        </label>
+        <button
+          type="button"
+          class="btn-note"
+          [class.has-note]="eveningShift?.note"
+          *ngIf="isAdmin && eveningShift"
+          [attr.aria-label]="eveningShift?.note ? 'עריכת הערת המשמרת' : 'הוספת הערה למשמרת'"
+          (click)="onEditNote('EVENING')"
+        >✏️</button>
+        <button type="button" class="btn-release" *ngIf="canReleaseEvening" (click)="onRelease('EVENING')">
+          🔓 שחרר משמרת
+        </button>
+      </div>
+    </ng-template>
 
     <div class="admin-assign-row" *ngIf="isAdmin && selectedType">
       <label for="volunteerSelect">שיבוץ מתנדב/ת:</label>

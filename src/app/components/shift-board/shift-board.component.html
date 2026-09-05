@@ -65,15 +65,17 @@
                   class="shift-chip morning"
                   [class.locked]="c.day.morning?.status === 'LOCKED'"
                   [class.mine]="isMine(c.day.morning)"
+                  [class.shabbat]="isShabbat(c.day.morning)"
                 >
-                  ☀️ {{ c.day.morning?.status === 'LOCKED' ? (c.day.morning?.volunteer?.name || '—') : 'פנוי' }}
+                  {{ isShabbat(c.day.morning) ? '🕯️ שבת מנוחה' : ('☀️ ' + (c.day.morning?.status === 'LOCKED' ? (c.day.morning?.volunteer?.name || '—') : 'פנוי')) }}
                 </span>
                 <span
                   class="shift-chip evening"
                   [class.locked]="c.day.evening?.status === 'LOCKED'"
                   [class.mine]="isMine(c.day.evening)"
+                  [class.shabbat]="isShabbat(c.day.evening)"
                 >
-                  🌙 {{ c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי' }}
+                  {{ isShabbat(c.day.evening) ? '🕯️ שבת מנוחה' : ('🌙 ' + (c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי')) }}
                 </span>
               </div>
 

@@ -324,4 +324,66 @@ describe('ShiftBoardComponent (shift notes)', () => {
             expect(fixture.componentInstance.isCellClickable(buildPastDay('OPEN'))).toBeFalse();
         });
     });
+
+    // August 7, 2026 is a Friday; August 8, 2026 is a Saturday.
+    describe('Shabbat shift blocking (Friday evening / Saturday morning)', () => {
+        it('isShabbat() should flag Friday evening', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const shift = buildShift({ date: `${YEAR}-08-07`, type: 'EVENING' });
+
+            expect(fixture.componentInstance.isShabbat(shift)).toBeTrue();
+        });
+
+        it('isShabbat() should flag Saturday morning', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const shift = buildShift({ date: `${YEAR}-08-08`, type: 'MORNING' });
+
+            expect(fixture.componentInstance.isShabbat(shift)).toBeTrue();
+        });
+
+        it('isShabbat() should NOT flag Friday morning or Saturday evening', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isShabbat(buildShift({ date: `${YEAR}-08-07`, type: 'MORNING' }))).toBeFalse();
+            expect(fixture.componentInstance.isShabbat(buildShift({ date: `${YEAR}-08-08`, type: 'EVENING' }))).toBeFalse();
+        });
+
+        it('isShabbat() should return false for null', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+
+            expect(fixture.componentInstance.isShabbat(null)).toBeFalse();
+        });
+
+        it('hasOpenSlot() should ignore an OPEN Shabbat shift — a Friday with only its evening open should not count as having an open slot', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const day: ShiftBoardDay = {
+                dayNumber: 7,
+                dateString: '7/8/2026',
+                isToday: false,
+                morning: buildShift({ date: `${YEAR}-08-07`, type: 'MORNING', status: 'LOCKED' }),
+                evening: buildShift({ date: `${YEAR}-08-07`, type: 'EVENING', status: 'OPEN' })
+            };
+
+            expect(fixture.componentInstance.hasOpenSlot(day)).toBeFalse();
+        });
+
+        it('hasOpenSlot() should still count a real open slot on the same Friday (morning)', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const day: ShiftBoardDay = {
+                dayNumber: 7,
+                dateString: '7/8/2026',
+                isToday: false,
+                morning: buildShift({ date: `${YEAR}-08-07`, type: 'MORNING', status: 'OPEN' }),
+                evening: buildShift({ date: `${YEAR}-08-07`, type: 'EVENING', status: 'OPEN' })
+            };
+
+            expect(fixture.componentInstance.hasOpenSlot(day)).toBeTrue();
+        });
+    });
 });

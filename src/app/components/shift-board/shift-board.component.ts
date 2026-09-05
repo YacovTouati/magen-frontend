@@ -9,6 +9,7 @@ import { ScheduleService, ScheduleRecord, ShiftRecord, ShiftVolunteer } from '..
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ShiftSelectionModalComponent, AdminAssignment } from '../shift-selection-modal/shift-selection-modal.component';
 import { ShiftNoteModalComponent } from '../shift-note-modal/shift-note-modal.component';
+import { isShabbatBlockedShift } from '../../shared/shabbat';
 
 export interface ShiftBoardDay {
     dayNumber: number;
@@ -246,7 +247,16 @@ export class ShiftBoardComponent implements OnInit {
     }
 
     hasOpenSlot(day: ShiftBoardDay): boolean {
-        return day.morning?.status === 'OPEN' || day.evening?.status === 'OPEN';
+        return (day.morning?.status === 'OPEN' && !this.isShabbat(day.morning))
+            || (day.evening?.status === 'OPEN' && !this.isShabbat(day.evening));
+    }
+
+    // Friday evening / Saturday morning — blocked outright, no self-claim and no admin
+    // override (see scheduleService's identical server-side check). Derived purely from
+    // the shift's own date/type, so it applies to every shift regardless of when the
+    // schedule was generated.
+    isShabbat(shift: ShiftRecord | null): boolean {
+        return !!shift && isShabbatBlockedShift(shift.date, shift.type);
     }
 
     // Admins face no lock/draft/past-date restrictions when opening a day — they can

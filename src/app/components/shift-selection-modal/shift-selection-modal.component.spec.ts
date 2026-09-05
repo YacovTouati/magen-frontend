@@ -112,4 +112,74 @@ describe('ShiftSelectionModalComponent', () => {
             expect(comp.selectShift.emit).toHaveBeenCalledWith(comp.morningShift);
         });
     });
+
+    // August 7, 2026 is a Friday; August 8, 2026 is a Saturday.
+    describe('Shabbat shift blocking (Friday evening / Saturday morning)', () => {
+        it('canSelectMorning/Evening should be false for a Shabbat shift even for an admin', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = true;
+            comp.morningShift = buildShift({ date: '2026-08-08', type: 'MORNING', status: 'OPEN' });
+            comp.eveningShift = buildShift({ id: 2, date: '2026-08-07', type: 'EVENING', status: 'OPEN' });
+
+            expect(comp.isShabbatMorning).toBeTrue();
+            expect(comp.isShabbatEvening).toBeTrue();
+            expect(comp.canSelectMorning).toBeFalse();
+            expect(comp.canSelectEvening).toBeFalse();
+        });
+
+        it('canSelectMorning/Evening should stay normal for a non-Shabbat day', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = false;
+            comp.morningShift = buildShift({ date: '2026-08-16', type: 'MORNING', status: 'OPEN' });
+            comp.eveningShift = buildShift({ id: 2, date: '2026-08-16', type: 'EVENING', status: 'OPEN' });
+
+            expect(comp.isShabbatMorning).toBeFalse();
+            expect(comp.isShabbatEvening).toBeFalse();
+            expect(comp.canSelectMorning).toBeTrue();
+            expect(comp.canSelectEvening).toBeTrue();
+        });
+
+        it('canReleaseMorning/Evening should be false for a Shabbat shift even if somehow LOCKED', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = true;
+            comp.morningShift = buildShift({ date: '2026-08-08', type: 'MORNING', status: 'LOCKED' });
+
+            expect(comp.canReleaseMorning).toBeFalse();
+        });
+
+        it('should render the "שבת מנוחה" candle option instead of the normal shift-option for a Shabbat shift', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = false;
+            comp.morningShift = buildShift({ date: '2026-08-08', type: 'MORNING', status: 'OPEN' });
+            comp.eveningShift = buildShift({ id: 2, date: '2026-08-08', type: 'EVENING', status: 'OPEN' });
+            fixture.detectChanges();
+
+            const shabbatOptions = fixture.debugElement.queryAll(By.css('.shabbat-option'));
+            expect(shabbatOptions.length).toBe(1); // only the morning shift is Shabbat here
+            expect(shabbatOptions[0].nativeElement.textContent).toContain('שבת מנוחה');
+            expect(fixture.debugElement.query(By.css('input[value="MORNING"]'))).toBeFalsy();
+            expect(fixture.debugElement.query(By.css('input[value="EVENING"]'))).toBeTruthy();
+        });
+
+        it('onConfirmSelection() should never emit for a Shabbat shift, even if selectedType is forced programmatically', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = false;
+            comp.morningShift = buildShift({ date: '2026-08-08', type: 'MORNING', status: 'OPEN' });
+            fixture.detectChanges();
+            spyOn(comp.selectShift, 'emit');
+
+            // The radio for a Shabbat shift is removed from the DOM entirely (see the template
+            // test above), but onConfirmSelection() re-checks isShabbatBlockedShift() itself too
+            // — a stale/forced selectedType can never slip a claim through either path.
+            comp.selectedType = 'MORNING';
+            comp.onConfirmSelection();
+
+            expect(comp.selectShift.emit).not.toHaveBeenCalled();
+        });
+    });
 });
