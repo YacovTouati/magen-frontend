@@ -48,13 +48,6 @@ export class DashboardComponent implements OnInit {
   ];
   currentQuote = this.empowermentQuotes[0];
 
-  // רשימת שיחות לדוגמה מוכנה
-  sampleCalls = [
-    { id: 1, title: 'תרחיש 1: שיחת משבר ראשוני', description: 'מקום לתיאור מקרה, נקודות מפתח למענה ומבנה השיחה... (נמלא בהמשך)' },
-    { id: 2, title: 'תרחיש 2: פנייה של בן משפחה המודאג ממצב קרובו', description: 'מקום לתיאור מקרה, דגשים להקשבה תומכת... (נמלא בהמשך)' },
-    { id: 3, title: 'תרחיש 3: שיחת מעקב או ליווי אקטיבי', description: 'מקום לתיאור מקרה, פרוטוקול ליווי והפניה לגורמים רלוונטיים... (נמלא בהמשך)' }
-  ];
-
   // שדות טופס דיווח שיחה מורחב
   callDuration: number = 30;
   callerType: string = 'victim';

@@ -1,22 +1,428 @@
-.samples-list {
+.guide-header {
+    margin-bottom: 12px;
+}
+
+.emergency-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #fef2f2;
+    border: 2px solid #dc2626;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    position: sticky;
+    top: 8px;
+    z-index: 5;
+}
+
+.emergency-banner-text {
+    color: #991b1b;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.emergency-banner-text b {
+    font-size: 16px;
+}
+
+.emergency-banner-btn {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease;
+}
+
+.emergency-banner-btn:hover {
+    background-color: #b91c1c;
+}
+
+.guide-layout {
     display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.guide-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: sticky;
+    top: 70px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.step-nav-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: right;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #334155;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.step-nav-btn:hover {
+    background: #eef2f7;
+}
+
+.step-nav-btn.active {
+    background: #1e3a8a;
+    color: #fff;
+}
+
+.step-nav-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.step-nav-num {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.step-nav-title {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.step-nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    flex-shrink: 0;
+}
+
+.step-nav-btn.active .step-nav-dot {
+    background: #86efac;
+}
+
+.progress-hint {
+    margin: 6px 4px 2px;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.guide-content {
+    min-width: 0;
+}
+
+.step-panel {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
-.sample-call-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 12px;
-    border-radius: 6px;
+/* Higher specificity than .step-panel alone, so a hidden step-panel actually
+   disappears — [hidden] and .step-panel tie at equal specificity otherwise, and
+   author CSS always wins over the browser's default [hidden] { display: none }. */
+.step-panel[hidden] {
+    display: none;
 }
 
-.sample-call-desc {
-    color: #64748b;
+.step-title {
+    margin: 0;
+    color: #1e3a8a;
+    font-size: 17px;
+}
+
+.step-subtitle {
+    margin: 4px 0 -4px;
+    font-weight: 700;
+    color: #334155;
     font-size: 13px;
 }
 
-.placeholder-tag {
-    display: inline-block;
-    margin-top: 8px;
-    color: #94a3b8;
+.step-note {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.step-question {
+    margin: 0;
+    font-size: 14px;
+    color: #334155;
+}
+
+.step-tip {
+    margin: 0;
+    font-size: 13px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    color: #334155;
+    cursor: pointer;
+}
+
+.checklist-item input[type="checkbox"] {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.checklist-item em {
+    color: #1e3a8a;
+}
+
+.checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+}
+
+/* Step 2 — identity chips */
+
+.identity-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.identity-chip {
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.identity-chip:hover {
+    border-color: #94a3b8;
+}
+
+.identity-chip.selected {
+    border-color: #1e3a8a;
+    background: #1e3a8a;
+    color: #fff;
+}
+
+/* Step 3 — danger branches */
+
+.danger-branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.danger-branch {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
+.danger-yes {
+    background: #fef2f2;
+    border: 2px solid #dc2626;
+    color: #991b1b;
+}
+
+.danger-no {
+    background: #f0fdf4;
+    border: 2px solid #16a34a;
+    color: #166534;
+}
+
+.emergency-numbers {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.emergency-full-table {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #f8fafc;
+}
+
+.emergency-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #334155;
+}
+
+/* Step 4 — four axes */
+
+.axis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.axis-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+}
+
+.axis-card h5 {
+    margin: 0 0 8px;
+    color: #1e3a8a;
+    font-size: 14px;
+}
+
+.axis-card p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #334155;
+}
+
+/* Steps 5 & 6 — identity columns */
+
+.identity-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.identity-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.identity-card.highlight {
+    border-color: #1e3a8a;
+    background: #eff6ff;
+}
+
+.identity-card h5 {
+    margin: 0 0 8px;
+    color: #1e3a8a;
+    font-size: 14px;
+}
+
+.identity-card p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #334155;
+}
+
+/* Step 6 — duty-to-report reminder */
+
+.duty-reminder {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.duty-reminder-title {
+    margin: 0;
+    font-weight: 700;
+    color: #92400e;
+    font-size: 13px;
+}
+
+/* Step 8 — referral table */
+
+.referral-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.referral-table th,
+.referral-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+}
+
+.referral-table th {
+    color: #475569;
+    font-weight: 700;
+    background: #f8fafc;
+}
+
+/* Step 9 — documentation reminder */
+
+.documentation-reminder {
+    margin: 0;
+    font-size: 13px;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+@media (max-width: 900px) {
+    .guide-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-sidebar {
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .step-nav-btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .step-nav-title {
+        display: none;
+    }
+
+    .axis-grid,
+    .identity-grid,
+    .checklist-grid {
+        grid-template-columns: 1fr;
+    }
 }

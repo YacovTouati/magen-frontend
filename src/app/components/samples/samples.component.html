@@ -1,0 +1,261 @@
+<section class="section-card guide-card">
+  <div class="guide-header">
+    <h3>📚 שיחות ותרחישים לדוגמה — מדריך שיחה חי</h3>
+    <p class="section-desc">
+      עוקב אחרי טופס האינטייק המעודכן — כל שלב לחיץ בכל רגע, אין צורך להתקדם לפי הסדר.
+      עזר בזמן אמת בלבד; את הדיווח בפועל ממלאים ב"דיווח שיחה חדשה".
+    </p>
+  </div>
+
+  <div class="emergency-banner">
+    <span class="emergency-banner-text">🚨 <strong>סכנה מיידית?</strong> משטרה <b>100</b> · מד״א <b>101</b> · כונן רווחה <b>106</b></span>
+    <button type="button" class="emergency-banner-btn" (click)="goToStep(3)">לפרטים המלאים ←</button>
+  </div>
+
+  <div class="guide-layout">
+    <nav class="guide-sidebar" aria-label="שלבי השיחה">
+      <button
+        type="button"
+        class="step-nav-btn"
+        *ngFor="let step of steps"
+        [class.active]="currentStep === step.id"
+        [class.visited]="isStepVisited(step.id)"
+        (click)="goToStep(step.id)"
+      >
+        <span class="step-nav-icon">{{ step.icon }}</span>
+        <span class="step-nav-num">{{ step.id }}</span>
+        <span class="step-nav-title">{{ step.title }}</span>
+        <span class="step-nav-dot" *ngIf="isStepVisited(step.id)"></span>
+      </button>
+      <p class="progress-hint">{{ visitedCount }}/9 שלבים נצפו</p>
+    </nav>
+
+    <div class="guide-content">
+      <!-- שלב 1 -->
+      <div class="step-panel" [hidden]="currentStep !== 1">
+        <h4 class="step-title">👋 שלב 1 — פתיחה ויצירת קשר</h4>
+
+        <label class="checklist-item">
+          <input type="checkbox" [checked]="isChecked('s1-intro')" (change)="toggleCheck('s1-intro')">
+          <span>הצגה עצמית: <em>"הגעתם למרכז סיוע 'מגן' — שלום, שמי.... אשמח לעזור לך, מה הביא אותך אלינו?"</em></span>
+        </label>
+        <p class="step-note">אם אין סיבה דחופה לשיחה עכשיו — מסיימים בלקיחת פרטים אישיים להעברה לרכזת האינטייק. אם עולה צורך דחוף — ממשיכים.</p>
+
+        <label class="checklist-item">
+          <input type="checkbox" [checked]="isChecked('s1-anon')" (change)="toggleCheck('s1-anon')">
+          <span>למי שחושש/ת: הצגת האנונימיות והסודיות — בהתאם למחויבות המקצועית לחובת דיווח</span>
+        </label>
+        <p class="step-tip">💡 חשוב מאוד להציג את האנונימיות והסודיות כבר בפתיחה — זה הבסיס לאמון בהמשך השיחה.</p>
+      </div>
+
+      <!-- שלב 2 -->
+      <div class="step-panel" [hidden]="currentStep !== 2">
+        <h4 class="step-title">🧑‍🤝‍🧑 שלב 2 — מי מתקשר/ת?</h4>
+        <p class="step-note">סמנו את הזהות המתאימה — הבחירה תדגיש את העמודה הרלוונטית בשלבים 5 ו-6 בהמשך.</p>
+
+        <div class="identity-chips">
+          <button type="button" class="identity-chip" [class.selected]="selectedIdentity === 'victim'" (click)="selectIdentity('victim')">נפגע/ת עצמה/ו</button>
+          <button type="button" class="identity-chip" [class.selected]="selectedIdentity === 'family'" (click)="selectIdentity('family')">בן משפחה של הנפגע/ת</button>
+          <button type="button" class="identity-chip" [class.selected]="selectedIdentity === 'professional'" (click)="selectIdentity('professional')">איש/אשת מקצוע</button>
+          <button type="button" class="identity-chip" [class.selected]="selectedIdentity === 'professional'" (click)="selectIdentity('professional')">אחר</button>
+        </div>
+      </div>
+
+      <!-- שלב 3 -->
+      <div class="step-panel" [hidden]="currentStep !== 3">
+        <h4 class="step-title">🚨 שלב 3 — בדיקת סכנה מיידית (עדיפות עליונה!)</h4>
+
+        <p class="step-question"><strong>האם יש סכנה מיידית?</strong> הפגיעה מתרחשת עכשיו / הפוגע נמצא עם הנפגע/ת / קיים חשש ממשי לביטחון הפונה.</p>
+
+        <div class="danger-branches">
+          <div class="danger-branch danger-yes">
+            <strong>כן ←</strong> מוקד חירום מיידי
+            <div class="emergency-numbers">
+              <span>משטרה <b>100</b></span>
+              <span>מד״א <b>101</b></span>
+              <span>כונן רווחה <b>106</b></span>
+            </div>
+          </div>
+          <div class="danger-branch danger-no">
+            <strong>לא ←</strong> ממשיכים להקשבה, עוברים לשלב 4 — ארבעת הצירים
+          </div>
+        </div>
+
+        <p class="step-tip">💡 בכל שלב חשוב: לתת תיקוף ואמפתיה, לתת מקום לקושי לדבר, לתת קומפלימנט על האומץ להתקשר.</p>
+
+        <div class="emergency-full-table">
+          <div class="emergency-row"><span>קו החם (מגן)</span><span>02-372-4073 · 076-8844400</span></div>
+          <div class="emergency-row"><span>ער״ן — תמיכה נפשית</span><span>קו סיוע ארצי</span></div>
+        </div>
+      </div>
+
+      <!-- שלב 4 -->
+      <div class="step-panel" [hidden]="currentStep !== 4">
+        <h4 class="step-title">🧭 שלב 4 — מודל ארבעת הצירים (לסרוק בכל שיחה)</h4>
+
+        <div class="axis-grid">
+          <div class="axis-card">
+            <h5>1. נפשי-טיפולי</h5>
+            <p>הקשבה, הכלה, תיקוף, אמפתיה — בלי לשפוט ובלי לחקור מבלי צורך.</p>
+            <p>ליווי רגשי: לפעמים הפונה לא מחפש/ת פתרון אלא הקשבה, הכלה, תיקוף וסדר.</p>
+            <p>האם קיים חשש לביטחון נפשי (מצוקה קשה, מחשבות פגיעה עצמית)?</p>
+          </div>
+          <div class="axis-card">
+            <h5>2. מוגנות</h5>
+            <p>מה מעלה את החשד? האם מדובר בהתנהגות, אמירה או גילוי?</p>
+            <p>מי הילד/ה, מה גילו/ה, מהי קרבת הפוגע/ת לילד/ה (חובת דיווח)?</p>
+            <p>האם הילד/ה בטוח/ה כרגע? האם הפגיעה עדיין מתרחשת או הופסקה?</p>
+            <p>האם קיים חשד כלפי אדם מסוים? האם בוצעו כבר פעולות?</p>
+          </div>
+          <div class="axis-card">
+            <h5>3. פיזיולוגי-רפואי</h5>
+            <p>מה קרה, מתי קרה — האם זו פגיעה חד-פעמית או מתמשכת?</p>
+            <p>האם נדרשת הפניה לטיפול רפואי מותאם טראומה?</p>
+            <p>אופי הפגיעה/התלונה — האם יש צורך בהפניה דחופה?</p>
+          </div>
+          <div class="axis-card">
+            <h5>4. הליך פלילי</h5>
+            <p>האם זו חובת דיווח (קרבת הפוגע לילד/ה, גיל הילד/ה)?</p>
+            <p>האם יש תמיכה/קשר עם מרכז סיוע אחר?</p>
+            <p>הליך פלילי מול הליך אזרחי — מה רלוונטי כאן?</p>
+            <p>למקד את העזרה — מה הם רוצים/צריכים כרגע?</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- שלב 5 -->
+      <div class="step-panel" [hidden]="currentStep !== 5">
+        <h4 class="step-title">❓ שלב 5 — שאלות ממוקדות לפי זהות המתקשר/ת</h4>
+        <p class="step-note">העמודה המסומנת מתאימה לזהות שבחרת בשלב 2 — שאר העמודות תמיד זמינות כרפרנס.</p>
+
+        <div class="identity-grid">
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'victim'">
+            <h5>נפגע/ת</h5>
+            <p>מה קרה? מתי קרה?</p>
+            <p>האם זו פגיעה חד״פ או מתמשכת?</p>
+            <p>האם הוא/היא בטוח/ה כרגע?</p>
+            <p>האם יש תמיכה? האם בקשר עם מרכז סיוע אחר?</p>
+            <p>מה רוצים/צריכים כרגע?</p>
+          </div>
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'family'">
+            <h5>בן משפחה של הנפגע/ת</h5>
+            <p>גיל הילד/ה, קרבת הפוגע (חובת דיווח)</p>
+            <p>האם הילד/ה בטוח/ה כרגע? מה כבר נעשה?</p>
+            <p>אם הנפגע/ת בגיר/ה — האם יודע/ת שמתקשרים?</p>
+          </div>
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'professional'">
+            <h5>איש מקצוע</h5>
+            <p>מה תפקידו/ה?</p>
+            <p>האם רוצה להתייעץ (אין חובת דיווח)?</p>
+            <p>או: יש חובת דיווח — לא להבטיח דברים שלא בטוח שיקרו.</p>
+          </div>
+        </div>
+
+        <p class="step-tip">💡 בכל שלושת הטורים — לא לשפוט, לא לחקור, לא לחרוץ דין, להסביר איך להגיב/לתמוך, ולא להבטיח דברים שלא בטוח שיקרו.</p>
+      </div>
+
+      <!-- שלב 6 -->
+      <div class="step-panel" [hidden]="currentStep !== 6">
+        <h4 class="step-title">⚠️ שלב 6 — חשד לפגיעה (התייחסות משולשת)</h4>
+
+        <div class="identity-grid">
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'victim'">
+            <h5>חשד לפגיעה — נפגע/ת</h5>
+            <p>להבין מה מעורר את החשד.</p>
+            <p>במידה ויש פגיעה: האם סיכון בתו״ז?</p>
+            <p>האם הפגיעה מתמשכת? האם הוא/היא בטוח/ה כרגע?</p>
+          </div>
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'family'">
+            <h5>חשד לפגיעה — בן משפחה</h5>
+            <p>מה מעלה את החשד? מצב משפחתי (נשוי/פרוד/גרוש)?</p>
+            <p>מי הילד/ה, גיל הילד/ה? קרבת הפוגע לילד/ה (חובת דיווח)</p>
+            <p>האם מדובר בהתנהגות, אמירה או גילוי?</p>
+          </div>
+          <div class="identity-card" [class.highlight]="selectedIdentity === 'professional'">
+            <h5>חשד לפגיעה — איש מקצוע</h5>
+            <p>להבין מה גורם לחשד.</p>
+            <p>האם קיימים חובת דיווח? האם כבר בוצעו פעולות?</p>
+          </div>
+        </div>
+
+        <div class="duty-reminder">
+          <p class="duty-reminder-title">🔔 תזכורת — חובת דיווח מול עידוד וולונטרי</p>
+          <label class="checklist-item">
+            <input type="checkbox" [checked]="isChecked('s6-duty-checked')" (change)="toggleCheck('s6-duty-checked')">
+            <span>בדקתי אם חלה חובת דיווח חוקית (לפי קרבת הפוגע וגיל הילד/ה — כולל עדכון לגבי בני/בנות דודים)</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [checked]="isChecked('s6-duty-voluntary')" (change)="toggleCheck('s6-duty-voluntary')">
+            <span>אם אין חובה — שקלתי לעודד דיווח וולונטרי מטעמי מוגנות ושיקום</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [checked]="isChecked('s6-duty-consult')" (change)="toggleCheck('s6-duty-consult')">
+            <span>אם לא בטוחה — פניתי לייעוץ לפני החלטה עצמאית, ולא הבטחתי דברים שלא בטוח שיקרו</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- שלב 7 -->
+      <div class="step-panel" [hidden]="currentStep !== 7">
+        <h4 class="step-title">📋 שלב 7 — פרטים חשובים לתיוק (בשיחה ראשונית)</h4>
+        <p class="step-note">ניתן לתת פרטי בלבד / שם בדוי אם נוח יותר — יש להבהיר שעם התקדמות לתהליך ליווי צריך להזדהות בשם מלא. לתעד את כל הפרטים בטופס "דיווח שיחה חדשה".</p>
+
+        <div class="checklist-grid">
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-name')" (change)="toggleCheck('s7-name')"><span>שם (פרטי בלבד / שם בדוי אם נוח יותר)</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-dob')" (change)="toggleCheck('s7-dob')"><span>תאריך לידה לועזי</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-email')" (change)="toggleCheck('s7-email')"><span>מייל</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-city')" (change)="toggleCheck('s7-city')"><span>באיזו עיר גר/ה</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-marital')" (change)="toggleCheck('s7-marital')"><span>מצב משפחתי</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-phone')" (change)="toggleCheck('s7-phone')"><span>מספר טלפון (ואם לא — איזה מספר נוח לחזור אליו)</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-ongoing')" (change)="toggleCheck('s7-ongoing')"><span>האם הפגיעה הופסקה או עדיין נמשכת?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-lasttime')" (change)="toggleCheck('s7-lasttime')"><span>מתי הייתה הפגיעה האחרונה?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-whoknows')" (change)="toggleCheck('s7-whoknows')"><span>מי עוד יודע על הפגיעה?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-support')" (change)="toggleCheck('s7-support')"><span>האם יש מקורות תמיכה? האם פנו למרכז סיוע נוסף?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s7-sector')" (change)="toggleCheck('s7-sector')"><span>לאיזה מגזר את/ה משתייך/ת?</span></label>
+        </div>
+
+        <p class="step-note">כשמדובר בעבר ומועברים למחלקת חקירות, ניתן לשאול שאלות נוספות (רק לוודא שכפילויות לא נעשו): גיל בזמן הפגיעה, אירוע חד-פעמי/מתמשך, פגיעות נוספות בעבר, הקשר לנפגע/ת, פעולות שכבר ננקטו, שם הפוגע.</p>
+      </div>
+
+      <!-- שלב 8 -->
+      <div class="step-panel" [hidden]="currentStep !== 8">
+        <h4 class="step-title">🤝 שלב 8 — בקשת המלצה / הפניה</h4>
+
+        <table class="referral-table">
+          <thead>
+            <tr><th>סוג טיפול</th><th>פירוט</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>טיפול רגשי</td><td>פרטי / מרכזי טיפול וסיוע</td></tr>
+            <tr><td>טיפול רפואי</td><td>מותאם טראומה</td></tr>
+            <tr><td>הליך משפטי</td><td>פלילי או אזרחי — בהתאם למצב</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- שלב 9 -->
+      <div class="step-panel" [hidden]="currentStep !== 9">
+        <h4 class="step-title">✅ שלב 9 — סיכום וסגירת השיחה</h4>
+
+        <label class="checklist-item">
+          <input type="checkbox" [checked]="isChecked('s9-org')" (change)="toggleCheck('s9-org')">
+          <span>לתת הסבר על התהליך הארגוני: <em>"אני מעביר/ה את הפנייה לצוות והם יחזרו אליך בימים הקרובים..."</em></span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox" [checked]="isChecked('s9-close')" (change)="toggleCheck('s9-close')">
+          <span>סיכום השיחה: <em>"תודה שפנית אלינו ושיתפת... זה לא היה צעד קל... אנחנו כאן ונעשה כל שביכולתנו לעזור לך בעז״ה."</em></span>
+        </label>
+
+        <p class="step-subtitle">4 שאלות עיקריות לוודא שקיבלו מענה בשיחה:</p>
+        <div class="checklist-grid">
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s9-q1')" (change)="toggleCheck('s9-q1')"><span>מי מתקשר?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s9-q2')" (change)="toggleCheck('s9-q2')"><span>מהי מטרת השיחה?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s9-q3')" (change)="toggleCheck('s9-q3')"><span>האם קיימת סכנה מיידית?</span></label>
+          <label class="checklist-item"><input type="checkbox" [checked]="isChecked('s9-q4')" (change)="toggleCheck('s9-q4')"><span>האם יש צורך בהמשך טיפול של מגן?</span></label>
+        </div>
+
+        <p class="documentation-reminder">📌 חובה: תיעוד השיחה — לרשום במחברת את כל הפרטים, ומיד בסיום השיחה לתייק ב"דיווח שיחה חדשה"! חשוב לרשום שם וטלפון לחזור אליו/ה גם אם זה שם בדוי.</p>
+      </div>
+    </div>
+  </div>
+</section>
