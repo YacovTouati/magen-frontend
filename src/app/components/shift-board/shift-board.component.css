@@ -168,6 +168,18 @@
     color: #0f172a;
 }
 
+/* Chol HaMoed / Chanukah / Purim — decorative only, opposite corner from the day
+   number so it never overlaps it, and small enough to stay out of the way of the
+   shift chips below. Never affects click/selection behavior on the cell. */
+.day-observance-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: default;
+}
+
 .shift-row {
     display: flex;
     flex-direction: column;

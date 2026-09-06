@@ -14,6 +14,23 @@ export interface ShiftVolunteer {
     role: string;
 }
 
+// Computed server-side (src/utils/shabbat.ts / src/utils/holidays.ts on the backend) —
+// non-null whenever this shift falls on Shabbat or a Yom Tov and is blocked from
+// assignment. The frontend never computes holiday dates itself (Shabbat is the one
+// exception — see shared/shabbat.ts — since Friday/Saturday needs no calendar lookup).
+export interface ShiftHoliday {
+    emoji: string;
+    label: string;
+}
+
+// Computed server-side too, but purely informational — Chol HaMoed, Chanukah and Purim
+// are never blocked from assignment (explicit requirement), so this is a separate,
+// non-blocking field from `holiday` above rather than reusing it.
+export interface ShiftObservance {
+    emoji: string;
+    label: string;
+}
+
 export interface ShiftRecord {
     id: number;
     date: string; // YYYY-MM-DD
@@ -21,6 +38,8 @@ export interface ShiftRecord {
     status: ShiftStatus;
     volunteer: ShiftVolunteer | null;
     note: string | null;
+    holiday: ShiftHoliday | null;
+    observance: ShiftObservance | null;
 }
 
 // Returned by /schedules, /schedules/:id/publish — neither includes the shift rows.
@@ -155,7 +174,9 @@ export class ScheduleService {
             type: raw?.type,
             status: raw?.status ?? 'OPEN',
             volunteer: this.normalizeVolunteer(raw?.volunteer),
-            note: raw?.note ?? null
+            note: raw?.note ?? null,
+            holiday: raw?.holiday ? { emoji: raw.holiday.emoji, label: raw.holiday.label } : null,
+            observance: raw?.observance ? { emoji: raw.observance.emoji, label: raw.observance.label } : null
         };
     }
 

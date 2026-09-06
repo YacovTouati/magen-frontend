@@ -49,19 +49,19 @@ export class ShiftSelectionModalComponent {
     selectedVolunteerId: number | null = null;
 
     // Admins face no lock restriction at all here — /admin-assign works whether the shift
-    // is OPEN or LOCKED. Volunteers keep the original OPEN-only gate. Shabbat shifts are
-    // blocked for everyone, admins included — this is an organizational policy, not a
-    // scheduling conflict an admin should be able to override (see scheduleService's
-    // identical server-side check).
+    // is OPEN or LOCKED. Volunteers keep the original OPEN-only gate. Shabbat/Yom Tov
+    // shifts are blocked for everyone, admins included — this is an organizational
+    // policy, not a scheduling conflict an admin should be able to override (see
+    // scheduleService's identical server-side check).
     get canSelectMorning(): boolean {
-        if (this.isShabbatMorning) {
+        if (this.isBlockedMorning) {
             return false;
         }
         return this.isAdmin || this.morningShift?.status === 'OPEN';
     }
 
     get canSelectEvening(): boolean {
-        if (this.isShabbatEvening) {
+        if (this.isBlockedEvening) {
             return false;
         }
         return this.isAdmin || this.eveningShift?.status === 'OPEN';
@@ -75,12 +75,40 @@ export class ShiftSelectionModalComponent {
         return !!this.eveningShift && isShabbatBlockedShift(this.eveningShift.date, this.eveningShift.type);
     }
 
+    // Yom Tov days are computed server-side (src/utils/holidays.ts on the backend) and
+    // attached to the shift as `holiday`; Shabbat needs no calendar lookup and is still
+    // checked purely client-side too — either signal blocks the shift.
+    get isBlockedMorning(): boolean {
+        return this.isShabbatMorning || !!this.morningShift?.holiday;
+    }
+
+    get isBlockedEvening(): boolean {
+        return this.isShabbatEvening || !!this.eveningShift?.holiday;
+    }
+
+    // Prefers the server-supplied holiday info (richer: per-holiday emoji + label) and
+    // falls back to the hardcoded Shabbat display for the one case that's still computed
+    // purely client-side.
+    get morningBlockLabel(): string {
+        if (this.morningShift?.holiday) {
+            return `${this.morningShift.holiday.emoji} ${this.morningShift.holiday.label}`;
+        }
+        return this.isShabbatMorning ? '🕯️ שבת מנוחה' : '';
+    }
+
+    get eveningBlockLabel(): string {
+        if (this.eveningShift?.holiday) {
+            return `${this.eveningShift.holiday.emoji} ${this.eveningShift.holiday.label}`;
+        }
+        return this.isShabbatEvening ? '🕯️ שבת מנוחה' : '';
+    }
+
     get canReleaseMorning(): boolean {
-        return this.isAdmin && this.morningShift?.status === 'LOCKED' && !this.isShabbatMorning;
+        return this.isAdmin && this.morningShift?.status === 'LOCKED' && !this.isBlockedMorning;
     }
 
     get canReleaseEvening(): boolean {
-        return this.isAdmin && this.eveningShift?.status === 'LOCKED' && !this.isShabbatEvening;
+        return this.isAdmin && this.eveningShift?.status === 'LOCKED' && !this.isBlockedEvening;
     }
 
     get selectedShift(): ShiftRecord | null {
@@ -116,11 +144,11 @@ export class ShiftSelectionModalComponent {
             return;
         }
 
-        // Belt-and-suspenders: the radio for a Shabbat shift is removed from the DOM
+        // Belt-and-suspenders: the radio for a blocked shift is removed from the DOM
         // entirely (see canSelectMorning/Evening), but selectedType is plain component
         // state — checking again here means a stale/forced value can never slip through
         // even if the template guard is ever bypassed.
-        if (isShabbatBlockedShift(shift.date, shift.type)) {
+        if (isShabbatBlockedShift(shift.date, shift.type) || shift.holiday) {
             return;
         }
 

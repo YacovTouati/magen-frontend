@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UserManagementService } from '../../services/user-management.service';
-import { ScheduleService, ScheduleRecord, ShiftRecord, ShiftVolunteer } from '../../services/schedule.service';
+import { ScheduleService, ScheduleRecord, ShiftRecord, ShiftVolunteer, ShiftObservance } from '../../services/schedule.service';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ShiftSelectionModalComponent, AdminAssignment } from '../shift-selection-modal/shift-selection-modal.component';
 import { ShiftNoteModalComponent } from '../shift-note-modal/shift-note-modal.component';
@@ -247,8 +247,8 @@ export class ShiftBoardComponent implements OnInit {
     }
 
     hasOpenSlot(day: ShiftBoardDay): boolean {
-        return (day.morning?.status === 'OPEN' && !this.isShabbat(day.morning))
-            || (day.evening?.status === 'OPEN' && !this.isShabbat(day.evening));
+        return (day.morning?.status === 'OPEN' && !this.isBlocked(day.morning))
+            || (day.evening?.status === 'OPEN' && !this.isBlocked(day.evening));
     }
 
     // Friday evening / Saturday morning — blocked outright, no self-claim and no admin
@@ -257,6 +257,29 @@ export class ShiftBoardComponent implements OnInit {
     // schedule was generated.
     isShabbat(shift: ShiftRecord | null): boolean {
         return !!shift && isShabbatBlockedShift(shift.date, shift.type);
+    }
+
+    // Yom Tov days (Rosh Hashana, Yom Kippur, Sukkot I, Shmini Atzeret, Pesach I/VII,
+    // Shavuot) — computed server-side via a real Hebrew-calendar library (src/utils/
+    // holidays.ts on the backend) and attached to the shift itself, unlike Shabbat which
+    // needs no calendar lookup and is still computed purely client-side too.
+    isBlocked(shift: ShiftRecord | null): boolean {
+        return this.isShabbat(shift) || !!shift?.holiday;
+    }
+
+    // Prefers the server-supplied holiday info (richer: per-holiday emoji + label) and
+    // falls back to the hardcoded Shabbat display only if a shift is Shabbat-blocked but
+    // somehow arrived without server enrichment (defensive — every real API response
+    // populates `holiday` for a Shabbat shift too, since scheduleService checks Shabbat
+    // first).
+    blockLabel(shift: ShiftRecord | null): string {
+        if (shift?.holiday) {
+            return `${shift.holiday.emoji} ${shift.holiday.label}`;
+        }
+        if (this.isShabbat(shift)) {
+            return '🕯️ שבת מנוחה';
+        }
+        return '';
     }
 
     // Admins face no lock/draft/past-date restrictions when opening a day — they can
@@ -519,6 +542,15 @@ export class ShiftBoardComponent implements OnInit {
         }
 
         return days;
+    }
+
+    // Chol HaMoed / Chanukah / Purim — decorative only, computed server-side (src/utils/
+    // holidays.ts on the backend). Never affects hasOpenSlot()/isCellClickable(): these
+    // days must stay fully assignable, this is purely a visual marker on the day cell.
+    // One badge per day even though the field lives on each shift — morning/evening carry
+    // the same value for any given date, so either is a valid source.
+    observanceFor(day: ShiftBoardDay): ShiftObservance | null {
+        return day.morning?.observance ?? day.evening?.observance ?? null;
     }
 
     // Backs the single bottom-of-cell note indicator — one indicator per day, even though

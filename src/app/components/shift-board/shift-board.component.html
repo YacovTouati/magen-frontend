@@ -58,6 +58,11 @@
             (click)="cell && onDayClick(cell.day)"
           >
             <ng-container *ngIf="cell as c">
+              <span
+                *ngIf="observanceFor(c.day) as obs"
+                class="day-observance-badge"
+                [title]="obs.label"
+              >{{ obs.emoji }}</span>
               <div class="day-number">{{ c.day.dayNumber }}</div>
 
               <div class="shift-row">
@@ -65,17 +70,17 @@
                   class="shift-chip morning"
                   [class.locked]="c.day.morning?.status === 'LOCKED'"
                   [class.mine]="isMine(c.day.morning)"
-                  [class.shabbat]="isShabbat(c.day.morning)"
+                  [class.shabbat]="isBlocked(c.day.morning)"
                 >
-                  {{ isShabbat(c.day.morning) ? '🕯️ שבת מנוחה' : ('☀️ ' + (c.day.morning?.status === 'LOCKED' ? (c.day.morning?.volunteer?.name || '—') : 'פנוי')) }}
+                  {{ isBlocked(c.day.morning) ? blockLabel(c.day.morning) : ('☀️ ' + (c.day.morning?.status === 'LOCKED' ? (c.day.morning?.volunteer?.name || '—') : 'פנוי')) }}
                 </span>
                 <span
                   class="shift-chip evening"
                   [class.locked]="c.day.evening?.status === 'LOCKED'"
                   [class.mine]="isMine(c.day.evening)"
-                  [class.shabbat]="isShabbat(c.day.evening)"
+                  [class.shabbat]="isBlocked(c.day.evening)"
                 >
-                  {{ isShabbat(c.day.evening) ? '🕯️ שבת מנוחה' : ('🌙 ' + (c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי')) }}
+                  {{ isBlocked(c.day.evening) ? blockLabel(c.day.evening) : ('🌙 ' + (c.day.evening?.status === 'LOCKED' ? (c.day.evening?.volunteer?.name || '—') : 'פנוי')) }}
                 </span>
               </div>
 

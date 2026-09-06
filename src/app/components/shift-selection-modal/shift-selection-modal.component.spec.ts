@@ -11,6 +11,8 @@ function buildShift(overrides: Partial<ShiftRecord>): ShiftRecord {
         status: 'OPEN',
         volunteer: null,
         note: null,
+        holiday: null,
+        observance: null,
         ...overrides
     };
 }
@@ -176,6 +178,59 @@ describe('ShiftSelectionModalComponent', () => {
             // The radio for a Shabbat shift is removed from the DOM entirely (see the template
             // test above), but onConfirmSelection() re-checks isShabbatBlockedShift() itself too
             // — a stale/forced selectedType can never slip a claim through either path.
+            comp.selectedType = 'MORNING';
+            comp.onConfirmSelection();
+
+            expect(comp.selectShift.emit).not.toHaveBeenCalled();
+        });
+    });
+
+    // Yom Tov is computed server-side and arrives as `shift.holiday` — a non-Shabbat
+    // weekday shift with `holiday` set should be blocked exactly like a Shabbat one.
+    describe('Yom Tov shift blocking (server-supplied shift.holiday)', () => {
+        const roshHashana = { emoji: '🍎', label: 'ראש השנה' };
+
+        it('isBlockedMorning/Evening should be true when holiday is set, even on an ordinary weekday date', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.morningShift = buildShift({ date: '2026-09-22', type: 'MORNING', holiday: roshHashana });
+            comp.eveningShift = buildShift({ id: 2, date: '2026-09-22', type: 'EVENING', holiday: null });
+
+            expect(comp.isShabbatMorning).toBeFalse(); // not a Friday/Saturday
+            expect(comp.isBlockedMorning).toBeTrue();
+            expect(comp.isBlockedEvening).toBeFalse();
+        });
+
+        it('canSelectMorning should be false, even for an admin, when the shift has a holiday', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = true;
+            comp.morningShift = buildShift({ date: '2026-09-22', type: 'MORNING', status: 'OPEN', holiday: roshHashana });
+
+            expect(comp.canSelectMorning).toBeFalse();
+        });
+
+        it('morningBlockLabel should render the specific holiday emoji + label', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.morningShift = buildShift({ date: '2026-09-22', type: 'MORNING', holiday: roshHashana });
+            comp.eveningShift = buildShift({ id: 2, date: '2026-09-22', type: 'EVENING', holiday: null });
+            fixture.detectChanges();
+
+            expect(comp.morningBlockLabel).toBe('🍎 ראש השנה');
+            const shabbatOptions = fixture.debugElement.queryAll(By.css('.shabbat-option'));
+            expect(shabbatOptions.length).toBe(1);
+            expect(shabbatOptions[0].nativeElement.textContent).toContain('ראש השנה');
+        });
+
+        it('onConfirmSelection() should never emit for a shift with a holiday set', () => {
+            const fixture = create();
+            const comp = fixture.componentInstance;
+            comp.isAdmin = false;
+            comp.morningShift = buildShift({ date: '2026-09-22', type: 'MORNING', status: 'OPEN', holiday: roshHashana });
+            fixture.detectChanges();
+            spyOn(comp.selectShift, 'emit');
+
             comp.selectedType = 'MORNING';
             comp.onConfirmSelection();
 

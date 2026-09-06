@@ -20,6 +20,8 @@ function buildShift(overrides: Partial<ShiftRecord>): ShiftRecord {
         status: 'OPEN',
         volunteer: null,
         note: null,
+        holiday: null,
+        observance: null,
         ...overrides
     };
 }
@@ -384,6 +386,104 @@ describe('ShiftBoardComponent (shift notes)', () => {
             };
 
             expect(fixture.componentInstance.hasOpenSlot(day)).toBeTrue();
+        });
+    });
+
+    // Yom Tov is computed server-side and arrives as shift.holiday — a non-Shabbat
+    // weekday date with holiday set should be blocked exactly like a Shabbat one.
+    describe('Yom Tov shift blocking (server-supplied shift.holiday)', () => {
+        const roshHashana = { emoji: '🍎', label: 'ראש השנה' };
+
+        it('isBlocked() should be true when holiday is set, even on an ordinary weekday', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const shift = buildShift({ date: '2026-09-22', type: 'MORNING', holiday: roshHashana });
+
+            expect(fixture.componentInstance.isShabbat(shift)).toBeFalse(); // not a Friday/Saturday
+            expect(fixture.componentInstance.isBlocked(shift)).toBeTrue();
+        });
+
+        it('blockLabel() should render the specific holiday emoji + label', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const shift = buildShift({ date: '2026-09-22', type: 'MORNING', holiday: roshHashana });
+
+            expect(fixture.componentInstance.blockLabel(shift)).toBe('🍎 ראש השנה');
+        });
+
+        it('blockLabel() should fall back to the Shabbat display when there is no server-supplied holiday', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const shift = buildShift({ date: `${YEAR}-08-07`, type: 'EVENING', holiday: null });
+
+            expect(fixture.componentInstance.blockLabel(shift)).toBe('🕯️ שבת מנוחה');
+        });
+
+        it('hasOpenSlot() should ignore a holiday-blocked OPEN shift', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const day: ShiftBoardDay = {
+                dayNumber: 22,
+                dateString: '22/9/2026',
+                isToday: false,
+                morning: buildShift({ date: '2026-09-22', type: 'MORNING', status: 'OPEN', holiday: roshHashana }),
+                evening: buildShift({ date: '2026-09-22', type: 'EVENING', status: 'OPEN', holiday: null })
+            };
+
+            expect(fixture.componentInstance.hasOpenSlot(day)).toBeTrue(); // evening is unaffected
+            expect(fixture.componentInstance.isBlocked(day.morning)).toBeTrue();
+        });
+
+        it('blockLabel() should render the server-combined label when a Yom Tov coincides with Shabbat', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            // The backend merges Shabbat + Yom Tov into one label/emoji rather than one hiding
+            // the other (e.g. Sukkot I falling on a Saturday) — the frontend just displays it.
+            const shift = buildShift({ date: '2026-09-26', type: 'MORNING', holiday: { emoji: '🕯️🌿', label: 'שבת וסוכות' } });
+
+            expect(fixture.componentInstance.isShabbat(shift)).toBeTrue();
+            expect(fixture.componentInstance.blockLabel(shift)).toBe('🕯️🌿 שבת וסוכות');
+        });
+    });
+
+    // Chol HaMoed / Chanukah / Purim — decorative badge only, never blocks scheduling.
+    describe('observanceFor() (Chol HaMoed / Chanukah / Purim badge)', () => {
+        it('should prefer the morning shift\'s observance when both are set', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const day: ShiftBoardDay = {
+                dayNumber: 4, dateString: '4/12/2026', isToday: false,
+                morning: buildShift({ id: 1, date: '2026-12-04', type: 'MORNING', observance: { emoji: '🕎', label: 'חנוכה' } }),
+                evening: buildShift({ id: 2, date: '2026-12-04', type: 'EVENING', observance: { emoji: '🕎', label: 'חנוכה' } })
+            };
+
+            expect(fixture.componentInstance.observanceFor(day)).toEqual({ emoji: '🕎', label: 'חנוכה' });
+        });
+
+        it('should return null on an ordinary day', () => {
+            configure(false);
+            const fixture = createWithSchedule([]);
+            const day: ShiftBoardDay = {
+                dayNumber: 16, dateString: '16/8/2026', isToday: false,
+                morning: buildShift({ observance: null }),
+                evening: buildShift({ id: 2, observance: null })
+            };
+
+            expect(fixture.componentInstance.observanceFor(day)).toBeNull();
+        });
+
+        it('should render the badge in the day cell without blocking the shift itself', () => {
+            configure(false);
+            // Date kept inside the board's currently-displayed month (August, see MONTH0) so
+            // the fabricated observance actually lands on a rendered day cell — the frontend
+            // never computes real Hebrew-calendar dates itself, it only displays what arrives.
+            const shift = buildShift({ status: 'OPEN', observance: { emoji: '🕎', label: 'חנוכה' } });
+            const fixture = createWithSchedule([shift]);
+
+            const badge = fixture.debugElement.query(By.css('.day-observance-badge'));
+            expect(badge).toBeTruthy();
+            expect(badge.nativeElement.textContent).toContain('🕎');
+            expect(fixture.componentInstance.isBlocked(shift)).toBeFalse();
         });
     });
 });

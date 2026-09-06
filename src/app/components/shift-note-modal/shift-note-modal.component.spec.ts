@@ -10,7 +10,9 @@ const SHIFT_WITH_NOTE: ShiftRecord = {
     type: 'MORNING',
     status: 'LOCKED',
     volunteer: { id: 3, name: 'מירי', email: 'miri@example.com', role: 'VOLUNTEER' },
-    note: 'מירי עבדה עד 18:00'
+    note: 'מירי עבדה עד 18:00',
+    holiday: null,
+    observance: null
 };
 
 const SHIFT_WITHOUT_NOTE: ShiftRecord = {
