@@ -33,7 +33,7 @@ const UNHANDLED_COUNT_POLL_INTERVAL_MS = 15000;
       </button>
       <button class="nav-btn" [class.active]="currentTab === 'report'" (click)="switch('report')">📝 דיווח שיחה חדשה</button>
       <button *ngIf="isAdmin" class="nav-btn" [class.active]="currentTab === 'charts'" (click)="switch('charts')">📊 דוחות ואנליטיקה</button>
-      <button *ngIf="isSuperAdmin" class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
+      <button *ngIf="isSuperAdmin || !isAdmin" class="nav-btn" [class.active]="currentTab === 'samples'" (click)="switch('samples')">📚 שיחות ותרחישים לדוגמה</button>
       <button *ngIf="isSuperAdmin" class="nav-btn" [class.active]="currentTab === 'users'" (click)="switch('users')">👤 ניהול משתמשים</button>
     </nav>
 

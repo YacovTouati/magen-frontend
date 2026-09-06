@@ -113,12 +113,12 @@ describe('SidebarComponent', () => {
         expect(samplesButton(fixture)).toBeTruthy();
     });
 
-    it('should hide "שיחות ותרחישים לדוגמה" (sample calls) for a VOLUNTEER', () => {
+    it('should show "שיחות ותרחישים לדוגמה" (sample calls) for a VOLUNTEER', () => {
         const fixture = TestBed.createComponent(SidebarComponent);
         fixture.componentInstance.isAdmin = false;
         fixture.detectChanges();
 
-        expect(samplesButton(fixture)).toBeFalsy();
+        expect(samplesButton(fixture)).toBeTruthy();
     });
 
     describe('אינטייקים tab', () => {
