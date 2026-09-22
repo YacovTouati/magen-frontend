@@ -120,7 +120,19 @@ interface ReportDraft {
 
       <div class="form-group full-width">
         <label>תוכן וסיכום השיחה (דגשים חשובים, תהליך ומצב נוכחי):</label>
-        <textarea [(ngModel)]="summaryNotes" name="summaryNotes" rows="5" required placeholder="הקלד כאן נקודות מפתח מתוך השיחה..."></textarea>
+        <textarea
+          [(ngModel)]="summaryNotes"
+          #summaryNotesModel="ngModel"
+          name="summaryNotes"
+          rows="5"
+          required
+          minlength="5"
+          maxlength="10000"
+          placeholder="הקלד כאן נקודות מפתח מתוך השיחה..."
+        ></textarea>
+        <p class="field-error" *ngIf="summaryNotesModel.invalid && (summaryNotesModel.dirty || summaryNotesModel.touched)">
+          סיכום השיחה חייב להכיל לפחות 5 תווים
+        </p>
       </div>
 
       <div class="form-group">

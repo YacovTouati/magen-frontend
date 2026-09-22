@@ -91,6 +91,41 @@ describe('ReportComponent', () => {
             expect(fixture.debugElement.query(By.css('.field-error'))).toBeFalsy();
         });
 
+        // Previously this field only had `required` — a 1-4 character summary sailed
+        // through client-side and only failed at the server's own 5-char minimum,
+        // surfacing as a jarring native alert() with zero warning beforehand.
+        it('should show an inline error once the summary is touched with fewer than 5 characters', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+            const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
+
+            summary.value = 'קצר';
+            summary.dispatchEvent(new Event('input'));
+            summary.dispatchEvent(new Event('blur'));
+            fixture.detectChanges();
+
+            const error = fixture.debugElement.query(By.css('textarea[name="summaryNotes"] ~ .field-error'));
+            expect(error).toBeTruthy();
+            expect(error.nativeElement.textContent).toContain('לפחות 5 תווים');
+        });
+
+        it('should NOT show an error once the summary has 5 or more characters', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+            const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
+
+            summary.value = 'תקציר שיחה לדוגמה';
+            summary.dispatchEvent(new Event('input'));
+            summary.dispatchEvent(new Event('blur'));
+            fixture.detectChanges();
+
+            expect(fixture.debugElement.query(By.css('textarea[name="summaryNotes"] ~ .field-error'))).toBeFalsy();
+        });
+
         it('the submit button should be disabled while the phone number is invalid, and enabled once the whole form is valid', async () => {
             const fixture = TestBed.createComponent(ReportComponent);
             fixture.detectChanges();
@@ -325,6 +360,40 @@ describe('ReportComponent', () => {
             const reportedByInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
             reportedByInput.value = 'דנה לוי';
             reportedByInput.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+
+            expect(submitBtn.disabled).toBeFalse();
+        });
+
+        it('the submit button should stay disabled while the summary is under 5 characters, even with every other field valid', async () => {
+            const fixture = TestBed.createComponent(ReportComponent);
+            fixture.detectChanges();
+            await fixture.whenStable();
+            fixture.detectChanges();
+
+            const nameInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="callerName"]')).nativeElement;
+            const phoneInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="phone"]')).nativeElement;
+            const regionInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="region"]')).nativeElement;
+            const reportedByInput: HTMLInputElement = fixture.debugElement.query(By.css('input[name="reportedBy"]')).nativeElement;
+            const summary: HTMLTextAreaElement = fixture.debugElement.query(By.css('textarea[name="summaryNotes"]')).nativeElement;
+            const submitBtn: HTMLButtonElement = fixture.debugElement.query(By.css('.submit-btn')).nativeElement;
+
+            nameInput.value = 'ישראל ישראלי';
+            nameInput.dispatchEvent(new Event('input'));
+            phoneInput.value = '0501234567';
+            phoneInput.dispatchEvent(new Event('input'));
+            regionInput.value = 'מרכז';
+            regionInput.dispatchEvent(new Event('input'));
+            reportedByInput.value = 'דנה לוי';
+            reportedByInput.dispatchEvent(new Event('input'));
+            summary.value = 'קצר';
+            summary.dispatchEvent(new Event('input'));
+            fixture.detectChanges();
+
+            expect(submitBtn.disabled).toBeTrue(); // summary still under 5 chars
+
+            summary.value = 'תקציר שיחה לדוגמה';
+            summary.dispatchEvent(new Event('input'));
             fixture.detectChanges();
 
             expect(submitBtn.disabled).toBeFalse();
