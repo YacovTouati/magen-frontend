@@ -1,5 +1,6 @@
 import { Component, OnInit, DestroyRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -189,10 +190,32 @@ export class DashboardComponent implements OnInit {
         this.magenContactHistory = 'first_time';
         this.reportingDuty = 'no';
       },
-      error: () => {
-        alert('שגיאה בשמירת הדיווח. הנתונים נחסמו מטעמי אבטחה או אימות.');
+      error: (err: HttpErrorResponse) => {
+        alert(this.describeReportError(err));
       }
     });
+  }
+
+  // The generic "הנתונים נחסמו מטעמי אבטחה" this replaced showed identically
+  // whether the real cause was a missing required field, a rate limit, a dead
+  // network, or an actual server crash — giving neither the volunteer nor
+  // whoever's debugging it later any way to tell those apart. This surfaces
+  // whatever the server (or the browser, for status 0) actually said instead.
+  private describeReportError(err: HttpErrorResponse): string {
+    if (err.status === 0) {
+      return 'לא ניתן להתחבר לשרת. בדוק/י את החיבור לאינטרנט — ואם הוא תקין, ייתכן שתוכנת אבטחה או הרשת חוסמת את הבקשה. הדיווח נשמר כטיוטה מקומית ואפשר לנסות לשלוח שוב.';
+    }
+    if (err.status === 429) {
+      return err.error?.message || 'נשלחו יותר מדי דיווחים בזמן קצר. נסה/י שוב בעוד כמה דקות.';
+    }
+    if (Array.isArray(err.error?.errors)) {
+      const details = err.error.errors.map((e: { message: string }) => e.message).join('\n');
+      return `הדיווח לא נשמר — יש לתקן:\n${details}`;
+    }
+    if (err.error?.message) {
+      return `שגיאה בשמירת הדיווח: ${err.error.message}`;
+    }
+    return 'שגיאה בשמירת הדיווח. נסה/י שוב, ואם זה חוזר — פנה/י למנהל המערכת.';
   }
 
   closeSuccessModal(): void {

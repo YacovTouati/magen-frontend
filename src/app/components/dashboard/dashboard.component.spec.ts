@@ -180,6 +180,67 @@ describe('DashboardComponent', () => {
         // alongside the report tab fires its own unrelated background GET on init.
     });
 
+    // The generic "הנתונים נחסמו מטעמי אבטחה" alert used to show identically
+    // regardless of cause — these lock down that the real reason (network vs
+    // rate limit vs validation vs a genuine server error) now reaches the user.
+    describe('onReportSubmit() error handling', () => {
+        it('should report a network/offline failure distinctly (status 0)', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            const comp = fixture.componentInstance;
+            fixture.detectChanges();
+            const httpMock = TestBed.inject(HttpTestingController);
+            spyOn(window, 'alert');
+
+            comp.onReportSubmit({ callerName: 'ישראל ישראלי' } as any);
+            httpMock.expectOne(`${environment.apiBaseUrl}/api/reports`)
+                .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+
+            expect(window.alert).toHaveBeenCalledWith(jasmine.stringContaining('לא ניתן להתחבר לשרת'));
+        });
+
+        it('should surface the backend\'s own rate-limit message on 429', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            const comp = fixture.componentInstance;
+            fixture.detectChanges();
+            const httpMock = TestBed.inject(HttpTestingController);
+            spyOn(window, 'alert');
+
+            comp.onReportSubmit({ callerName: 'ישראל ישראלי' } as any);
+            httpMock.expectOne(`${environment.apiBaseUrl}/api/reports`)
+                .flush({ success: false, message: 'יותר מדי דיווחים נשלחו מכתובת זו, אנא נסה שוב מאוחר יותר' }, { status: 429, statusText: 'Too Many Requests' });
+
+            expect(window.alert).toHaveBeenCalledWith('יותר מדי דיווחים נשלחו מכתובת זו, אנא נסה שוב מאוחר יותר');
+        });
+
+        it('should list every field-level validation message on a 400', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            const comp = fixture.componentInstance;
+            fixture.detectChanges();
+            const httpMock = TestBed.inject(HttpTestingController);
+            spyOn(window, 'alert');
+
+            comp.onReportSubmit({ callerName: 'ישראל ישראלי' } as any);
+            httpMock.expectOne(`${environment.apiBaseUrl}/api/reports`)
+                .flush({ success: false, errors: [{ field: 'region', message: 'חובה להזין אזור בארץ' }] }, { status: 400, statusText: 'Bad Request' });
+
+            expect(window.alert).toHaveBeenCalledWith(jasmine.stringContaining('חובה להזין אזור בארץ'));
+        });
+
+        it('should fall back to a generic message when the server gives no detail at all', () => {
+            const fixture = TestBed.createComponent(DashboardComponent);
+            const comp = fixture.componentInstance;
+            fixture.detectChanges();
+            const httpMock = TestBed.inject(HttpTestingController);
+            spyOn(window, 'alert');
+
+            comp.onReportSubmit({ callerName: 'ישראל ישראלי' } as any);
+            httpMock.expectOne(`${environment.apiBaseUrl}/api/reports`)
+                .flush(null, { status: 500, statusText: 'Internal Server Error' });
+
+            expect(window.alert).toHaveBeenCalledWith(jasmine.stringContaining('שגיאה בשמירת הדיווח'));
+        });
+    });
+
     it('logout should clear the session and navigate to /login', () => {
         const fixture = TestBed.createComponent(DashboardComponent);
         const comp = fixture.componentInstance;
