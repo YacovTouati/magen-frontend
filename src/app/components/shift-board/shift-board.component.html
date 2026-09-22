@@ -42,11 +42,9 @@
     </div>
 
     <div class="board-grid-wrapper">
-      <div class="weekday-row">
-        <div class="weekday-cell" *ngFor="let wd of weekdayLabels">{{ wd }}</div>
-      </div>
-
       <div class="board-grid">
+        <div class="weekday-cell" *ngFor="let wd of weekdayLabels">{{ wd }}</div>
+
         <ng-container *ngFor="let week of weeks; trackBy: trackByIndex">
           <div
             *ngFor="let cell of week; trackBy: trackByIndex"
